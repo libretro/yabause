@@ -34,9 +34,9 @@
 
 #include <stdarg.h>
 
-#ifdef __LIBRETRO__
-#include "streams/file_stream_transforms.h"
-#endif
+//#ifdef __LIBRETRO__
+//#include "streams/file_stream_transforms.h"
+//#endif
 
 #ifndef HAVE_STRICMP
 #ifdef HAVE_STRCASECMP
