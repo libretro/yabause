@@ -92,6 +92,20 @@ else ifeq ($(platform), jetson-nano)
 	HAVE_SSE = 0
 	FLAGS += -march=armv8-a+crc -mtune=cortex-a57
 
+# Switch Lakka (arm64
+else ifeq ($(platform), arm64)
+	override platform += unix
+	TARGET := $(TARGET_NAME)_libretro.so
+	fpic := -fPIC
+	SHARED := -shared -Wl,--no-undefined -Wl,--version-script=link.T
+	LDFLAGS += -lpthread -lGL
+	FLAGS +=  -DAARCH64
+	ARCH_IS_LINUX = 1
+	HAVE_SSE = 0
+	USE_AARCH64_DRC = 1
+	DYNAREC_DEVMIYAX = 1
+	ALLOW_POLYGON_MODE = 0
+
 # RockPro64
 else ifneq (,$(findstring rockpro64,$(platform)))
 	override platform += unix
