@@ -87,13 +87,7 @@ INCLUDE_DIRS := $(CORE_DIR) \
 	$(SOURCE_DIR)/ctrl/include \
 	$(SOURCE_DIR)/ctrl/threads \
 	$(LIBRETRO_COMM_DIR)/include \
-	$(SOURCE_DIR)/core/m68k/musashi \
-	$(LIBCHDR_DIR)/src \
-	$(LZMA_DIR)/C \
-	$(CRYPTO_DIR) \
-	$(FLAC_DIR)/include \
-	$(FLAC_DIR)/src/libFLAC/include \
-	$(ZLIB_DIR)
+	$(SOURCE_DIR)/core/m68k/musashi
 
 SOURCES_S :=
 
@@ -149,6 +143,16 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+	$(CORE_DIR)/libretro.c
+
+LIBCHDR_INCLUDE_DIRS = \
+	$(LIBCHDR_DIR)/src \
+	$(LZMA_DIR)/C \
+	$(CRYPTO_DIR) \
+	$(FLAC_DIR)/include \
+	$(FLAC_DIR)/src/libFLAC/include \
+	$(ZLIB_DIR)
+LIBCHDR_SOURCES_C = \
 	$(LIBCHDR_DIR)/src/chd.c \
 	$(LIBCHDR_DIR)/src/bitstream.c \
 	$(LIBCHDR_DIR)/src/huffman.c \
@@ -171,8 +175,18 @@ SOURCES_C := \
 	$(ZLIB_DIR)/inffast.c \
 	$(ZLIB_DIR)/inflate.c \
 	$(ZLIB_DIR)/inftrees.c \
-	$(ZLIB_DIR)/zutil.c \
-	$(CORE_DIR)/libretro.c
+	$(ZLIB_DIR)/zutil.c
+
+ifeq ($(SYSTEM_LIBCHDR), 1)
+	CFLAGS += $(shell pkg-config --cflags libchdr)
+	LDFLAGS += $(shell pkg-config --libs libchdr)
+else
+	INCLUDE_DIRS += $(LIBCHDR_INCLUDE_DIRS)
+	SOURCES_C += $(LIBCHDR_SOURCES_C)
+	ifeq ($(ARCH_IS_WINDOWS), 1)
+		SOURCES_C += $(FLAC_DIR)/src/libFLAC/windows_unicode_filenames.c
+	endif
+endif
 
 ifeq ($(HAVE_CDROM), 1)
 	FLAGS += -DHAVE_CDROM
@@ -186,10 +200,6 @@ ifeq ($(HAVE_CDROM), 1)
 	ifeq ($(CDROM_DEBUG), 1)
 		FLAGS += -DCDROM_DEBUG
 	endif
-endif
-
-ifeq ($(ARCH_IS_WINDOWS), 1)
-	SOURCES_C += $(FLAC_DIR)/src/libFLAC/windows_unicode_filenames.c
 endif
 
 ifeq ($(FORCE_GLEW), 1)
