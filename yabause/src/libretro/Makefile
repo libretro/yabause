@@ -147,6 +147,21 @@ else ifneq (,$(findstring rockpro64,$(platform)))
 	DYNAREC_DEVMIYAX = 1
 	FLAGS += -march=armv8-a+crc -mcpu=cortex-a72 -mtune=cortex-a72.cortex-a53 -mfloat-abi=hard -mfpu=neon-vfpv4 -mvectorize-with-neon-quad
 
+# Rpi4 (64-bit)
+else ifeq ($(platform), rpi4)
+	override platform += unix
+	TARGET := $(TARGET_NAME)_libretro.so
+	fpic := -fPIC
+	SHARED := -shared -Wl,--no-undefined -Wl,--version-script=link.T
+	LDFLAGS += -lpthread
+	FLAGS += -DAARCH64
+	ARCH_IS_LINUX = 1
+	HAVE_SSE = 0
+	FORCE_GLES = 1
+	USE_AARCH64_DRC = 1
+	DYNAREC_DEVMIYAX = 1
+	FLAGS += -mcpu=cortex-a72 -mtune=cortex-a72
+
 # ODROIDs
 else ifeq ($(platform), odroid-n2)
 	override platform += unix
