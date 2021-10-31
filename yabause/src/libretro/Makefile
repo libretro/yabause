@@ -163,6 +163,32 @@ else ifeq ($(platform), rpi4)
 	FLAGS += -mcpu=cortex-a72 -mtune=cortex-a72
 
 # ODROIDs
+else ifneq (,$(findstring odroid-c2,$(platform)))
+	override platform += unix
+	TARGET := $(TARGET_NAME)_libretro.so
+	fpic := -fPIC
+	SHARED := -shared -Wl,--no-undefined -Wl,--version-script=link.T
+	LDFLAGS += -lpthread
+	ARCH_IS_LINUX = 1
+	HAVE_SSE = 0
+	FORCE_GLES = 1
+	USE_AARCH64_DRC = 1
+	DYNAREC_DEVMIYAX = 1
+	FLAGS += -DAARCH64 -march=armv8-a+crc+fp+simd -mcpu=cortex-a53 -mtune=cortex-a53
+
+else ifneq (,$(findstring odroid-c4,$(platform)))
+	override platform += unix
+	TARGET := $(TARGET_NAME)_libretro.so
+	fpic := -fPIC
+	SHARED := -shared -Wl,--no-undefined -Wl,--version-script=link.T
+	LDFLAGS += -lpthread
+	ARCH_IS_LINUX = 1
+	HAVE_SSE = 0
+	FORCE_GLES = 1
+	USE_AARCH64_DRC = 1
+	DYNAREC_DEVMIYAX = 1
+	FLAGS += -DAARCH64 -march=armv8-a+crc+fp+simd -mcpu=cortex-a55 -mtune=cortex-a55
+
 else ifeq ($(platform), odroid-n2)
 	override platform += unix
 	TARGET := $(TARGET_NAME)_libretro.so
