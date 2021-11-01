@@ -99,6 +99,20 @@ else ifeq ($(platform), arm64)
 	USE_AARCH64_DRC = 1
 	DYNAREC_DEVMIYAX = 1
 
+# Generic AArch64 Cortex-A53 support with GLES 3.0 like Amlogic G12A or Allwinner H616 
+else ifneq (,$(findstring arm64_cortex_a53_gles3,$(platform)))
+	override platform += unix
+	TARGET := $(TARGET_NAME)_libretro.so
+	fpic := -fPIC
+	SHARED := -shared -Wl,--no-undefined -Wl,--version-script=link.T
+	LDFLAGS += -lpthread
+	ARCH_IS_LINUX = 1
+	HAVE_SSE = 0
+	FORCE_GLES = 1
+	USE_AARCH64_DRC = 1
+	DYNAREC_DEVMIYAX = 1
+	FLAGS += -DAARCH64 -march=armv8-a+crc+fp+simd -mcpu=cortex-a53 -mtune=cortex-a53
+
 # Amlogic S922X Odroid-N2 / A311D Khadas VIM3 (AMLG12B) - 32-bit userspace
 else ifneq (,$(findstring AMLG12B,$(platform)))
 	override platform += unix
