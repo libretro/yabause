@@ -2862,7 +2862,7 @@ int STVSingleInit(const char *gamepath, const char *biospath, const char *eeprom
   nbGame = STVGetSingle(gamepath, biospath, &id);
   if (loadGame(0) == 0) {
     char eeprom_path[4096];
-    snprintf(eeprom_path, sizeof(eeprom_path), "%s%s.nv", eepromdir, GameList[id].romset);
+    snprintf(eeprom_path, sizeof(eeprom_path), "%s/%s.nv", eepromdir, GameList[id].romset);
     eeprom_init(eeprom_path);
     yabsys.isSTV = 1;
     return 0;
@@ -2881,7 +2881,7 @@ int STVInit(int id, const char *path, const char *eepromdir, int favorite_region
 #endif
   if (loadGame(id) == 0) {
     char eeprom_path[4096];
-    snprintf(eeprom_path, sizeof(eeprom_path), "%s%s.nv", eepromdir, availableGames[id].entry->romset);
+    snprintf(eeprom_path, sizeof(eeprom_path), "%s/%s.nv", eepromdir, availableGames[id].entry->romset);
     eeprom_init(eeprom_path);
     yabsys.isSTV = 1;
     return 0;

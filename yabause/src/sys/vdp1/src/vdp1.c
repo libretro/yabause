@@ -36,6 +36,9 @@
 #include "sh2core.h"
 #include "ygl.h"
 
+
+// #define DEBUG_CMD_LIST
+
 u8 * Vdp1Ram;
 int vdp1Ram_update_start;
 int vdp1Ram_update_end;
@@ -47,12 +50,12 @@ extern VideoInterface_struct *VIDCoreList[];
 Vdp1 * Vdp1Regs;
 Vdp1External_struct Vdp1External;
 
-vdp1cmdctrl_struct cmdBufferBeingProcessed[2000];
+vdp1cmdctrl_struct cmdBufferBeingProcessed[CMD_QUEUE_SIZE];
 
 int vdp1_clock = 0;
 
 static int nbCmdToProcess = 0;
-static int CmdListDrawn = 0;
+static int CmdListInLoop = 0;
 static int CmdListLimit = 0x80000;
 
 
@@ -82,7 +85,10 @@ static void abortVdp1() {
     // The vdp1 is still running and a new draw command request has been received
     // Abort the current command list
     Vdp1External.status = VDP1_STATUS_IDLE;
+    CmdListInLoop = 0;
     vdp1_clock = 0;
+    nbCmdToProcess = 0;
+    needVdp1draw = 0;
   }
 }
 //////////////////////////////////////////////////////////////////////////////
@@ -110,9 +116,6 @@ u32 FASTCALL Vdp1RamReadLong(SH2_struct *context, u8* mem, u32 addr) {
 
 void FASTCALL Vdp1RamWriteByte(SH2_struct *context, u8* mem, u32 addr, u8 val) {
    addr &= 0x7FFFF;
-   if (CmdListLimit >= addr) {
-     CmdListDrawn = 0;
-   }
    Vdp1External.updateVdp1Ram = 1;
    if( Vdp1External.status == VDP1_STATUS_RUNNING) vdp1_clock -= 1;
    if (vdp1Ram_update_start > addr) vdp1Ram_update_start = addr;
@@ -124,9 +127,6 @@ void FASTCALL Vdp1RamWriteByte(SH2_struct *context, u8* mem, u32 addr, u8 val) {
 
 void FASTCALL Vdp1RamWriteWord(SH2_struct *context, u8* mem, u32 addr, u16 val) {
    addr &= 0x7FFFF;
-   if (CmdListLimit >= addr) {
-     CmdListDrawn = 0;
-   }
    Vdp1External.updateVdp1Ram = 1;
    if( Vdp1External.status == VDP1_STATUS_RUNNING) vdp1_clock -= 2;
    if (vdp1Ram_update_start > addr) vdp1Ram_update_start = addr;
@@ -138,9 +138,6 @@ void FASTCALL Vdp1RamWriteWord(SH2_struct *context, u8* mem, u32 addr, u16 val) 
 
 void FASTCALL Vdp1RamWriteLong(SH2_struct *context, u8* mem, u32 addr, u32 val) {
    addr &= 0x7FFFF;
-   if (CmdListLimit >= addr) {
-     CmdListDrawn = 0;
-   }
    Vdp1External.updateVdp1Ram = 1;
    if( Vdp1External.status == VDP1_STATUS_RUNNING) vdp1_clock -= 4;
    if (vdp1Ram_update_start > addr) vdp1Ram_update_start = addr;
@@ -471,7 +468,6 @@ void FASTCALL Vdp1WriteWord(SH2_struct *context, u8* mem, u32 addr, u16 val) {
         FRAMELOG("VDP1: VDPEV_DIRECT_DRAW\n");
         Vdp1External.plot_trigger_line = yabsys.LineCount;
         abortVdp1();
-        vdp1_clock = 0;
         RequestVdp1ToDraw();
         Vdp1TryDraw();
         Vdp1External.plot_trigger_done = 1;
@@ -479,7 +475,6 @@ void FASTCALL Vdp1WriteWord(SH2_struct *context, u8* mem, u32 addr, u16 val) {
       if ((val == 0x2) && (oldPTMR == 0x0)){
         FRAMELOG("[VDP1] PTMR == 0x2 start drawing immidiatly\n");
         abortVdp1();
-        vdp1_clock = 0;
         RequestVdp1ToDraw();
         Vdp1TryDraw();
       }
@@ -495,7 +490,7 @@ void FASTCALL Vdp1WriteWord(SH2_struct *context, u8* mem, u32 addr, u16 val) {
          break;
       case 0xC:
          Vdp1Regs->ENDR = val;
-      	 Vdp1External.status = VDP1_STATUS_IDLE;
+         abortVdp1();
          break;
       default:
          LOG("trying to write a Vdp1 read-only register - %08X\n", addr);
@@ -607,14 +602,29 @@ static int Vdp1NormalSpriteDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* 
   cmd->CMDXA += regs->localX;
   cmd->CMDYA += regs->localY;
 
-  cmd->CMDXB = cmd->CMDXA + MAX(1,cmd->w) - 1;
+  cmd->CMDXB = cmd->CMDXA + MAX(1,cmd->w);
   cmd->CMDYB = cmd->CMDYA;
-  cmd->CMDXC = cmd->CMDXA + MAX(1,cmd->w) - 1;
-  cmd->CMDYC = cmd->CMDYA + MAX(1,cmd->h) -1;
+  cmd->CMDXC = cmd->CMDXA + MAX(1,cmd->w);
+  cmd->CMDYC = cmd->CMDYA + MAX(1,cmd->h);
   cmd->CMDXD = cmd->CMDXA;
-  cmd->CMDYD = cmd->CMDYA + MAX(1,cmd->h) - 1;
+  cmd->CMDYD = cmd->CMDYA + MAX(1,cmd->h);
 
   int area = abs((cmd->CMDXA*cmd->CMDYB - cmd->CMDXB*cmd->CMDYA) + (cmd->CMDXB*cmd->CMDYC - cmd->CMDXC*cmd->CMDYB) + (cmd->CMDXC*cmd->CMDYD - cmd->CMDXD*cmd->CMDYC) + (cmd->CMDXD*cmd->CMDYA - cmd->CMDXA *cmd->CMDYD))/2;
+  switch ((cmd->CMDPMOD >> 3) & 0x7) {
+    case 0:
+    case 1:
+      // 4 pixels per 16 bits
+      area  = area >> 2;
+      break;
+    case 2:
+    case 3:
+    case 4:
+      // 2 pixels per 16 bits
+      area = area >> 1;
+      break;
+    default:
+      break;
+  }
   yabsys.vdp1cycles+= MIN(1000, 70 + (area));
 
   memset(cmd->G, 0, sizeof(float)*16);
@@ -731,7 +741,48 @@ static int Vdp1ScaledSpriteDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* 
   cmd->CMDXD = x + regs->localX;
   cmd->CMDYD = y + rh + regs->localY;
 
+  // Setup Zoom Point
+  switch ((cmd->CMDCTRL & 0xF00) >> 8)
+  {
+  case 0x0: // Only two coordinates
+    if ((s16)cmd->CMDXC > (s16)cmd->CMDXA){ cmd->CMDXB += 1; cmd->CMDXC += 1;} else { cmd->CMDXA += 1; cmd->CMDXB +=1; cmd->CMDXC += 1; cmd->CMDXD += 1;}
+    if ((s16)cmd->CMDYC > (s16)cmd->CMDYA){ cmd->CMDYC += 1; cmd->CMDYD += 1;} else { cmd->CMDYA += 1; cmd->CMDYB += 1; cmd->CMDYC += 1; cmd->CMDYD += 1;}
+    break;
+  case 0x5: // Upper-left
+  case 0x6: // Upper-Center
+  case 0x7: // Upper-Right
+  case 0x9: // Center-left
+  case 0xA: // Center-center
+  case 0xB: // Center-right
+  case 0xD: // Lower-left
+  case 0xE: // Lower-center
+  case 0xF: // Lower-right
+    cmd->CMDXB += 1;
+    cmd->CMDXC += 1;
+    cmd->CMDYC += 1;
+    cmd->CMDYD += 1;
+    break;
+  default: break;
+  }
+
+
+
   int area = abs((cmd->CMDXA*cmd->CMDYB - cmd->CMDXB*cmd->CMDYA) + (cmd->CMDXB*cmd->CMDYC - cmd->CMDXC*cmd->CMDYB) + (cmd->CMDXC*cmd->CMDYD - cmd->CMDXD*cmd->CMDYC) + (cmd->CMDXD*cmd->CMDYA - cmd->CMDXA *cmd->CMDYD))/2;
+  switch ((cmd->CMDPMOD >> 3) & 0x7) {
+    case 0:
+    case 1:
+      // 4 pixels per 16 bits
+      area  = area >> 2;
+      break;
+    case 2:
+    case 3:
+    case 4:
+      // 2 pixels per 16 bits
+      area = area >> 1;
+      break;
+    default:
+      break;
+  }
   yabsys.vdp1cycles+= MIN(1000, 70 + area);
 
   //gouraud
@@ -790,6 +841,21 @@ static int Vdp1DistortedSpriteDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u
   cmd->CMDYD += regs->localY;
 
   int area = abs((cmd->CMDXA*cmd->CMDYB - cmd->CMDXB*cmd->CMDYA) + (cmd->CMDXB*cmd->CMDYC - cmd->CMDXC*cmd->CMDYB) + (cmd->CMDXC*cmd->CMDYD - cmd->CMDXD*cmd->CMDYC) + (cmd->CMDXD*cmd->CMDYA - cmd->CMDXA *cmd->CMDYD))/2;
+  switch ((cmd->CMDPMOD >> 3) & 0x7) {
+    case 0:
+    case 1:
+      // 4 pixels per 16 bits
+      area  = area >> 2;
+      break;
+    case 2:
+    case 3:
+    case 4:
+      // 2 pixels per 16 bits
+      area = area >> 1;
+      break;
+    default:
+      break;
+  }
   yabsys.vdp1cycles+= MIN(1000, 70 + (area*3));
 
   memset(cmd->G, 0, sizeof(float)*16);
@@ -1048,14 +1114,114 @@ static vdp1cmd_struct * usrClipCmd = NULL;
 static vdp1cmd_struct * sysClipCmd = NULL;
 static vdp1cmd_struct * localCoordCmd = NULL;
 
+#ifdef DEBUG_CMD_LIST
+void debugCmdList() {
+  YuiMsg("Draw %d (%d)\n", yabsys.LineCount, _Ygl->drawframe);
+  for (int i=0;;i++)
+  {
+     char *string;
+
+     if ((string = Vdp1DebugGetCommandNumberName(i)) == NULL)
+        break;
+
+     YuiMsg("\t%s\n", string);
+  }
+}
+#endif
+static u32 Vdp1DebugGetCommandNumberAddr(u32 number);
+
+int EvaluateCmdListHash(Vdp1 * regs){
+  int hash = 0;
+  u32 addr = 0;
+  u32 returnAddr = 0xFFFFFFFF;
+  u32 commandCounter = 0;
+  u16 command;
+
+  command = T1ReadWord(Vdp1Ram, addr);
+
+  while (!(command & 0x8000) && (commandCounter < 2000))
+  {
+      vdp1cmd_struct cmd;
+     // Make sure we're still dealing with a valid command
+     if ((command & 0x000C) == 0x000C)
+        // Invalid, abort
+        return hash;
+      Vdp1ReadCommand(&cmd, addr, Vdp1Ram);
+      hash ^= (cmd.CMDCTRL << 16) | cmd.CMDLINK;
+      hash ^= (cmd.CMDPMOD << 16) | cmd.CMDCOLR;
+      hash ^= (cmd.CMDSRCA << 16) | cmd.CMDSIZE;
+      hash ^= (cmd.CMDXA << 16) | cmd.CMDYA;
+      hash ^= (cmd.CMDXB << 16) | cmd.CMDYB;
+      hash ^= (cmd.CMDXC << 16) | cmd.CMDYC;
+      hash ^= (cmd.CMDXD << 16) | cmd.CMDYD;
+      hash ^= (cmd.CMDGRDA << 16) | _Ygl->drawframe;
+
+     // Determine where to go next
+     switch ((command & 0x3000) >> 12)
+     {
+        case 0: // NEXT, jump to following table
+           addr += 0x20;
+           break;
+        case 1: // ASSIGN, jump to CMDLINK
+           addr = T1ReadWord(Vdp1Ram, addr + 2) * 8;
+           break;
+        case 2: // CALL, call a subroutine
+           if (returnAddr == 0xFFFFFFFF)
+              returnAddr = addr + 0x20;
+
+           addr = T1ReadWord(Vdp1Ram, addr + 2) * 8;
+           break;
+        case 3: // RETURN, return from subroutine
+           if (returnAddr != 0xFFFFFFFF) {
+              addr = returnAddr;
+              returnAddr = 0xFFFFFFFF;
+           }
+           else
+              addr += 0x20;
+           break;
+     }
+
+     if (addr > 0x7FFE0)
+        return hash;
+     command = T1ReadWord(Vdp1Ram, addr);
+     commandCounter++;
+  }
+  return hash;
+}
+
+static int sameCmd(vdp1cmd_struct* a, vdp1cmd_struct* b) {
+  if (a == NULL) return 0;
+  if (b == NULL) return 0;
+  if (emptyCmd(a)) return 0;
+  int cmp = memcmp(a, b, 15*sizeof(int));
+  if (cmp == 0) {
+    return 1;
+  }
+  return 0;
+}
+
+static int lastHash = -1;
 void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
 {
   int cylesPerLine  = getVdp1CyclesPerLine();
 
-  if (CmdListDrawn != 0) return; //The command list has already been drawn for the current frame
-  CmdListLimit = 0;
-
   if (Vdp1External.status == VDP1_STATUS_IDLE) {
+    #if 0
+    int newHash = EvaluateCmdListHash(regs);
+    // Breaks megamanX4
+    if (newHash == lastHash) {
+      #ifdef DEBUG_CMD_LIST
+      YuiMsg("Abort same command %x %x (%d) (%d)\n", newHash, lastHash, _Ygl->drawframe, yabsys.LineCount);
+      #endif
+      return;
+    }
+    lastHash = newHash;
+    YuiMsg("The last list is 0x%x (%d) (%d)\n", newHash, _Ygl->drawframe, yabsys.LineCount);
+    #endif
+    #ifdef DEBUG_CMD_LIST
+    debugCmdList();
+    #endif
+
     returnAddr = 0xffffffff;
     if (usrClipCmd != NULL) free(usrClipCmd);
     if (sysClipCmd != NULL) free(sysClipCmd);
@@ -1064,7 +1230,11 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
     sysClipCmd = NULL;
     localCoordCmd = NULL;
     nbCmdToProcess = 0;
+  } else {
+    //Check if previous call where looping. In that case, directly abort
+    if (CmdListInLoop == 1) return;
   }
+  CmdListLimit = 0;
 
    Vdp1External.status = VDP1_STATUS_RUNNING;
    if (regs->addr > 0x7FFFF) {
@@ -1080,8 +1250,10 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
    vdp1Ram_update_end = 0x0;
    Vdp1External.checkEDSR = 0;
 
+   vdp1cmd_struct oldCmd;
+
    yabsys.vdp1cycles = 0;
-   while (!(command & 0x8000) && commandCounter < 2000) { // fix me
+   while (!(command & 0x8000) && nbCmdToProcess < CMD_QUEUE_SIZE) { // fix me
      int ret;
       regs->COPR = (regs->addr & 0x7FFFF) >> 3;
       // First, process the command
@@ -1097,23 +1269,29 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
             ctrl = &cmdBufferBeingProcessed[nbCmdToProcess];
             ctrl->dirty = 0;
             Vdp1ReadCommand(&ctrl->cmd, regs->addr, Vdp1Ram);
-            checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
-            ctrl->ignitionLine = MIN(yabsys.LineCount + yabsys.vdp1cycles/cylesPerLine,yabsys.MaxLineCount-1);
-            ret = Vdp1NormalSpriteDraw(&ctrl->cmd, ram, regs, back_framebuffer);
-            if (ret == 0) vdp1_clock = 0; //Incorrect command, wait next line to continue
-            if (ret == 1) nbCmdToProcess++;
-            setupSpriteLimit(ctrl);
+            if (!sameCmd(&ctrl->cmd, &oldCmd)) {
+              oldCmd = ctrl->cmd;
+              checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
+              ctrl->ignitionLine = MIN(yabsys.LineCount + yabsys.vdp1cycles/cylesPerLine,yabsys.MaxLineCount-1);
+              ret = Vdp1NormalSpriteDraw(&ctrl->cmd, ram, regs, back_framebuffer);
+              if (ret == 1) nbCmdToProcess++;
+              else vdp1_clock = 0; //Incorrect command, wait next line to continue
+              setupSpriteLimit(ctrl);
+            }
             break;
          case 1: // scaled sprite draw
             ctrl = &cmdBufferBeingProcessed[nbCmdToProcess];
             ctrl->dirty = 0;
             Vdp1ReadCommand(&ctrl->cmd, regs->addr, Vdp1Ram);
-            ctrl->ignitionLine = MIN(yabsys.LineCount + yabsys.vdp1cycles/cylesPerLine,yabsys.MaxLineCount-1);
-            checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
-            ret = Vdp1ScaledSpriteDraw(&ctrl->cmd, ram, regs, back_framebuffer);
-            if (ret == 0) vdp1_clock = 0; //Incorrect command, wait next line to continue
-            if (ret == 1) nbCmdToProcess++;
-            setupSpriteLimit(ctrl);
+            if (!sameCmd(&ctrl->cmd, &oldCmd)) {
+              oldCmd = ctrl->cmd;
+              ctrl->ignitionLine = MIN(yabsys.LineCount + yabsys.vdp1cycles/cylesPerLine,yabsys.MaxLineCount-1);
+              checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
+              ret = Vdp1ScaledSpriteDraw(&ctrl->cmd, ram, regs, back_framebuffer);
+              if (ret == 1) nbCmdToProcess++;
+              else vdp1_clock = 0; //Incorrect command, wait next line to continue
+              setupSpriteLimit(ctrl);
+            }
             break;
          case 2: // distorted sprite draw
          case 3: /* this one should be invalid, but some games
@@ -1121,40 +1299,52 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
             ctrl = &cmdBufferBeingProcessed[nbCmdToProcess];
             ctrl->dirty = 0;
             Vdp1ReadCommand(&ctrl->cmd, regs->addr, Vdp1Ram);
-            ctrl->ignitionLine = MIN(yabsys.LineCount + yabsys.vdp1cycles/cylesPerLine,yabsys.MaxLineCount-1);
-            checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
-            ret = Vdp1DistortedSpriteDraw(&ctrl->cmd, ram, regs, back_framebuffer);
-            if (ret == 0) vdp1_clock = 0; //Incorrect command, wait next line to continue
-            if (ret == 1) nbCmdToProcess++;
-            setupSpriteLimit(ctrl);
+            if (!sameCmd(&ctrl->cmd, &oldCmd)) {
+              oldCmd = ctrl->cmd;
+              ctrl->ignitionLine = MIN(yabsys.LineCount + yabsys.vdp1cycles/cylesPerLine,yabsys.MaxLineCount-1);
+              checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
+              ret = Vdp1DistortedSpriteDraw(&ctrl->cmd, ram, regs, back_framebuffer);
+              if (ret == 1) nbCmdToProcess++;
+              else vdp1_clock = 0; //Incorrect command, wait next line to continue
+              setupSpriteLimit(ctrl);
+            }
             break;
          case 4: // polygon draw
             ctrl = &cmdBufferBeingProcessed[nbCmdToProcess];
             ctrl->dirty = 0;
             Vdp1ReadCommand(&ctrl->cmd, regs->addr, Vdp1Ram);
-            ctrl->ignitionLine = MIN(yabsys.LineCount + yabsys.vdp1cycles/cylesPerLine,yabsys.MaxLineCount-1);
-            checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
-            nbCmdToProcess += Vdp1PolygonDraw(&ctrl->cmd, ram, regs, back_framebuffer);
-            setupSpriteLimit(ctrl);
+            if (!sameCmd(&ctrl->cmd, &oldCmd)) {
+              oldCmd = ctrl->cmd;
+              ctrl->ignitionLine = MIN(yabsys.LineCount + yabsys.vdp1cycles/cylesPerLine,yabsys.MaxLineCount-1);
+              checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
+              nbCmdToProcess += Vdp1PolygonDraw(&ctrl->cmd, ram, regs, back_framebuffer);
+              setupSpriteLimit(ctrl);
+            }
             break;
          case 5: // polyline draw
          case 7: // undocumented mirror
             ctrl = &cmdBufferBeingProcessed[nbCmdToProcess];
             ctrl->dirty = 0;
             Vdp1ReadCommand(&ctrl->cmd, regs->addr, Vdp1Ram);
-            ctrl->ignitionLine = MIN(yabsys.LineCount + yabsys.vdp1cycles/cylesPerLine,yabsys.MaxLineCount-1);
-            checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
-            nbCmdToProcess += Vdp1PolylineDraw(&ctrl->cmd, ram, regs, back_framebuffer);
-            setupSpriteLimit(ctrl);
+            if (!sameCmd(&ctrl->cmd, &oldCmd)) {
+              oldCmd = ctrl->cmd;
+              ctrl->ignitionLine = MIN(yabsys.LineCount + yabsys.vdp1cycles/cylesPerLine,yabsys.MaxLineCount-1);
+              checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
+              nbCmdToProcess += Vdp1PolylineDraw(&ctrl->cmd, ram, regs, back_framebuffer);
+              setupSpriteLimit(ctrl);
+            }
             break;
          case 6: // line draw
             ctrl = &cmdBufferBeingProcessed[nbCmdToProcess];
             ctrl->dirty = 0;
             Vdp1ReadCommand(&ctrl->cmd, regs->addr, Vdp1Ram);
-            ctrl->ignitionLine = MIN(yabsys.LineCount + yabsys.vdp1cycles/cylesPerLine,yabsys.MaxLineCount-1);
-            checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
-            nbCmdToProcess += Vdp1LineDraw(&ctrl->cmd, ram, regs, back_framebuffer);
-            setupSpriteLimit(ctrl);
+            if (!sameCmd(&ctrl->cmd, &oldCmd)) {
+              oldCmd = ctrl->cmd;
+              ctrl->ignitionLine = MIN(yabsys.LineCount + yabsys.vdp1cycles/cylesPerLine,yabsys.MaxLineCount-1);
+              checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
+              nbCmdToProcess += Vdp1LineDraw(&ctrl->cmd, ram, regs, back_framebuffer);
+              setupSpriteLimit(ctrl);
+            }
             break;
          case 8: // user clipping coordinates
          case 11: // undocumented mirror
@@ -1162,18 +1352,21 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
             yabsys.vdp1cycles += 16;
             usrClipCmd = (vdp1cmd_struct *)malloc(sizeof(vdp1cmd_struct));
             Vdp1ReadCommand(usrClipCmd, regs->addr, ram);
+            oldCmd = *usrClipCmd;
             break;
          case 9: // system clipping coordinates
             checkClipCmd(NULL, &usrClipCmd, &localCoordCmd, ram, regs);
             yabsys.vdp1cycles += 16;
             sysClipCmd = (vdp1cmd_struct *)malloc(sizeof(vdp1cmd_struct));
             Vdp1ReadCommand(sysClipCmd, regs->addr, ram);
+            oldCmd = *sysClipCmd;
             break;
          case 10: // local coordinate
             checkClipCmd(&sysClipCmd, &usrClipCmd, NULL, ram, regs);
             yabsys.vdp1cycles += 16;
             localCoordCmd = (vdp1cmd_struct *)malloc(sizeof(vdp1cmd_struct));
             Vdp1ReadCommand(localCoordCmd, regs->addr, ram);
+            oldCmd = *localCoordCmd;
             break;
          default: // Abort
             VDP1LOG("vdp1\t: Bad command: %x\n", command);
@@ -1181,7 +1374,6 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
       	    Vdp1External.status = VDP1_STATUS_IDLE;
             regs->EDSR |= 2;
             regs->COPR = (regs->addr & 0x7FFFF) >> 3;
-            CmdListDrawn = 1;
             CmdListLimit = MAX((regs->addr & 0x7FFFF), regs->addr);
             return;
          }
@@ -1196,7 +1388,6 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
 		  checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
 		  Vdp1External.status = VDP1_STATUS_IDLE;
 		  regs->COPR = (regs->addr & 0x7FFFF) >> 3;
-      CmdListDrawn = 1;
       CmdListLimit = MAX((regs->addr & 0x7FFFF), regs->addr);
 		  return;
 	  }
@@ -1210,11 +1401,12 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
         {
           u32 oldAddr = regs->addr;
           regs->addr = T1ReadWord(ram, regs->addr + 2) * 8;
-          if ((regs->addr == oldAddr) && (command & 0x4000))   {
+          if (((regs->addr == oldAddr) && (command & 0x4000)) || (regs->addr == 0))   {
             //The next adress is the same as the old adress and the command is skipped => Exit
+            //The next adress is the start of the command list. It means the list has an infinte loop => Exit (used by Burning Rangers)
             regs->lCOPR = (regs->addr & 0x7FFFF) >> 3;
             vdp1_clock = 0;
-            CmdListDrawn = 1;
+            CmdListInLoop = 1;
             CmdListLimit = MAX((regs->addr & 0x7FFFF), regs->addr);
             checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
             return;
@@ -1243,13 +1435,13 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
       //If we do not change it, Noon will not start
       //So store the value and update COPR with last value at VBlank In
       regs->lCOPR = (regs->addr & 0x7FFFF) >> 3;
-      commandCounter++;
    }
    if (command & 0x8000) {
         LOG("VDP1: Command Finished! count = %d @ %08X", commandCounter, regs->addr);
         Vdp1External.status = VDP1_STATUS_IDLE;
+        regs->COPR = (regs->addr & 0x7FFFF) >> 3;
+        regs->lCOPR = (regs->addr & 0x7FFFF) >> 3;
    }
-   CmdListDrawn = 1;
    CmdListLimit = MAX((regs->addr & 0x7FFFF), regs->addr);
    checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
 }
@@ -1401,7 +1593,7 @@ int Vdp1SaveState(void ** stream)
    u8 back_framebuffer[0x40000] = { 0 };
 #endif
 
-   offset = MemStateWriteHeader(stream, "VDP1", 1);
+   offset = MemStateWriteHeader(stream, "VDP1", 2);
 
    // Write registers
    MemStateWrite((void *)Vdp1Regs, sizeof(Vdp1), 1, stream);
@@ -1415,6 +1607,11 @@ int Vdp1SaveState(void ** stream)
 
    MemStateWrite((void *)back_framebuffer, 0x40000, 1, stream);
 #endif
+
+    // VDP1 status
+   int size = sizeof(Vdp1External_struct);
+   MemStateWrite((void *)(&size), sizeof(int),1,stream);
+   MemStateWrite((void *)(&Vdp1External), sizeof(Vdp1External_struct),1,stream);
    return MemStateFinishHeader(stream, offset);
 }
 
@@ -1440,6 +1637,23 @@ int Vdp1LoadState(const void * stream, UNUSED int version, int size)
    for (i = 0; i < 0x40000; i++)
       Vdp1FrameBufferWriteByte(NULL, NULL, i, back_framebuffer[i]);
 #endif
+   if (version > 1) {
+     int size = 0;
+     MemStateRead((void *)(&size), sizeof(int), 1, stream);
+     if (size == sizeof(Vdp1External_struct)) {
+        MemStateRead((void *)(&Vdp1External), sizeof(Vdp1External_struct),1,stream);
+     } else {
+       YuiMsg("Too old savestate, can not restore Vdp1External\n");
+       memset((void *)(&Vdp1External), 0, sizeof(Vdp1External_struct));
+       Vdp1External.disptoggle = 1;
+     }
+   } else {
+     YuiMsg("Too old savestate, can not restore Vdp1External\n");
+     memset((void *)(&Vdp1External), 0, sizeof(Vdp1External_struct));
+     Vdp1External.disptoggle = 1;
+   }
+   Vdp1External.updateVdp1Ram = 1;
+
    return size;
 }
 
@@ -2187,6 +2401,11 @@ void ToggleVDP1(void)
    Vdp1External.disptoggle ^= 1;
 }
 //////////////////////////////////////////////////////////////////////////////
+
+static void Vdp1EraseWrite(int id){
+  lastHash = -1;
+  if ((VIDCore != NULL) && (VIDCore->Vdp1EraseWrite != NULL))VIDCore->Vdp1EraseWrite(id);
+}
 static void startField(void) {
   int isrender = 0;
   yabsys.wait_line_count = -1;
@@ -2200,17 +2419,16 @@ static void startField(void) {
   if (Vdp1External.swap_frame_buffer == 1)
   {
     FRAMELOG("Swap Line %d\n", yabsys.LineCount);
+    lastHash = -1;
     if ((Vdp1External.manualerase == 1) || (Vdp1External.onecyclemode == 1))
     {
       int id = 0;
       if (_Ygl != NULL) id = _Ygl->readframe;
-      VIDCore->Vdp1EraseWrite(id);
-      CmdListDrawn = 0;
+      Vdp1EraseWrite(id);
       Vdp1External.manualerase = 0;
     }
 
     VIDCore->Vdp1FrameChange();
-    CmdListDrawn = 0;
     FRAMELOG("Change readframe %d to %d (%d)\n", _Ygl->drawframe, _Ygl->readframe, yabsys.LineCount);
     Vdp1External.current_frame = !Vdp1External.current_frame;
     Vdp1Regs->LOPR = Vdp1Regs->COPR;
@@ -2264,9 +2482,9 @@ void Vdp1HBlankIN(void)
         cmdBufferBeingProcessed[i].ignitionLine = -1;
       }
     }
+    nbCmdToProcess = 0;
     if (needToCompose == 1) {
       //We need to evaluate end line and not ignition line? It is improving doom if we better take care of the concurrency betwwen vdp1 update and command list"
-      nbCmdToProcess = 0;
       vdp1Ram_update_start = 0x80000;
       vdp1Ram_update_end = 0x0;
       if (VIDCore != NULL) {
@@ -2317,7 +2535,6 @@ void Vdp1VBlankOUT(void)
   if (needVBlankErase()) {
     int id = 0;
     if (_Ygl != NULL) id = _Ygl->readframe;
-    CmdListDrawn = 0;
-    VIDCore->Vdp1EraseWrite(id);
+    Vdp1EraseWrite(id);
   }
 }

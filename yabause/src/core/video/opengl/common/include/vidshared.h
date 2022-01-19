@@ -123,7 +123,6 @@ typedef struct
    /* The above fields MUST NOT BE CHANGED (including inserting new fields)
     * unless YglSprite is also updated in ygl.h */
 
-   int celly;
    int cellw_bits, cellh_bits;
    int mapwh;
    int planew, planew_bits, planeh, planeh_bits;
@@ -140,6 +139,7 @@ typedef struct
    u16 supplementdata;
    int auxmode;
    int enable;
+   //Display shall be used per line to render NBG more accurately
    u8 display[270];
    int x, y;
    int sh,sv;
@@ -194,6 +194,8 @@ typedef struct
 
    u16 char_bank[4];
    u16 pname_bank[4];
+   u8 alpha_per_line[270];
+   u16 draw_line;
 
 } vdp2draw_struct;
 

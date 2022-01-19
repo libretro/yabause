@@ -455,7 +455,7 @@ const GLchar Yglprg_userclip_f[] =
       "precision highp float;                            \n"
       "#endif\n"
       "out vec4 fragColor;            \n"
-      "out vec2 fragMesh; \n"
+      "out vec4 fragMesh; \n"
       "void main()                                         \n"
       "{ \n"
       "  vec4 outColor = vec4( 0.0 );\n";
@@ -472,7 +472,8 @@ const GLchar Yglprg_userclip_f[] =
 } \n"
 
 #define MESH_IMPROVED_PROCESS(A, B) \
-" meshColor = "Stringify(A)".rg; \n \
+" meshColor.rg = "Stringify(A)".rg; \n \
+  meshColor.b = 1.0; \n \
   "Stringify(A)".rg = "Stringify(B)".rg; \n"
 
 // we have a gouraud value, we can consider the pixel code is RGB otherwise gouraud effect is not guaranted (VDP1 doc p26)
@@ -527,7 +528,9 @@ int MSBhl = (col"Stringify(A)" & 0x8000) >> 8;\n \
   int MSBs = (col"Stringify(A)" & 0x8000) >> 8;\n \
   "Stringify(A)".r = float(Rs | ((Gs & 0x7)<<5))/255.0;\n \
   "Stringify(A)".g = float((Gs>>3) | (Bs<<2) | MSBs)/255.0;\n \
-} else discard;\n"
+} else { \n \
+  fragColor = "Stringify(A)"; \n \
+};\n"
 
 
 #define COLINDEX(A) \
@@ -745,9 +748,10 @@ const GLchar vdp1drawstart_no_mesh[] = {
   "in vec4 v_texcoord;\n"
   "in vec4 v_vtxcolor; \n"
   "out vec4 fragColor; \n"
-  "out vec2 fragMesh; \n"
+  "out vec4 fragMesh; \n"
   "void main() {\n"
   "  vec4 outColor = vec4(0.0);\n"
+  "  vec4 meshColor = vec4(0.0);\n"
   "  if (any(greaterThan(ivec2(gl_FragCoord.x, sysClip.z - gl_FragCoord.y), sysClip.xy))) discard;\n"
   "  ivec2 addr = ivec2(vec2(textureSize(u_sprite, 0)) * v_texcoord.st / v_texcoord.q); \n"
   "  vec4 spriteColor = texelFetch(u_sprite,addr,0);\n"
@@ -764,10 +768,10 @@ const GLchar vdp1drawstart_mesh[] = {
   "in vec4 v_texcoord;\n"
   "in vec4 v_vtxcolor; \n"
   "out vec4 fragColor; \n"
-  "out vec2 fragMesh; \n"
+  "out vec4 fragMesh; \n"
   "void main() {\n"
   "  vec4 outColor = vec4(0.0);\n"
-  "  vec2 meshColor = vec2(0.0);\n"
+  "  vec4 meshColor = vec4(0.0);\n"
   "  if (any(greaterThan(ivec2(gl_FragCoord.x, sysClip.z - gl_FragCoord.y), sysClip.xy))) discard;\n"
   "  ivec2 addr = ivec2(vec2(textureSize(u_sprite, 0)) * v_texcoord.st / v_texcoord.q); \n"
   "  vec4 spriteColor = texelFetch(u_sprite,addr,0);\n"
@@ -834,7 +838,7 @@ const GLchar msb[] = {
   "  vec4 currentColor = texelFetch(u_fbo,ivec2(gl_FragCoord.xy),0);\n"
   "  currentColor.g = float(int(currentColor.g * 255.0)|0x80)/255.0;\n"
   "  fragColor = currentColor;\n"
-  "  fragMesh.rg = vec2(0.0);\n"
+  "  fragMesh = meshColor;\n"
   "  return;\n"
 };
 
@@ -934,12 +938,12 @@ const GLchar* vdp1drawmode[15]= {
 //ENd of shaders
 const GLchar vdp1drawend_no_mesh[] = {
   "  fragColor.rgba = outColor;\n"
-  "  fragMesh.rg = vec2(0.0);\n"
+  "  fragMesh = vec4(0.0);\n"
   "}\n"
 };
 const GLchar vdp1drawend_mesh[] = {
-  "  fragColor.rgba = outColor;\n"
-  "  fragMesh.rg = meshColor;\n"
+  "  fragColor = outColor;\n"
+  "  fragMesh = meshColor;\n"
   "}\n"
 };
 
@@ -1265,9 +1269,9 @@ void initDrawShaderCode() {
               prg_input_f[index][1] = vdp1drawstart[j];
               prg_input_f[index][2] = vdp1drawcheckend[k1];
               prg_input_f[index][3] = vdp1drawcheck[k];
-              prg_input_f[index][4] = vdp1drawmsb[i];
-              prg_input_f[index][5] = vdp1drawmode[l];
-              prg_input_f[index][6] = vdp1drawmesh[j];
+              prg_input_f[index][4] = vdp1drawmode[l];
+              prg_input_f[index][5] = vdp1drawmesh[j];
+              prg_input_f[index][6] = vdp1drawmsb[i];
               prg_input_f[index][7] = vdp1drawend[j];
               prg_input_f[index][8] =  NULL;
 
@@ -1303,9 +1307,9 @@ void initDrawShaderCode() {
   prg_input_f[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][1] = Yglprg_userclip_f;
   prg_input_f[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][2] = vdp1drawcheckend[1];
   prg_input_f[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][3] = vdp1drawcheck[1];
-  prg_input_f[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][4] = vdp1drawmsb[0];
-  prg_input_f[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][5] = vdp1drawmode[14];
-  prg_input_f[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][6] = vdp1drawmesh[0];
+  prg_input_f[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][4] = vdp1drawmesh[0];
+  prg_input_f[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][5] = vdp1drawmsb[0];
+  prg_input_f[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][6] = vdp1drawmode[14];
   prg_input_f[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][7] = vdp1drawend[0];
   prg_input_f[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][8] = NULL;
 
@@ -1325,9 +1329,9 @@ void initDrawShaderCode() {
   prg_input_f[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][1] = Yglprg_userclip_f;
   prg_input_f[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][2] = vdp1drawcheckend[1];
   prg_input_f[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][3] = vdp1drawcheck[1];
-  prg_input_f[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][4] = vdp1drawmsb[0];
-  prg_input_f[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][5] = vdp1drawmode[14];
-  prg_input_f[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][6] = vdp1drawmesh[0];
+  prg_input_f[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][4] = vdp1drawmesh[0];
+  prg_input_f[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][5] = vdp1drawmsb[0];
+  prg_input_f[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][6] = vdp1drawmode[14];
   prg_input_f[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][7] = vdp1drawend[0];
   prg_input_f[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][8] = NULL;
 

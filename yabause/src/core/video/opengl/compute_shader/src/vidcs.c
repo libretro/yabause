@@ -63,7 +63,7 @@ static Vdp2 baseVdp2Regs;
 //#define PERFRAME_LOG
 #ifdef PERFRAME_LOG
 int fount = 0;
-FILE *ppfp = NULL;YglGenFrameBuffer
+FILE *ppfp = NULL;
 #endif
 
 #define YGL_THREAD_DEBUG
@@ -165,42 +165,40 @@ YglCSFinsihDraw
 void addCSCommands(vdp1cmd_struct* cmd, int type)
 {
   //Test game: Sega rally : The aileron at the start
-  int Ax = (cmd->CMDXD - cmd->CMDXA);
-  int Ay = (cmd->CMDYD - cmd->CMDYA);
-  int Bx = (cmd->CMDXC - cmd->CMDXB);
-  int By = (cmd->CMDYC - cmd->CMDYB);
-  int nbStep = 0;
-  unsigned int lA;
-  unsigned int lB;
+  int ADx = (cmd->CMDXD - cmd->CMDXA);
+  int ADy = (cmd->CMDYD - cmd->CMDYA);
+  int BCx = (cmd->CMDXC - cmd->CMDXB);
+  int BCy = (cmd->CMDYC - cmd->CMDYB);
 
-  lA = ceil(sqrt(Ax*Ax+Ay*Ay));
-  lB = ceil(sqrt(Bx*Bx+By*By));
+  int nbStepAD = sqrt(ADx*ADx + ADy*ADy);
+  int nbStepBC = sqrt(BCx*BCx + BCy*BCy);
 
-  cmd->uAstepx = 0.0;
-  cmd->uAstepy = 0.0;
-  cmd->uBstepx = 0.0;
-  cmd->uBstepy = 0.0;
-  cmd->nbStep = 1;
+  int nbStep = MAX(nbStepAD, nbStepBC);
+
   cmd->type = type;
 
-  nbStep = lA;
-  if (lB >= lA)
-    nbStep = lB;
-
-  if(nbStep != 0) {
-    cmd->nbStep = nbStep + 1;
-    cmd->uAstepx = (float)Ax/(float)nbStep;
-    cmd->uAstepy = (float)Ay/(float)nbStep;
-    cmd->uBstepx = (float)Bx/(float)nbStep;
-    cmd->uBstepy = (float)By/(float)nbStep;
+  cmd->nbStep = nbStep;
+  if(cmd->nbStep  != 0) {
+    // Ici faut voir encore les Ax doivent faire un de plus.
+    cmd->uAstepx = (float)ADx/(float)nbStep;
+    cmd->uAstepy = (float)ADy/(float)nbStep;
+    cmd->uBstepx = (float)BCx/(float)nbStep;
+    cmd->uBstepy = (float)BCy/(float)nbStep;
+  } else {
+    cmd->uAstepx = 0.0;
+    cmd->uAstepy = 0.0;
+    cmd->uBstepx = 0.0;
+    cmd->uBstepy = 0.0;
   }
 #ifdef DEBUG_VDP1_CMD
-  printf("%d %f [%d %d][%d %d][%d %d][%d %d]\n", cmd->nbStep, (float)cmd->h / (float)cmd->nbStep,
-    cmd->CMDXA, cmd->CMDYA,
-    cmd->CMDXB, cmd->CMDYB,
-    cmd->CMDXC, cmd->CMDYC,
-    cmd->CMDXD, cmd->CMDYD
-  );
+  YuiMsg("Add Distorted\n");
+  YuiMsg("\t[%d,%d]\n", cmd->CMDXA, cmd->CMDYA);
+  YuiMsg("\t[%d,%d]\n", cmd->CMDXB, cmd->CMDYB);
+  YuiMsg("\t[%d,%d]\n", cmd->CMDXC, cmd->CMDYC);
+  YuiMsg("\t[%d,%d]\n", cmd->CMDXD, cmd->CMDYD);
+  YuiMsg("\n\n");
+  YuiMsg("=> %d (%d %d %d %d => %d %d) %f %f %f %f\n", cmd->nbStep, ADx, ADy, BCx, BCy, nbStepAD, nbStepBC, cmd->uAstepx, cmd->uAstepy, cmd->uBstepx, cmd->uBstepy);
+  YuiMsg("==============\n");
 #endif
   vdp1_add(cmd,0);
 }
@@ -234,16 +232,14 @@ void VIDCSVdp1NormalSpriteDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* b
 
 int getBestMode(vdp1cmd_struct* cmd) {
   int ret = DISTORTED;
-  if (
-    ((cmd->CMDXA - cmd->CMDXD) == 0) &&
-    ((cmd->CMDYA - cmd->CMDYB) == 0) &&
-    ((cmd->CMDXB - cmd->CMDXC) == 0) &&
-    ((cmd->CMDYC - cmd->CMDYD) == 0) &&
-    (cmd->w - abs(cmd->CMDXB - cmd->CMDXA) == 1) &&
-    (cmd->h - abs(cmd->CMDYC - cmd->CMDYA) == 1)
-  ) {
-    ret = QUAD;
-  }
+  // if (
+  //   ((cmd->CMDXA - cmd->CMDXD) == 0) &&
+  //   ((cmd->CMDYA - cmd->CMDYB) == 0) &&
+  //   ((cmd->CMDXB - cmd->CMDXC) == 0) &&
+  //   ((cmd->CMDYC - cmd->CMDYD) == 0)
+  // ) {
+  //   ret = QUAD;
+  // }
   return ret;
 }
 
@@ -272,13 +268,20 @@ void VIDCSVdp1DistortedSpriteDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8
     u32 *cclist = (u32 *)&(Vdp2Lines[0].CCRSA);
     cclist[0] &= 0x1Fu;
   }
-  //gouraud
 
   cmd->SPCTL = Vdp2Lines[0].SPCTL;
   if (getBestMode(cmd) == DISTORTED) {
     addCSCommands(cmd,DISTORTED);
   } else {
     cmd->type = QUAD;
+    if (cmd->CMDXA <= cmd->CMDXB) cmd->CMDXB += 1;
+    else cmd->CMDXB -= 1;
+    if (cmd->CMDXD <= cmd->CMDXC) cmd->CMDXC += 1;
+    else cmd->CMDXC -= 1;
+    if (cmd->CMDYB <= cmd->CMDYC) cmd->CMDYC += 1;
+    else cmd->CMDYC -= 1;
+    if (cmd->CMDYA <= cmd->CMDYD) cmd->CMDYD += 1;
+    else cmd->CMDYD -= 1;
     vdp1_add(cmd,0);
   }
 
@@ -290,9 +293,19 @@ void VIDCSVdp1PolygonDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* back_f
   cmd->SPCTL = Vdp2Lines[0].SPCTL;
   // cmd->type = POLYGON;
   cmd->COLOR[0] = Vdp1ReadPolygonColor(cmd,&Vdp2Lines[0]);
+
+
   if (getBestMode(cmd) == DISTORTED) {
     addCSCommands(cmd,POLYGON);
   } else {
+    if (cmd->CMDXA <= cmd->CMDXB) cmd->CMDXB += 1;
+    else cmd->CMDXB -= 1;
+    if (cmd->CMDXD <= cmd->CMDXC) cmd->CMDXC += 1;
+    else cmd->CMDXC -= 1;
+    if (cmd->CMDYB <= cmd->CMDYC) cmd->CMDYC += 1;
+    else cmd->CMDYC -= 1;
+    if (cmd->CMDYA <= cmd->CMDYD) cmd->CMDYD += 1;
+    else cmd->CMDYD -= 1;
     cmd->type = QUAD_POLY;
     vdp1_add(cmd,0);
   }
@@ -327,8 +340,8 @@ void VIDCSVdp1LineDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* back_fram
 
 void VIDCSVdp1UserClipping(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs)
 {
-  if (  (cmd->CMDXC+1 > regs->systemclipX2)
-    && (cmd->CMDYC+1 > regs->systemclipY2)
+  if (  (cmd->CMDXC > regs->systemclipX2)
+    && (cmd->CMDYC > regs->systemclipY2)
   ) {
     regs->localX = 0;
     regs->localY = 0;
@@ -338,19 +351,19 @@ void VIDCSVdp1UserClipping(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs)
   vdp1_add(cmd,1);
   regs->userclipX1 = cmd->CMDXA;
   regs->userclipY1 = cmd->CMDYA;
-  regs->userclipX2 = cmd->CMDXC+1;
-  regs->userclipY2 = cmd->CMDYC+1;
+  regs->userclipX2 = cmd->CMDXC;
+  regs->userclipY2 = cmd->CMDYC;
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
 void VIDCSVdp1SystemClipping(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs)
 {
-  if (((cmd->CMDXC+1) == regs->systemclipX2) && (regs->systemclipY2 == (cmd->CMDYC+1))) return;
+  if (((cmd->CMDXC) == regs->systemclipX2) && (regs->systemclipY2 == (cmd->CMDYC))) return;
   cmd->type = SYSTEM_CLIPPING;
   vdp1_add(cmd,1);
-  regs->systemclipX2 = cmd->CMDXC+1;
-  regs->systemclipY2 = cmd->CMDYC+1;
+  regs->systemclipX2 = cmd->CMDXC;
+  regs->systemclipY2 = cmd->CMDYC;
 }
 
 #endif

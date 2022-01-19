@@ -61,8 +61,8 @@ static const GLchar * a_prg_vdp1[NB_PRG][5] = {
   //VDP1_MESH_STANDARD - BANDING
 	{
 		vdp1_start_f,
-		vdp1_banding_f,
 		vdp1_standard_mesh_f,
+		vdp1_banding_f,
 		vdp1_continue_no_mesh_f,
 		vdp1_end_f
 	},
@@ -77,8 +77,8 @@ static const GLchar * a_prg_vdp1[NB_PRG][5] = {
 	//VDP1_MESH_STANDARD - NO BANDING
 	{
 		vdp1_start_f,
-		vdp1_no_banding_f,
 		vdp1_standard_mesh_f,
+		vdp1_no_banding_f,
 		vdp1_continue_no_mesh_f,
 		vdp1_end_f
 	},
@@ -215,14 +215,14 @@ static int regenerateMeshTex(int w, int h) {
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, mesh_tex[0]);
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RG8, w, h);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, w, h);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glBindTexture(GL_TEXTURE_2D, mesh_tex[1]);
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RG8, w, h);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, w, h);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -234,11 +234,11 @@ static void vdp1_clear_mesh() {
 	if (prg_vdp1[progId] == 0)
     prg_vdp1[progId] = createProgram(sizeof(a_prg_vdp1[progId]) / sizeof(char*), (const GLchar**)a_prg_vdp1[progId]);
   glUseProgram(prg_vdp1[progId]);
-	glBindImageTexture(0, mesh_tex[0], 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RG8);
-	glBindImageTexture(1, mesh_tex[1], 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RG8);
+	glBindImageTexture(0, mesh_tex[0], 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+	glBindImageTexture(1, mesh_tex[1], 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
 	glDispatchCompute(work_groups_x, work_groups_y, 1); //might be better to launch only the right number of workgroup
 	glBindImageTexture(0, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
-	glBindImageTexture(1, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RG8);
+	glBindImageTexture(1, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
 }
 
 static int generateComputeBuffer(int w, int h) {
@@ -331,13 +331,13 @@ void vdp1GenerateBuffer_sync(vdp1cmd_struct* cmd, int id) {
 					else if (((dot & 0xF0) == 0xF0) && (!END)) {
           	endcnt++;
         	} else {
-						if (((cmd->CMDPMOD >> 3) & 0x7)==1) {
-							//ColorLut
-							u16 val = Vdp1RamReadWord(NULL, Vdp1Ram, addr1);
-							if (cmdRam_update_start[id] > addr1) cmdRam_update_start[id] = addr1;
-							if (cmdRam_update_end[id] < (addr1 + 2)) cmdRam_update_end[id] = addr1 + 2;
-							T1WriteWord(buf, addr1, val);
-						}
+							if (((cmd->CMDPMOD >> 3) & 0x7)==1) {
+								//ColorLut
+								u16 val = Vdp1RamReadWord(NULL, Vdp1Ram, addr1);
+								if (cmdRam_update_start[id] > addr1) cmdRam_update_start[id] = addr1;
+								if (cmdRam_update_end[id] < (addr1 + 2)) cmdRam_update_end[id] = addr1 + 2;
+								T1WriteWord(buf, addr1, val);
+							}
 					}
 					if ((!END) && (endcnt >= 2)) {
           	dot |= 0xF;
@@ -479,6 +479,18 @@ int vdp1_add(vdp1cmd_struct* cmd, int clipcmd) {
 	}
 	if (clipcmd == 0) {
 		vdp1GenerateBuffer(cmd);
+		if (_Ygl->meshmode != ORIGINAL_MESH) {
+			//Hack for Improved MESH
+			//Games like J.League Go Go Goal or Sailor Moon are using MSB shadow with VDP2 in RGB/Palette mode
+			//In that case, the pixel is considered as RGB by the VDP2 displays it a black surface
+			// To simualte a transparent shadow, on improved mesh, we force the shadow mode and the usage of mesh
+			if ((cmd->CMDPMOD & 0x8000) && ((Vdp2Regs->SPCTL & 0x20)!=0)) {
+				//MSB is set to be used but VDP2 do not use it. Consider as invalid and remove the MSB
+				//Use shadow mode with Mesh to simulate the final effect
+				cmd->CMDPMOD &= ~0x8007;
+				cmd->CMDPMOD |= 0x101; //Use shadow mode and mesh then
+			}
+		}
 
 	  float Ax = cmd->CMDXA;
 		float Ay = cmd->CMDYA;
@@ -504,10 +516,12 @@ int vdp1_add(vdp1cmd_struct* cmd, int clipcmd) {
 	  maxy = (maxy > Dy)?maxy:Dy;
 
 	//Add a bounding box
-	  cmd->B[0] = minx*tex_ratiow;
-	  cmd->B[1] = (maxx + 1)*tex_ratiow;
-	  cmd->B[2] = miny*tex_ratioh;
-	  cmd->B[3] = (maxy + 1)*tex_ratioh;
+	  cmd->B[0] = minx;
+	  cmd->B[1] = (maxx);
+	  cmd->B[2] = miny;
+	  cmd->B[3] = (maxy);
+
+		// YuiMsg("Bounding %d %d %d %d\n", minx, maxx, miny, maxy);
 
 		progMask |= 1 << (cmd->CMDPMOD & 0x7u);
 		if ((cmd->CMDPMOD & 0x8000u) == 0x8000u) progMask |= 0x100;
@@ -553,11 +567,11 @@ void vdp1_clear(int id, float *col) {
     prg_vdp1[progId] = createProgram(sizeof(a_prg_vdp1[progId]) / sizeof(char*), (const GLchar**)a_prg_vdp1[progId]);
   glUseProgram(prg_vdp1[progId]);
 	glBindImageTexture(0, get_vdp1_tex(id), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
-	glBindImageTexture(1, get_vdp1_mesh(id), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RG8);
+	glBindImageTexture(1, get_vdp1_mesh(id), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
 	glUniform4fv(2, 1, col);
 	glDispatchCompute(work_groups_x, work_groups_y, 1); //might be better to launch only the right number of workgroup
 	glBindImageTexture(0, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
-	glBindImageTexture(1, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RG8);
+	glBindImageTexture(1, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
 }
 
 void vdp1_write() {
@@ -696,6 +710,7 @@ void vdp1_compute() {
 		}
   }
   if (needRender == 0) {
+		nbCmdToProcess = 0;
 		return;
 	}
 
@@ -727,7 +742,7 @@ void vdp1_compute() {
   glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(int)*NB_COARSE_RAST, (void*)nbCmd);
 
 	glBindImageTexture(0, compute_tex[_Ygl->drawframe], 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
-	glBindImageTexture(1, mesh_tex[_Ygl->drawframe], 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RG8);
+	glBindImageTexture(1, mesh_tex[_Ygl->drawframe], 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
 
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, ssbo_vdp1ram_[_Ygl->drawframe]);
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, ssbo_nbcmd_);
@@ -768,7 +783,7 @@ void vdp1_compute() {
 	progMask = 0;
 
 	glBindImageTexture(0, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
-	glBindImageTexture(1, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RG8);
+	glBindImageTexture(1, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
   memset(nbCmd, 0, NB_COARSE_RAST*sizeof(int));
 	nbCmdToProcess = 0;
 	memset(hasDrawingCmd, 0, NB_COARSE_RAST*sizeof(int));

@@ -1451,6 +1451,7 @@ void PerUpdateConfig(PerBaseConfig_struct * baseconfig, int nelems, void * contr
    {
       perkeyconfig[i].base = baseconfig + j;
       perkeyconfig[i].controller = controller;
+			perkeyconfig[i].key = -1;
       j++;
    }
 }

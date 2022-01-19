@@ -46,7 +46,7 @@ Vdp2 * Vdp2Regs;
 Vdp2Internal_struct Vdp2Internal;
 Vdp2External_struct Vdp2External;
 
-int addrToUpdate[0x800];
+int addrToUpdate[0x1000];
 int nbAddrToUpdate = 0;
 
 INLINE int getVramCycle(u32 addr) {
@@ -242,7 +242,8 @@ void FASTCALL Vdp2ColorRamWriteByte(SH2_struct *context, u8* mem, u32 addr, u8 v
      T2WriteByte(mem, addr, val);
      //A EXTRAIRE
 #if defined(HAVE_LIBGL) || defined(__ANDROID__) || defined(IOS)
-     addrToUpdate[nbAddrToUpdate++] = addr;
+     addrToUpdate[addr] = 1;
+     nbAddrToUpdate = 1;
 #endif
    }
 }
@@ -256,7 +257,9 @@ void FASTCALL Vdp2ColorRamWriteWord(SH2_struct *context, u8* mem, u32 addr, u16 
      T2WriteWord(mem, addr, val);
 
 #if defined(HAVE_LIBGL) || defined(__ANDROID__) || defined(IOS)
-    addrToUpdate[nbAddrToUpdate++] = addr;
+    addrToUpdate[addr] = 1;
+    addrToUpdate[addr+1] = 1;
+    nbAddrToUpdate = 1;
 #endif
    }
 }
@@ -269,11 +272,16 @@ void FASTCALL Vdp2ColorRamWriteLong(SH2_struct *context, u8* mem, u32 addr, u32 
    T2WriteLong(Vdp2ColorRam, addr, val);
 #if defined(HAVE_LIBGL) || defined(__ANDROID__) || defined(IOS)
    if (Vdp2Internal.ColorMode == 2) {
-     addrToUpdate[nbAddrToUpdate++] = addr;
+     addrToUpdate[addr] = 1;
+     addrToUpdate[addr+1] = 1;
+     nbAddrToUpdate = 1;
    }
    else {
-     addrToUpdate[nbAddrToUpdate++] = addr;
-     addrToUpdate[nbAddrToUpdate++] = addr + 2;
+     addrToUpdate[addr] = 1;
+     addrToUpdate[addr+1] = 1;
+     addrToUpdate[addr+2] = 1;
+     addrToUpdate[addr+3] = 1;
+     nbAddrToUpdate = 1;
    }
 #endif
 }
@@ -407,10 +415,6 @@ void Vdp2Reset(void) {
    Vdp2Internal.ColorMode = 0;
 
    Vdp2External.disptoggle = 0xFF;
-   memset(Vdp2External.perline_alpha_a, 0, 270*sizeof(int));
-   memset(Vdp2External.perline_alpha_b, 0, 270*sizeof(int));
-   Vdp2External.perline_alpha = Vdp2External.perline_alpha_a;
-   Vdp2External.perline_alpha_draw = Vdp2External.perline_alpha_b;
    Vdp2External.cpu_cycle_a = 0;
    Vdp2External.cpu_cycle_b = 0;
 
@@ -618,9 +622,14 @@ void Vdp2VBlankIN(void) {
 void Vdp2HBlankIN(void) {
 
   #if defined(HAVE_LIBGL) || defined(__ANDROID__) || defined(IOS)
-    for (int i=0; i<nbAddrToUpdate; i++)
-      YglOnUpdateColorRamWord(addrToUpdate[i]);
+  if (nbAddrToUpdate != 0){
+    for (int i=0; i<0x1000; i++)
+      if (addrToUpdate[i] != 0) {
+        YglOnUpdateColorRamWord(i);
+        addrToUpdate[i] = 0;
+      }
     nbAddrToUpdate = 0;
+  }
   #endif
 
   if (yabsys.LineCount < yabsys.VBlankLineCount) {
@@ -650,55 +659,6 @@ void Vdp2HBlankOUT(void) {
       cell_scroll_data[yabsys.LineCount].data[i] = Vdp2RamReadLong(NULL, Vdp2Ram, cell_scroll_table_start_addr + i * 4);
     }
     if (yabsys.LineCount == 0) return;
-
-    if ((Vdp2Lines[0].CCRNA & 0x00FF) != (Vdp2Lines[yabsys.LineCount].CCRNA & 0x00FF)){
-      Vdp2External.perline_alpha[yabsys.LineCount] |= 0x1;
-    }
-
-    if ((Vdp2Lines[0].CCRNA & 0xFF00) != (Vdp2Lines[yabsys.LineCount].CCRNA & 0xFF00)){
-      Vdp2External.perline_alpha[yabsys.LineCount] |= 0x2;
-    }
-
-    if ((Vdp2Lines[0].CCRNB & 0xFF00) != (Vdp2Lines[yabsys.LineCount].CCRNB & 0xFF00)){
-      Vdp2External.perline_alpha[yabsys.LineCount] |= 0x4;
-    }
-
-    if ((Vdp2Lines[0].CCRNB & 0x00FF) != (Vdp2Lines[yabsys.LineCount].CCRNB & 0x00FF)){
-      Vdp2External.perline_alpha [yabsys.LineCount]|= 0x8;
-    }
-
-    if (Vdp2Lines[0].CCRR != Vdp2Lines[yabsys.LineCount].CCRR){
-      Vdp2External.perline_alpha[yabsys.LineCount] |= 0x10;
-    }
-
-    if (Vdp2Lines[0].COBR != Vdp2Lines[yabsys.LineCount].COBR){
-
-      Vdp2External.perline_alpha[yabsys.LineCount] |= Vdp2Lines[yabsys.LineCount].CLOFEN;
-    }
-    if (Vdp2Lines[0].COAR != Vdp2Lines[yabsys.LineCount].COAR){
-
-      Vdp2External.perline_alpha[yabsys.LineCount] |= Vdp2Lines[yabsys.LineCount].CLOFEN;
-    }
-    if (Vdp2Lines[0].COBG != Vdp2Lines[yabsys.LineCount].COBG){
-
-      Vdp2External.perline_alpha[yabsys.LineCount] |= Vdp2Lines[yabsys.LineCount].CLOFEN;
-    }
-    if (Vdp2Lines[0].COAG != Vdp2Lines[yabsys.LineCount].COAG){
-
-      Vdp2External.perline_alpha[yabsys.LineCount] |= Vdp2Lines[yabsys.LineCount].CLOFEN;
-    }
-    if (Vdp2Lines[0].COBB != Vdp2Lines[yabsys.LineCount].COBB){
-
-      Vdp2External.perline_alpha[yabsys.LineCount] |= Vdp2Lines[yabsys.LineCount].CLOFEN;
-    }
-    if (Vdp2Lines[0].COAB != Vdp2Lines[yabsys.LineCount].COAB){
-
-      Vdp2External.perline_alpha[yabsys.LineCount] |= Vdp2Lines[yabsys.LineCount].CLOFEN;
-    }
-    if (Vdp2Lines[0].PRISA != Vdp2Lines[yabsys.LineCount].PRISA) {
-
-      Vdp2External.perline_alpha[yabsys.LineCount] |= 0x40;
-    }
   }
 
   if (yabsys.LineCount == 1) {
@@ -720,18 +680,8 @@ Vdp2 * Vdp2RestoreRegs(int line, Vdp2* lines) {
 //////////////////////////////////////////////////////////////////////////////
 void Vdp2VBlankOUT(void) {
   g_frame_count++;
-  yabsys.screenOn = (Vdp2Regs->TVMD & 0x8000)!=0;
   FRAMELOG("***** VOUT %d *****", g_frame_count);
   if (VIDCore != NULL && VIDCore->id != VIDCORE_SOFT) YglUpdateColorRam();
-  if (Vdp2External.perline_alpha == Vdp2External.perline_alpha_a){
-    Vdp2External.perline_alpha = Vdp2External.perline_alpha_b;
-    Vdp2External.perline_alpha_draw = Vdp2External.perline_alpha_a;
-  }
-  else{
-    Vdp2External.perline_alpha = Vdp2External.perline_alpha_a;
-    Vdp2External.perline_alpha_draw = Vdp2External.perline_alpha_b;
-  }
-  memset(Vdp2External.perline_alpha, 0, 270*sizeof(int));
 
    if (((Vdp2Regs->TVMD >> 6) & 0x3) == 0){
      vdp2_is_odd_frame = 1;
@@ -1343,6 +1293,7 @@ void FASTCALL Vdp2WriteWord(SH2_struct *context, u8* mem, u32 addr, u16 val) {
    {
       case 0x000:
          Vdp2Regs->TVMD = val;
+         yabsys.screenOn = (Vdp2Regs->TVMD & 0x8000)!=0;
          yabsys.VBlankLineCount = 225+(val & 0x30);
          if (yabsys.VBlankLineCount > 256) yabsys.VBlankLineCount = 256;
          return;

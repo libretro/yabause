@@ -31,7 +31,6 @@ extern "C" {
 #define LOCAL_SIZE_Y 4
 
 #define QUEUE_SIZE 512
-#define CMD_QUEUE_SIZE 2048
 
 //#define SHOW_QUAD
 
@@ -86,7 +85,7 @@ SHADER_VERSION_COMPUTE
 "#endif\n"
 "layout(local_size_x = "Stringify(LOCAL_SIZE_X)", local_size_y = "Stringify(LOCAL_SIZE_Y)") in;\n"
 "layout(rgba8, binding = 0) writeonly uniform image2D outSurface;\n"
-"layout(rg8, binding = 1) writeonly uniform image2D outMesh;\n"
+"layout(rgba8, binding = 1) writeonly uniform image2D outMesh;\n"
 "layout(location = 2) uniform vec4 col;\n"
 "void main()\n"
 "{\n"
@@ -103,8 +102,8 @@ SHADER_VERSION_COMPUTE
 "precision highp float;\n"
 "#endif\n"
 "layout(local_size_x = "Stringify(LOCAL_SIZE_X)", local_size_y = "Stringify(LOCAL_SIZE_Y)") in;\n"
-"layout(rg8, binding = 0) writeonly uniform image2D outMesh0;\n"
-"layout(rg8, binding = 1) writeonly uniform image2D outMesh1;\n"
+"layout(rgba8, binding = 0) writeonly uniform image2D outMesh0;\n"
+"layout(rgba8, binding = 1) writeonly uniform image2D outMesh1;\n"
 "void main()\n"
 "{\n"
 "  ivec2 size = imageSize(outMesh0);\n"
@@ -147,7 +146,7 @@ int MSBhl = (col"Stringify(A)" & 0x8000) >> 8;\n \
 "Stringify(A)".g = float((Ghl>>3) | (Bhl<<2) | MSBhl)/255.0;\n"
 
 #define HALF_TRANPARENT_MIX(A, B) \
-"if ((col"Stringify(B)" & 0x8000) != 0) { \
+"if ((col"Stringify(B)" & 0x8000) != 0) { \n\
   int Rht = int(clamp(((float((col"Stringify(A)" >> 00) & 0x1F)/31.0) + (float((col"Stringify(B)" >> 00) & 0x1F)/31.0))*0.5, 0.0, 1.0)*31.0);\n \
   int Ght = int(clamp(((float((col"Stringify(A)" >> 05) & 0x1F)/31.0) + (float((col"Stringify(B)" >> 05) & 0x1F)/31.0))*0.5, 0.0, 1.0)*31.0);\n \
   int Bht = int(clamp(((float((col"Stringify(A)" >> 10) & 0x1F)/31.0) + (float((col"Stringify(B)" >> 10) & 0x1F)/31.0))*0.5, 0.0, 1.0)*31.0);\n \
@@ -189,12 +188,6 @@ SHADER_VERSION_COMPUTE
 "#endif\n"
 
 "struct cmdparameter_struct{ \n"
-"  float G[16];\n"
-"  uint priority;\n"
-"  uint w;\n"
-"  uint h;\n"
-"  uint flip;\n"
-"  uint type;\n"
 "  uint CMDCTRL;\n"
 "  uint CMDLINK;\n"
 "  uint CMDPMOD;\n"
@@ -209,10 +202,16 @@ SHADER_VERSION_COMPUTE
 "  int CMDYC;\n"
 "  int CMDXD;\n"
 "  int CMDYD;\n"
-"  uint B[4];\n"
-"  int COLOR[4];\n"
 "  uint CMDGRDA;\n"
+"  int COLOR[4];\n"
+"  float G[16];\n"
+"  uint priority;\n"
+"  uint w;\n"
+"  uint h;\n"
+"  uint flip;\n"
+"  uint type;\n"
 "  uint SPCTL;\n"
+"  uint B[4];\n"
 "  uint nbStep;\n"
 "  float uAstepx;\n"
 "  float uAstepy;\n"
@@ -223,7 +222,7 @@ SHADER_VERSION_COMPUTE
 
 "layout(local_size_x = "Stringify(LOCAL_SIZE_X)", local_size_y = "Stringify(LOCAL_SIZE_Y)") in;\n"
 "layout(rgba8, binding = 0) writeonly uniform image2D outSurface;\n"
-"layout(rg8, binding = 1) writeonly uniform image2D meshSurface;\n"
+"layout(rgba8, binding = 1) writeonly uniform image2D meshSurface;\n"
 "layout(std430, binding = 3) readonly buffer VDP1RAM { uint Vdp1Ram[]; };\n"
 "layout(std430, binding = 4) readonly buffer NB_CMD { uint nbCmd[]; };\n"
 "layout(std430, binding = 5) readonly buffer CMD { \n"
@@ -245,31 +244,10 @@ SHADER_VERSION_COMPUTE
 "  vec2 v = P1 - P0;\n"
 "  vec2 w = P - P0;\n"
 "  float c1 = dot(w,v);\n"
-"  if ( c1 <= 0.0 )\n"
-"    return vec3(P0,0.0);\n"
 "  float c2 = dot(v,v);\n"
-"  float b = clamp(c1 / c2, 0.0, 1.0);\n"
+"  float b = (c1+0.5) / (c2+1);\n"
 "  vec2 Pb = P0 + b * v;\n"
 "  return vec3(Pb,b);\n"
-"}\n"
-
-"uint isOnAQuadLine( vec2 P, vec2 V0, vec2 V1, vec2 sA, vec2 sB, uint step, out vec2 uv){\n"
-"  vec2 A = V0 + vec2(0.5)*upscale;\n"
-"  vec2 B = V1 + vec2(0.5)*upscale;\n"
-"  for (uint i=0; i<step; i++) {\n"
-//A pixel shall be considered as part of an anti-aliased line if the distance of the pixel center to the line is shorter than (sqrt(0.5), which is the diagonal of the pixel
-//This represent the behavior of antialiasing as displayed in vdp1 spec.
-"    vec3 d = antiAliasedPoint(P+vec2(0.5), A, B);\n" //Get the projection of the point P to the line segment
-"    if (distance(d.xy, P+vec2(0.5)) <= (length(upscale)/2.0)) {\n" //Test the distance between the projection on line and the center of the pixel
-"      float ux = d.z;\n" //u is the relative distance from first point to projected position
-"      float uy = (float(i)+0.5*upscale.y)/float(step);\n" //v is the ratio between the current line and the total number of lines
-"      uv = vec2(ux,uy);\n"
-"      return 1u;\n"
-"    }\n"
-"    A += sA;\n"
-"    B += sB;\n"
-"  }\n"
-"  return 0u;\n"
 "}\n"
 
 "vec3 aliasedPoint( vec2 P,  vec2 P0, vec2 P1 )\n"
@@ -306,37 +284,61 @@ SHADER_VERSION_COMPUTE
 "  return 0u;\n"
 "}\n"
 
-"uint isOnAQuad(vec2 P, vec2 V0, vec2 V1, out vec2 uv) {\n"
-"  uint step = uint(abs(V1.y-V0.y))+1;\n"
-"  float way = sign(V1.y - V0.y);\n"
-"  vec2 A = V0+(vec2(0.5)*upscale);\n"
-"  vec2 B = vec2(V1.x, V0.y)+(vec2(0.5)*upscale);\n"
-"  for (uint i=0; i<step; i++) {\n"
-"    vec3 d = antiAliasedPoint(P+vec2(0.5), A, B);\n"
-"    if (distance(d.xy, P+vec2(0.5)) <= (length(upscale)/2.0)) {\n"
-"      float ux= d.z;\n"
-"      float uy= (float(i))/float(step);\n"
-"      uv = vec2(ux,uy);\n"
+"uint isOnAQuadLine( vec2 P, vec2 V0, vec2 V1, vec2 V2, vec2 V3, vec2 sA, vec2 sB, uint step, out vec2 uv){\n"
+"  uint ret = 0u;\n"
+"  vec2 A = V0;\n"
+"  vec2 B = V1;\n"
+"  for (uint i=0; i<=step; i++) {\n"
+//A pixel shall be considered as part of an anti-aliased line if the distance of the pixel center to the line is shorter than (sqrt(0.5), which is the diagonal of the pixel
+//This represent the behavior of antialiasing as displayed in vdp1 spec.
+"    vec3 d = antiAliasedPoint(P+vec2(0.5), A+upscale/2.0, B+upscale/2.0);\n" //Get the projection of the point P to the line segment
+"    if(((distance(d.xy, P+vec2(0.5))) < (length(upscale/2.0)+0.25)) && (d.z>=0.0) && (d.z<=1.0) ){\n" //Test the distance between the projection on line and the center of the pixel
+"      vec2 PTop = V0 + d.z*(V1 - V0);\n"
+"      vec2 PDown = V3 + d.z*(V2 - V3);\n"
+"      uv.x = d.z;\n" //u is the relative distance from first point to projected position
+"      if (any(notEqual(upscale, vec2(1.0)))) uv.y = length(P - PTop)/(length(PDown - PTop) + length(floor(upscale/2.0)*2.0));\n" //uy is the ratio between P postion and the length of the line at this ux postion.
+"      else uv.y = (float(i)+0.5)/float(step+1);\n"
 "      return 1u;\n"
 "    }\n"
-"    A.y += way;\n"
-"    B.y += way;\n"
+"    A += sA;\n"
+"    B += sB;\n"
 "  }\n"
-"  return 0u;\n"
+"  return ret;\n"
+"}\n"
+
+"uint isOnAQuad(vec2 P, vec2 V0, vec2 V1, out vec2 uv) {\n"
+"  if (any(lessThan(P, min(V0,V1))) || any(greaterThanEqual(P, max(V0,V1)))) return 0u;\n"
+" uv = (P + vec2(0.5) - V0)/(V1 - V0);\n"
+" return 1u;\n"
+// "  //B--------C\n"
+// "  //|\n"
+// "  //|---M\n"
+// "  //A\n"
+// "  vec2 AB = floor(vec2 (0.0, V1.y-V0.y) / upscale);\n"
+// "  vec2 CB = floor(vec2 (V1.x - V0.x, 0.0) / upscale);\n"
+// "  vec2 MB = floor((P - vec2 (V0.x, V0.y)) /upscale);\n"
+// "  vec2 size = vec2(dot(CB, CB), dot(AB, AB));\n"
+// "  float ux = dot(CB, MB);\n"
+// "  float uy = dot(AB, MB) + 1.0;\n"
+// "  if (((ux >= 0.0) && (ux<=size.x)) && ((uy >= 0.0) && (uy<=size.y))) {\n"
+// "      uv = vec2(ux, uy)/size;\n"
+// "      return 1u;\n"
+// "  }\n"
+// "  return 0u;\n"
 "}\n"
 
 "uint pixIsInside (vec2 Pin, uint idx, out vec2 uv){\n"
 "  vec2 Quad[4];\n"
 "  if (cmd[idx].type >= "Stringify(SYSTEM_CLIPPING)") return 6u;\n"
-//Bounding box test
-"  if (any(lessThan(Pin, ivec2(cmd[idx].B[0],cmd[idx].B[2]))) || any(greaterThan(Pin, ivec2(cmd[idx].B[1],cmd[idx].B[3])))) return 0u;\n"
+"//Bounding box test\n"
+"  if (any(lessThan(Pin, ivec2(cmd[idx].B[0],cmd[idx].B[2])*upscale)) || any(greaterThan(Pin, ivec2(cmd[idx].B[1],cmd[idx].B[3])*upscale + upscale - vec2(1.0)))) return 0u;\n"
 "  Quad[0] = vec2(cmd[idx].CMDXA,cmd[idx].CMDYA)*upscale;\n"
 "  Quad[1] = vec2(cmd[idx].CMDXB,cmd[idx].CMDYB)*upscale;\n"
 "  Quad[2] = vec2(cmd[idx].CMDXC,cmd[idx].CMDYC)*upscale;\n"
 "  Quad[3] = vec2(cmd[idx].CMDXD,cmd[idx].CMDYD)*upscale;\n"
 
 "  if ((cmd[idx].type == "Stringify(DISTORTED)") || (cmd[idx].type == "Stringify(POLYGON)")) {\n"
-"    return isOnAQuadLine(Pin, Quad[0], Quad[1], vec2(cmd[idx].uAstepx, cmd[idx].uAstepy)*upscale, vec2(cmd[idx].uBstepx, cmd[idx].uBstepy)*upscale, uint(float(cmd[idx].nbStep)), uv);\n"
+"    return isOnAQuadLine(Pin, Quad[0], Quad[1], Quad[2], Quad[3], vec2(cmd[idx].uAstepx, cmd[idx].uAstepy)*upscale, vec2(cmd[idx].uBstepx, cmd[idx].uBstepy)*upscale, uint(float(cmd[idx].nbStep)), uv);\n"
 "  } else {\n"
 "    if ((cmd[idx].type == "Stringify(QUAD)")  || (cmd[idx].type == "Stringify(QUAD_POLY)")) {\n"
 "     return isOnAQuad(Pin, Quad[0], Quad[2], uv);\n"
@@ -384,19 +386,9 @@ SHADER_VERSION_COMPUTE
 
 "vec4 ReadSpriteColor(cmdparameter_struct pixcmd, vec2 uv, vec2 texel, out bool discarded){\n"
 "  vec4 color = vec4(0.0);\n"
-" if ((pixcmd.flip & 0x2u) == 0x2u) {\n"
-"   uv.y += 0.5f/float(pixcmd.h);\n"
-" } else {\n"
-"   uv.y -= 0.5f/float(pixcmd.h);\n"
-" }\n"
-
-" float posf = pixcmd.h*uv.y;\n"
-" if ((pixcmd.flip & 0x2u) == 0x2u) posf = floor(posf);\n"
-" else posf = ceil(posf);\n"
-
-"  uint x = clamp(uint(uv.x*(pixcmd.w-1)), 0u, uint(pixcmd.w-1));\n"
-"  uint pos = clamp(uint(posf), 0u, uint(pixcmd.h-1))*pixcmd.w+x;\n"
-
+"  uint posf = uint(floor((pixcmd.h)*uv.y));\n"
+"  uint x = uint(uv.x*(pixcmd.w));\n"
+"  uint pos = posf*pixcmd.w+x;\n"
 
 "  uint charAddr = ((pixcmd.CMDSRCA * 8)& 0x7FFFFu) + pos;\n"
 "  uint dot;\n"
@@ -407,7 +399,7 @@ SHADER_VERSION_COMPUTE
 "  {\n"
 "    case 0:\n"
 "    {\n"
-      // 4 bpp Bank mode
+"      // 4 bpp Bank mode\n"
 "      uint colorBank = pixcmd.CMDCOLR & 0xFFF0u;\n"
 "      uint i;\n"
 "      charAddr = pixcmd.CMDSRCA * 8 + pos/2;\n"
@@ -425,7 +417,7 @@ SHADER_VERSION_COMPUTE
 "    }\n"
 "    case 1:\n"
 "    {\n"
-      // 4 bpp LUT mode
+"      // 4 bpp LUT mode\n"
 "       uint temp;\n"
 "       charAddr = pixcmd.CMDSRCA * 8 + pos/2;\n"
 "       uint colorLut = pixcmd.CMDCOLR * 8;\n"
@@ -446,7 +438,7 @@ SHADER_VERSION_COMPUTE
 "    }\n"
 "    case 2:\n"
 "    {\n"
-      // 8 bpp(64 color) Bank mode
+"      // 8 bpp(64 color) Bank mode\n"
 "      uint colorBank = pixcmd.CMDCOLR & 0xFFC0u;\n"
 "      dot = Vdp1RamReadByte(charAddr);\n"
 "      if ((dot == 0xFFu) && (!END)) {\n"
@@ -462,7 +454,7 @@ SHADER_VERSION_COMPUTE
 "    }\n"
 "    case 3:\n"
 "    {\n"
-      // 8 bpp(128 color) Bank mode
+"      // 8 bpp(128 color) Bank mode\n"
 "      uint colorBank = pixcmd.CMDCOLR & 0xFF80u;\n"
 "      dot = Vdp1RamReadByte(charAddr);\n"
 "      if ((dot == 0xFFu) && (!END)) {\n"
@@ -478,7 +470,7 @@ SHADER_VERSION_COMPUTE
 "    }\n"
 "    case 4:\n"
 "    {\n"
-      // 8 bpp(256 color) Bank mode
+"      // 8 bpp(256 color) Bank mode\n"
 "      uint colorBank = pixcmd.CMDCOLR & 0xFF00u;\n"
 "      dot = Vdp1RamReadByte(charAddr);\n"
 "      if ((dot == 0xFFu) && (!END)) {\n"
@@ -494,7 +486,7 @@ SHADER_VERSION_COMPUTE
 "    }\n"
 "    case 5:\n"
 "    {\n"
-      // 16 bpp Bank mode
+"      // 16 bpp Bank mode\n"
 "      uint temp;\n"
 "      charAddr += pos;\n"
 "      temp = Vdp1RamReadWord(charAddr);\n"
@@ -526,7 +518,7 @@ SHADER_VERSION_COMPUTE
 "  vec4 meshColor = vec4(0.0);\n"
 "  vec4 newColor = vec4(0.0);\n"
 "  vec4 outColor = vec4(0.0);\n"
-"  vec2 tag = vec2(0.0);\n"
+"  vec3 tag = vec3(0.0);\n"
 "  cmdparameter_struct pixcmd;\n"
 "  bool discarded = false;\n"
 "  bool drawn = false;\n"
@@ -561,12 +553,12 @@ SHADER_VERSION_COMPUTE
 "    idCmd = cmdindex + 1 - cmdIndex;\n"
 "    pixcmd = cmd[cmdNb[cmdindex]];\n"
 "    if (pixcmd.type == "Stringify(SYSTEM_CLIPPING)") {\n"
-"      syslimit = ivec2(pixcmd.CMDXC+1,pixcmd.CMDYC+1);\n"
+"      syslimit = ivec2(pixcmd.CMDXC,pixcmd.CMDYC);\n"
 "      waitSysClip = false;\n"
 "      continue;\n"
 "    }\n"
 "    if (pixcmd.type == "Stringify(USER_CLIPPING)") {\n"
-"      userlimit = ivec4(pixcmd.CMDXA,pixcmd.CMDYA,pixcmd.CMDXC+1,pixcmd.CMDYC+1);\n"
+"      userlimit = ivec4(pixcmd.CMDXA,pixcmd.CMDYA,pixcmd.CMDXC,pixcmd.CMDYC);\n"
 "      continue;\n"
 "    }\n"
 "    if (any(greaterThan(pos,syslimit*scaleRot*upscale))) { \n"
@@ -574,11 +566,11 @@ SHADER_VERSION_COMPUTE
 "      continue;\n"
 "    }"
 "    if (((pixcmd.CMDPMOD >> 9) & 0x3u) == 2u) {\n"
-//Draw inside
+"//Draw inside\n"
 "      if (any(lessThan(pos,userlimit.xy*scaleRot*upscale)) || any(greaterThan(pos,userlimit.zw*scaleRot*upscale))) continue;\n"
 "    }\n"
 "    if (((pixcmd.CMDPMOD >> 9) & 0x3u) == 3u) {\n"
-//Draw outside
+"//Draw outside\n"
 "      if (all(greaterThanEqual(pos,userlimit.xy*scaleRot*upscale)) && all(lessThanEqual(pos,userlimit.zw*scaleRot*upscale))) continue;\n"
 "    }\n"
 "    texcoord = uv;\n"
@@ -597,44 +589,44 @@ SHADER_VERSION_COMPUTE
      COLINDEX(newColor);
 static const char vdp1_banding_f[] =
 "    if ((pixcmd.CMDPMOD & 0x8000u) == 0x8000u) {\n"
-       //MSB shadow
+"       //MSB shadow\n"
        MSB_SHADOW(finalColor)
 "      outColor = finalColor;\n"
-"    } else {"
+"    } else {\n"
 "      switch (pixcmd.CMDPMOD & 0x7u){\n"
 "        case 0u: {\n"
-           // replace_mode
+"           // replace_mode\n"
 "          outColor = newColor;\n"
 "          }; break;\n"
 "        case 1u: {\n"
-           //shadow_mode,
+"           //shadow_mode,\n"
            SHADOW(finalColor)
 "          outColor = finalColor;\n"
 "          }; break;\n"
 "        case 2u: {\n"
-           //half_luminance_mode,
+"           //half_luminance_mode,\n"
            HALF_LUMINANCE(newColor)
 "          outColor = newColor;\n"
 "          }; break;\n"
 "        case 3u: {\n"
-           //half_trans_mode,
+"           //half_trans_mode,\n"
            HALF_TRANPARENT_MIX(newColor, finalColor)
 "          outColor = newColor;\n"
 "          }; break;\n"
 "        case 4u: {\n"
-           //gouraud_mode,
+"           //gouraud_mode,\n"
            GOURAUD_PROCESS(newColor)
 "          outColor = newColor;\n"
 "          }; break;\n"
 "        case 6u: {\n"
-           //gouraud_half_luminance_mode,
+"           //gouraud_half_luminance_mode,\n"
            GOURAUD_PROCESS(newColor)
            RECOLINDEX(newColor)
            HALF_LUMINANCE(newColor)
 "          outColor = newColor;\n"
 "          }; break;\n"
 "        case 7u: {\n"
-           //gouraud_half_trans_mode,
+"           //gouraud_half_trans_mode,\n"
            GOURAUD_PROCESS(newColor)
            RECOLINDEX(newColor)
            HALF_TRANPARENT_MIX(newColor, finalColor)
@@ -648,37 +640,37 @@ static const char vdp1_banding_f[] =
 
 static const char vdp1_no_banding_f[] =
 "    if ((pixcmd.CMDPMOD & 0x8000u) == 0x8000u) {\n"
-       //MSB shadow
+"     //MSB shadow\n"
        MSB_SHADOW(finalColor)
 "      outColor = finalColor;\n"
-"    } else {"
+"    } else {\n"
 "      switch (pixcmd.CMDPMOD & 0x7u){\n"
 "        case 0u: {\n"
-           // replace_mode
+"           // replace_mode\n"
 "          outColor = newColor;\n"
 "          }; break;\n"
 "        case 1u: {\n"
-           //shadow_mode,
+"           //shadow_mode,\n"
            SHADOW(finalColor)
 "          outColor = finalColor;\n"
 "          }; break;\n"
 "        case 2u: {\n"
-           //half_luminance_mode,
+"           //half_luminance_mode,\n"
            HALF_LUMINANCE(newColor)
 "          outColor = newColor;\n"
 "          }; break;\n"
 "        case 3u: {\n"
-           //half_trans_mode,
+"           //half_trans_mode,\n"
            HALF_TRANPARENT_MIX(newColor, finalColor)
 "          outColor = newColor;\n"
 "          }; break;\n"
 "        case 4u: {\n"
-           //gouraud_mode,
+"           //gouraud_mode,\n"
            GOURAUD_PROCESS_EXTENDED(newColor)
 "          outColor = newColor;\n"
 "          }; break;\n"
 "        case 6u: {\n"
-           //gouraud_half_luminance_mode,
+"           //gouraud_half_luminance_mode,\n"
            GOURAUD_PROCESS_EXTENDED(newColor)
            RECOLINDEX(newColor)
            //MSB bits in .ba has to be divided by two also...
@@ -686,7 +678,7 @@ static const char vdp1_no_banding_f[] =
 "          outColor = newColor;\n"
 "          }; break;\n"
 "        case 7u: {\n"
-           //gouraud_half_trans_mode,
+"           //gouraud_half_trans_mode,\n"
            GOURAUD_PROCESS_EXTENDED(newColor)
            RECOLINDEX(newColor)
            //MSB bits in .ba has to be divided by two also...
@@ -700,8 +692,8 @@ static const char vdp1_no_banding_f[] =
 "    }\n";
 
 static const char vdp1_standard_mesh_f[] =
-//Normal mesh
-"  tag = vec2(0.0);\n"
+"//Normal mesh\n"
+"  tag = vec3(0.0);\n"
 "  if ((pixcmd.CMDPMOD & 0x100u)==0x100u){\n"//IS_MESH
 "    if( (int(texel.y) & 0x01) == 0 ){ \n"
 "      if( (int(texel.x) & 0x01) == 0 ){ \n"
@@ -717,17 +709,18 @@ static const char vdp1_standard_mesh_f[] =
 "  }\n";
 
 static const char vdp1_improved_mesh_f[] =
-//Improved mesh
+"//Improved mesh\n"
 "  if ((pixcmd.CMDPMOD & 0x100u)==0x100u){\n"//IS_MESH
-"    tag = outColor.rg;\n"
+"    tag.rg = outColor.rg;\n"
+"    tag.b = 1.0;\n"
 "    outColor = finalColor;\n"
 "  } else {\n"
-"    tag = vec2(0.0);\n"
+"    tag = vec3(0.0);\n"
 "  }\n";
 
 static const char vdp1_continue_mesh_f[] =
 "    if (drawn) {"
-"      meshColor.rg = tag;\n"
+"      meshColor.rgb = tag;\n"
 "      finalColor = outColor;\n"
 "    }\n";
 

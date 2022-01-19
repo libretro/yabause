@@ -25,8 +25,6 @@
 #include "../QtYabause.h"
 #include "UIYabause.h"
 
-#include <optional>
-
 QStringList getCdDriveList();
 
 class UISettings : public QDialog, public Ui::UISettings
@@ -40,10 +38,10 @@ protected:
 	QList <translation_struct> trans;
 	QList <QAction*> actionsList;
 
-	void requestFile( const QString& caption, QLineEdit* edit, const QString& filters = QString(), std::optional<QString> proposedPath = std::optional<QString>());
-	void requestNewFile( const QString& caption, QLineEdit* edit, const QString& filters = QString(), std::optional<QString> proposedPath = std::optional<QString>());
-	void requestFolder( const QString& caption, QLineEdit* edit, std::optional<QString> proposedPath = std::optional<QString>());
-	void requestSTVFolder(const QString & caption, QLineEdit * edit, std::optional<QString> proposedPath = std::optional<QString>());
+	void requestFile( const QString& caption, QLineEdit* edit, const QString& filters = QString(), QString proposedPath = QString());
+	void requestNewFile( const QString& caption, QLineEdit* edit, const QString& filters = QString(), QString proposedPath = QString());
+	void requestFolder( const QString& caption, QLineEdit* edit, QString proposedPath = QString());
+	void requestSTVFolder(const QString & caption, QLineEdit * edit, QString proposedPath = QString());
 	void setupCdDrives();
 	void loadCores();
 	void loadTranslations();
@@ -73,7 +71,7 @@ protected slots:
 				void changeCSMode(int id);
 
 private:
-	QString getCartridgePathSettingsKey(std::optional<int> cartridgeType = std::optional<int>()) const;
+	QString getCartridgePathSettingsKey(int cartridgeType = -1) const;
 	void updateVolatileSettings() const;
 
 	int selectedCartridgeType = 0;

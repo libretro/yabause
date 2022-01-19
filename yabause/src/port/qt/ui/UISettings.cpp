@@ -185,34 +185,34 @@ UISettings::UISettings(QList <translation_struct> *translations, QWidget* p )
 	QtYabause::retranslateWidget( this );
 }
 
-void UISettings::requestFile( const QString& c, QLineEdit* e, const QString& filters, std::optional<QString> proposedPath)
+void UISettings::requestFile( const QString& c, QLineEdit* e, const QString& filters, QString proposedPath)
 {
-	auto const & path = proposedPath.has_value() ? proposedPath.value() : e->text();
+	auto const & path = proposedPath.isEmpty() ? e->text() : proposedPath;
 	const QString s = CommonDialogs::getOpenFileName(path, c, filters );
 	if ( !s.isNull() )
 		e->setText( s );
 }
 
-void UISettings::requestNewFile( const QString& c, QLineEdit* e, const QString& filters, std::optional<QString> proposedPath)
+void UISettings::requestNewFile( const QString& c, QLineEdit* e, const QString& filters, QString proposedPath)
 {
-	auto const & path = proposedPath.has_value() ? proposedPath.value() : e->text();
+	auto const & path = proposedPath.isEmpty() ? e->text(): proposedPath;
 	const QString s = CommonDialogs::getSaveFileName(path, c, filters );
 	if ( !s.isNull() )
 		e->setText( s );
 }
 
-void UISettings::requestFolder( const QString& c, QLineEdit* e, std::optional<QString> proposedPath)
+void UISettings::requestFolder( const QString& c, QLineEdit* e, QString proposedPath)
 {
-	auto const & path = proposedPath.has_value() ? proposedPath.value() : e->text();
+	auto const & path = proposedPath.isEmpty() ? e->text() : proposedPath;
 	const QString s = CommonDialogs::getExistingDirectory(path, c );
 	if ( !s.isNull() ) {
 		e->setText( s );
   }
 }
 
-void UISettings::requestSTVFolder( const QString& c, QLineEdit* e, std::optional<QString> proposedPath )
+void UISettings::requestSTVFolder( const QString& c, QLineEdit* e, QString proposedPath )
 {
-	auto const & path = proposedPath.has_value() ? proposedPath.value() : e->text();
+	auto const & path = proposedPath.isEmpty() ? e->text() : proposedPath;
 	const QString existingDirectoryPath = CommonDialogs::getExistingDirectory(path, c );
 	if ( !existingDirectoryPath.isNull() ) {
 		e->setText( existingDirectoryPath );
@@ -916,12 +916,12 @@ void UISettings::accept()
 	QDialog::accept();
 }
 
-QString UISettings::getCartridgePathSettingsKey(std::optional<int> cartridgeType) const
+QString UISettings::getCartridgePathSettingsKey(int cartridgeType) const
 {
 	auto name = mCartridgeTypes[selectedCartridgeType].Name;
-	if (cartridgeType.has_value())
+	if (cartridgeType != -1)
 	{
-		name = mCartridgeTypes[cartridgeType.value()].Name;
+		name = mCartridgeTypes[cartridgeType].Name;
 	}
 	name = name.remove(' ');
 	return "Cartridge/Path/" + name;

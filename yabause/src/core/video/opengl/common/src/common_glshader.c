@@ -43,7 +43,8 @@ static const GLchar Yglprg_vdp2_sprite_getCode_8_16[] =
 
 
 static const GLchar Yglprg_vdp2_sprite_type_0[] =
-"FBCol getVDP1PixelCode(vec2 col) {\n"
+"FBCol getVDP1PixelCode(vec2 col, bool odd) {\n"
+"//Sprite type 0\n"
 "  FBCol ret = zeroFBCol();\n"
 "  if (any(notEqual(col,vec2(0.0)))) ret.valid = 1;\n"
 "  else return ret;\n"
@@ -65,7 +66,8 @@ static const GLchar Yglprg_vdp2_sprite_type_0[] =
 "}\n";
 
 static const GLchar Yglprg_vdp2_sprite_type_1[] =
-"FBCol getVDP1PixelCode(vec2 col) {\n"
+"FBCol getVDP1PixelCode(vec2 col, bool odd) {\n"
+"//Sprite type 1\n"
 "  FBCol ret = zeroFBCol();\n"
 "  if (any(notEqual(col,vec2(0.0)))) ret.valid = 1;\n"
 "  else return ret;\n"
@@ -87,7 +89,8 @@ static const GLchar Yglprg_vdp2_sprite_type_1[] =
 "}\n";
 
 static const GLchar Yglprg_vdp2_sprite_type_2[] =
-"FBCol getVDP1PixelCode(vec2 col) {\n"
+"FBCol getVDP1PixelCode(vec2 col, bool odd) {\n"
+"//Sprite type 2\n"
 "  FBCol ret = zeroFBCol();\n"
 "  if (any(notEqual(col,vec2(0.0)))) ret.valid = 1;\n"
 "  else return ret;\n"
@@ -116,7 +119,8 @@ static const GLchar Yglprg_vdp2_sprite_type_2[] =
 "}\n";
 
 static const GLchar Yglprg_vdp2_sprite_type_3[] =
-"FBCol getVDP1PixelCode(vec2 col) {\n"
+"FBCol getVDP1PixelCode(vec2 col, bool odd) {\n"
+"//Sprite type 3\n"
 "  FBCol ret = zeroFBCol();\n"
 "  if (any(notEqual(col,vec2(0.0)))) ret.valid = 1;\n"
 "  else return ret;\n"
@@ -145,7 +149,8 @@ static const GLchar Yglprg_vdp2_sprite_type_3[] =
 "}\n";
 
 static const GLchar Yglprg_vdp2_sprite_type_4[] =
-"FBCol getVDP1PixelCode(vec2 col) {\n"
+"FBCol getVDP1PixelCode(vec2 col, bool odd) {\n"
+"//Sprite type 4\n"
 "  FBCol ret = zeroFBCol();\n"
 "  if (any(notEqual(col,vec2(0.0)))) ret.valid = 1;\n"
 "  else return ret;\n"
@@ -174,7 +179,8 @@ static const GLchar Yglprg_vdp2_sprite_type_4[] =
 "}\n";
 
 static const GLchar Yglprg_vdp2_sprite_type_5[] =
-"FBCol getVDP1PixelCode(vec2 col) {\n"
+"FBCol getVDP1PixelCode(vec2 col, bool odd) {\n"
+"//Sprite type 5\n"
 "  FBCol ret = zeroFBCol();\n"
 "  if (any(notEqual(col,vec2(0.0)))) ret.valid = 1;\n"
 "  else return ret;\n"
@@ -203,7 +209,8 @@ static const GLchar Yglprg_vdp2_sprite_type_5[] =
 "}\n";
 
 static const GLchar Yglprg_vdp2_sprite_type_6[] =
-"FBCol getVDP1PixelCode(vec2 col) {\n"
+"FBCol getVDP1PixelCode(vec2 col, bool odd) {\n"
+"//Sprite type 6\n"
 "  FBCol ret = zeroFBCol();\n"
 "  if (any(notEqual(col,vec2(0.0)))) ret.valid = 1;\n"
 "  else return ret;\n"
@@ -232,7 +239,8 @@ static const GLchar Yglprg_vdp2_sprite_type_6[] =
 "}\n";
 
 static const GLchar Yglprg_vdp2_sprite_type_7[] =
-"FBCol getVDP1PixelCode(vec2 col) {\n"
+"FBCol getVDP1PixelCode(vec2 col, bool odd) {\n"
+"//Sprite type 7\n"
 "  FBCol ret = zeroFBCol();\n"
 "  if (any(notEqual(col,vec2(0.0)))) ret.valid = 1;\n"
 "  else return ret;\n"
@@ -264,7 +272,9 @@ static const GLchar Yglprg_vdp2_sprite_type_7[] =
 //Kunoichi Torimonochou is clearing with VDP1 clear code 0x8000 with FB in 8bits mode, so palette Only
 // Then the color code has to be considered as transparent color
 static const GLchar Yglprg_vdp2_sprite_type_8[] =
-"FBCol getVDP1PixelCode(vec2 col) {\n"
+"FBCol getVDP1PixelCode(vec2 col, bool odd) {\n"
+"//Sprite type 8\n"
+"  if (odd && ((uint(col.y*255.0) & 0x80u)==0x80u)) col.x = float(uint(col.x * 255.0) | 0x80u)/255.0\n;"
 "  FBCol ret = zeroFBCol();\n"
 "  if (col.x != 0.0) ret.valid = 1;\n"
 "  else return ret;\n"
@@ -278,7 +288,9 @@ static const GLchar Yglprg_vdp2_sprite_type_8[] =
 "}\n";
 
 static const GLchar Yglprg_vdp2_sprite_type_9[] =
-"FBCol getVDP1PixelCode(vec2 col) {\n"
+"FBCol getVDP1PixelCode(vec2 col, bool odd) {\n"
+"//Sprite type 9\n"
+"  if (odd && ((uint(col.y*255.0) & 0x80u)==0x80u)) col.x = float(uint(col.x * 255.0) | 0x80u)/255.0\n;"
 "  FBCol ret = zeroFBCol();\n"
 "  if (col.x != 0.0) ret.valid = 1;\n"
 "  else return ret;\n"
@@ -293,7 +305,9 @@ static const GLchar Yglprg_vdp2_sprite_type_9[] =
 "}\n";
 
 static const GLchar Yglprg_vdp2_sprite_type_A[] =
-"FBCol getVDP1PixelCode(vec2 col) {\n"
+"FBCol getVDP1PixelCode(vec2 col, bool odd) {\n"
+"//Sprite type A\n"
+"  if (odd && ((uint(col.y*255.0) & 0x80u)==0x80u)) col.x = float(uint(col.x * 255.0) | 0x80u)/255.0\n;"
 "  FBCol ret = zeroFBCol();\n"
 "  if (col.x != 0.0) ret.valid = 1;\n"
 "  else return ret;\n"
@@ -307,7 +321,9 @@ static const GLchar Yglprg_vdp2_sprite_type_A[] =
 "}\n";
 
 static const GLchar Yglprg_vdp2_sprite_type_B[] =
-"FBCol getVDP1PixelCode(vec2 col) {\n"
+"FBCol getVDP1PixelCode(vec2 col, bool odd) {\n"
+"//Sprite type B\n"
+"  if (odd && ((uint(col.y*255.0) & 0x80u)==0x80u)) col.x = float(uint(col.x * 255.0) | 0x80u)/255.0\n;"
 "  FBCol ret = zeroFBCol();\n"
 "  if (col.x != 0.0) ret.valid = 1;\n"
 "  else return ret;\n"
@@ -321,7 +337,9 @@ static const GLchar Yglprg_vdp2_sprite_type_B[] =
 "}\n";
 
 static const GLchar Yglprg_vdp2_sprite_type_C[] =
-"FBCol getVDP1PixelCode(vec2 col) {\n"
+"FBCol getVDP1PixelCode(vec2 col, bool odd) {\n"
+"//Sprite type C\n"
+"  if (odd && ((uint(col.y*255.0) & 0x80u)==0x80u)) col.x = float(uint(col.x * 255.0) | 0x80u)/255.0\n;"
 "  FBCol ret = zeroFBCol();\n"
 "  if (col.x != 0.0) ret.valid = 1;\n"
 "  else return ret;\n"
@@ -335,7 +353,9 @@ static const GLchar Yglprg_vdp2_sprite_type_C[] =
 "}\n";
 
 static const GLchar Yglprg_vdp2_sprite_type_D[] =
-"FBCol getVDP1PixelCode(vec2 col) {\n"
+"FBCol getVDP1PixelCode(vec2 col, bool odd) {\n"
+"//Sprite type D\n"
+"  if (odd && ((uint(col.y*255.0) & 0x80u)==0x80u)) col.x = float(uint(col.x * 255.0) | 0x80u)/255.0\n;"
 "  FBCol ret = zeroFBCol();\n"
 "  if (col.x != 0.0) ret.valid = 1;\n"
 "  else return ret;\n"
@@ -350,7 +370,9 @@ static const GLchar Yglprg_vdp2_sprite_type_D[] =
 "}\n";
 
 static const GLchar Yglprg_vdp2_sprite_type_E[] =
-"FBCol getVDP1PixelCode(vec2 col) {\n"
+"FBCol getVDP1PixelCode(vec2 col, bool odd) {\n"
+"//Sprite type E\n"
+"  if (odd && ((uint(col.y*255.0) & 0x80u)==0x80u)) col.x = float(uint(col.x * 255.0) | 0x80u)/255.0\n;"
 "  FBCol ret = zeroFBCol();\n"
 "  if (col.x != 0.0) ret.valid = 1;\n"
 "  else return ret;\n"
@@ -364,7 +386,9 @@ static const GLchar Yglprg_vdp2_sprite_type_E[] =
 "}\n";
 
 static const GLchar Yglprg_vdp2_sprite_type_F[] =
-"FBCol getVDP1PixelCode(vec2 col) {\n"
+"FBCol getVDP1PixelCode(vec2 col, bool odd) {\n"
+"//Sprite type F\n"
+"  if (odd && ((uint(col.y*255.0) & 0x80u)==0x80u)) col.x = float(uint(col.x * 255.0) | 0x80u)/255.0\n;"
 "  FBCol ret = zeroFBCol();\n"
 "  if (col.x != 0.0) ret.valid = 1;\n"
 "  else return ret;\n"
@@ -516,23 +540,27 @@ static const GLchar Yglprg_vdp2_common_draw[] =
 "  ivec2 fbCoord = addr + ivec2(x*vdp1Ratio.x, 0);\n"
 "  fbCoord = ivec2(getFBCoord(vec2(fbCoord)));\n"
 "  vec4 col = texelFetch(s_vdp1FrameBuffer, fbCoord, 0);\n"
-"  vec2 meshpix = texelFetch(s_vdp1Mesh, fbCoord, 0).rg;\n"
+"  vec4 meshpix = texelFetch(s_vdp1Mesh, fbCoord, 0);\n"
 "  FBTest = col;\n"
-"  ret = getVDP1PixelCode(col.rg);\n"
+"  ret = getVDP1PixelCode(col.rg, ((fbCoord.x & 0x1) == 0x1));\n"
 //Support of extended mesh mode
-"  mesh = getVDP1PixelCode(meshpix);\n"
-"  if (mesh.valid != 0) { \n"
+"  mesh = getVDP1PixelCode(meshpix.rg, ((fbCoord.x & 0x1) == 0x1));\n"
+"  if (meshpix.b != 0.0) { \n"
 "    vec4 meshcol=vec4(0.0,0.0,0.0,1.0);\n"
 "    int meshdepth = getVDP2Reg(mesh.prio+8, line);\n"
-"    if( mesh.isRGB == 0 ){ \n"// index color?
-"      if( mesh.code != 0 || meshdepth != 0){\n"
-"        mesh.code = mesh.code + u_color_ram_offset; \n"
-"        meshcol = getColoredPixel(mesh.code); \n"
-"      } else { \n"
-"        meshcol = vec4(0.0);\n"
-"      }\n"
-"    }else{ // direct color \n"
-"      meshcol = mesh.color;\n"
+"    if (mesh.valid == 0) {\n"
+"      meshcol = vec4(0.0);\n"
+"    } else {\n"
+"      if( mesh.isRGB == 0 ){ \n"// index color?
+"        if( mesh.code != 0 || meshdepth != 0){\n"
+"          mesh.code = mesh.code + u_color_ram_offset; \n"
+"          meshcol = getColoredPixel(mesh.code); \n"
+"        } else { \n"
+"          meshcol = vec4(0.0);\n"
+"        }\n"
+"      }else{ // direct color \n"
+"        meshcol = mesh.color;\n"
+"      } \n"
 "    } \n"
 "    ret.meshColor = meshcol;\n"
 "    ret.meshPrio = meshdepth;\n"
@@ -595,10 +623,12 @@ static const GLchar Yglprg_vdp2_common_part[] =
 "  int eW0 = endW0.x;\n"
 "  if (id == 6) { sW0 = startW0.y; eW0 = endW0.y;}\n"
 "  if (((win0_mode>>id)&0x1) != 0) { \n"
-"    if (sW0 > eW0) valid = false;\n"
-"    if ((sW0 < eW0) && ((pos < sW0) || (pos > eW0))) valid = false;\n"
+" //outside is valid so inside has to be reported as false\n"
+"    if ((sW0 <= eW0) && ((pos >= sW0) && (pos <= eW0))) valid = false;\n"
 "  } else { \n"
-"    if ((sW0 < eW0) && ((pos >= sW0) && (pos < eW0))) valid = false;\n"
+" //inside is valid so outside has to be reported as false\n"
+"    if (sW0 > eW0) valid = false;\n"
+"    if ((sW0 <= eW0) && ((pos < sW0) || (pos > eW0))) valid = false;\n"
 "  }\n"
 "  return valid;\n"
 "}\n"
@@ -608,10 +638,12 @@ static const GLchar Yglprg_vdp2_common_part[] =
 "  int eW1 = endW1.x;\n"
 "  if (id == 6) { sW1 = startW1.y; eW1 = endW1.y;}\n"
 "  if (((win1_mode>>id)&0x1) != 0) { \n"
-"    if (sW1 > eW1) valid = false;\n"
-"    if ((sW1 < eW1) && ((pos < sW1) || (pos > eW1))) valid = false;\n"
+" //outside is valid so inside has to be reported as false\n"
+"    if ((sW1 <= eW1) && ((pos >= sW1) && (pos <= eW1))) valid = false;\n"
 "  } else { \n"
-"    if ((sW1 < eW1) && ((pos >= sW1) && (pos < eW1))) valid = false;\n"
+" //inside is valid so outside has to be reported as false\n"
+"    if (sW1 > eW1) valid = false;\n"
+"    if ((sW1 <= eW1) && ((pos < sW1) || (pos > eW1))) valid = false;\n"
 "  }\n"
 "  return valid;\n"
 "}\n"
@@ -619,32 +651,40 @@ static const GLchar Yglprg_vdp2_common_part[] =
 " if (((win_s_mode>>id)&0x1) == 0) return FBSPwin;\n"
 " else return !FBSPwin;\n"
 "}\n"
+
+
 "bool inWindow(int id) {\n"
 "  int pos = int(PosX);\n"
-"  bool valid = true;\n"
+"  bool valid = false;\n"
 "  if (((win_op>>id)&0x1) != 0) {\n"
     //And
+"    if ((((win1>>id)&0x1) != 0) || (((win0>>id)&0x1) != 0) || ((((win_s>>id)&0x1) != 0)&&(use_sp_win != 0))) valid = true;\n"
 "    if (((win0>>id)&0x1) != 0) valid = valid && inNormalWindow0(id,pos);\n"
 "    if (((win1>>id)&0x1) != 0) valid = valid && inNormalWindow1(id,pos);\n"
-"    if ((((win_s_mode>>id)&0x1) != 0)&&(use_sp_win != 0)) valid = valid && inSpriteWindow(id);\n"
+"    if ((((win_s>>id)&0x1) != 0)&&(use_sp_win != 0)) valid = valid && !inSpriteWindow(id);\n"
 "  } else {\n"
     //Or
-"    if ((((win1>>id)&0x1) != 0) || (((win0>>id)&0x1) != 0) || ((((win_s>>id)&0x1) != 0)&&(use_sp_win != 0))) valid = false;\n"
 "    if (((win0>>id)&0x1) != 0) valid = valid || inNormalWindow0(id,pos);\n"
 "    if (((win1>>id)&0x1) != 0) valid = valid || inNormalWindow1(id,pos);\n"
 "    if ((((win_s>>id)&0x1) != 0)&&(use_sp_win != 0)) valid = valid || inSpriteWindow(id);\n"
 "  }\n"
 "  return valid;\n"
 "}\n"
+
+"bool inTransparentWindow(int id) {\n"
+"  return inWindow(id)\n;"
+"}\n;"
 "bool inCCWindow() {\n"
 "  if ((((win1>>7)&0x1) != 0) || (((win0>>7)&0x1) != 0) || (((win_s>>7)&0x1)!= 0)) {\n"
 "    return inWindow(7);\n"
-"  } else {return false;}\n"
+"  } else {\n"
+"    return false;\n"
+"  }\n"
 "}\n";
 
 //Thios can be still optimized. Sprite related variables are doubled
 #define VDP2_SPRITE_SCREN_SETUP "\
-if ((prio == FBPrio) && inWindow(6)) {\n \
+if ((prio == FBPrio) && (!inTransparentWindow(6))) {\n \
   ret.Color = FBColor; \n \
   ret.mode = int(FBColor.a*255.0)&0x7; \n \
   ret.normalShadow = FBNormalShadow;\n \
@@ -664,7 +704,7 @@ ret.mesh = 0;\n \
 
 #define VDP2_SCREEN_SETUP(ID) "\
 ret.offset_color = offcol"Stringify(ID)".rgb;\n \
-if (((int(vdp2col"Stringify(ID)".a*255.0)&0x7) == prio) && inWindow("Stringify(ID)")) {\n \
+if (((int(vdp2col"Stringify(ID)".a*255.0)&0x7) == prio) && (!inTransparentWindow("Stringify(ID)"))) {\n \
 remPrio = remPrio - 1;\n \
 ret.Color = vdp2col"Stringify(ID)"; \n \
 ret.mode = mode["Stringify(ID)"]; \n \
