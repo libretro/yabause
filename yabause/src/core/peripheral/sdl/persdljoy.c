@@ -103,7 +103,7 @@ YuiMsg("µSDL joy init\n");
 
 	// open joysticks
 	SDL_PERCORE_JOYSTICKS_INITIALIZED = SDL_NumJoysticks();
-	SDL_PERCORE_JOYSTICKS = malloc(sizeof(PERSDLJoystick) * SDL_PERCORE_JOYSTICKS_INITIALIZED);
+	SDL_PERCORE_JOYSTICKS = (PERSDLJoystick*)malloc(sizeof(PERSDLJoystick) * SDL_PERCORE_JOYSTICKS_INITIALIZED);
 	for ( i = 0; i < SDL_PERCORE_JOYSTICKS_INITIALIZED; i++ )
 	{
 		SDL_Joystick* joy = SDL_JoystickOpen( i );
@@ -111,8 +111,8 @@ YuiMsg("µSDL joy init\n");
 		SDL_JoystickUpdate();
 
 		SDL_PERCORE_JOYSTICKS[ i ].mJoystick = joy;
-		SDL_PERCORE_JOYSTICKS[ i ].mScanStatus = joy ? malloc(sizeof(s16) * SDL_JoystickNumAxes( joy )) : 0;
-		SDL_PERCORE_JOYSTICKS[ i ].mHatStatus = joy ? malloc(sizeof(Uint8) * SDL_JoystickNumHats( joy )) : 0;
+		SDL_PERCORE_JOYSTICKS[ i ].mScanStatus = joy ? (s16*)malloc(sizeof(s16) * SDL_JoystickNumAxes( joy )) : 0;
+		SDL_PERCORE_JOYSTICKS[ i ].mHatStatus = joy ? (Uint8*)malloc(sizeof(Uint8) * SDL_JoystickNumHats( joy )) : 0;
 
 		if ( joy )
 		{

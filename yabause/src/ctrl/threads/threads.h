@@ -21,10 +21,6 @@
 #ifndef THREADS_H
 #define THREADS_H
 
-#ifdef xSH2_ASYNC
-#include <semaphore.h>
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -86,7 +82,7 @@ enum {
 // YabThreadStart:  Start a new thread for the given function.  Only one
 // thread will be started for each thread ID (YAB_THREAD_*).  Returns 0 on
 // success, -1 on error.
-int YabThreadStart(unsigned int id, void (*func)(void *), void *arg);
+int YabThreadStart(unsigned int id, void* (*func)(void *), void *arg);
 
 // YabThreadWait:  Wait for the given ID's thread to terminate.  Returns
 // immediately if no thread has been started on the given ID.

@@ -319,6 +319,87 @@ typedef struct {
   int copy_clock;
 } Dmac;
 
+
+//DEBUG stuff
+
+typedef struct SH2_struct_s SH2_struct;
+
+#define BREAK_BYTEREAD  0x1
+#define BREAK_WORDREAD  0x2
+#define BREAK_LONGREAD  0x4
+#define BREAK_BYTEWRITE 0x8
+#define BREAK_WORDWRITE 0x10
+#define BREAK_LONGWRITE 0x20
+
+#define MAX_BREAKPOINTS 10
+
+typedef void (FASTCALL *writebytefunc)(SH2_struct *context, u8*, u32, u8);
+typedef void (FASTCALL *writewordfunc)(SH2_struct *context, u8*, u32, u16);
+typedef void (FASTCALL *writelongfunc)(SH2_struct *context, u8*, u32, u32);
+
+typedef u8(FASTCALL *readbytefunc)(SH2_struct *context, u8*, u32);
+typedef u16(FASTCALL *readwordfunc)(SH2_struct *context, u8*, u32);
+typedef u32(FASTCALL *readlongfunc)(SH2_struct *context, u8*, u32);
+
+typedef struct
+{
+  u32 addr;
+} codebreakpoint_struct;
+
+typedef struct
+{
+  u32 addr;
+  u32 flags;
+  readbytefunc oldreadbyte;
+  readwordfunc oldreadword;
+  readlongfunc oldreadlong;
+  writebytefunc oldwritebyte;
+  writewordfunc oldwriteword;
+  writelongfunc oldwritelong;
+} memorybreakpoint_struct;
+
+void SH2SetBreakpointCallBack(SH2_struct *context, void (*func)(void *, u32, void *), void *userdata);
+int SH2AddCodeBreakpoint(SH2_struct *context, u32 addr);
+int SH2DelCodeBreakpoint(SH2_struct *context, u32 addr);
+codebreakpoint_struct *SH2GetBreakpointList(SH2_struct *context);
+void SH2ClearCodeBreakpoints(SH2_struct *context);
+
+u32 *SH2GetBacktraceList(SH2_struct *context, int *size);
+
+int SH2AddMemoryBreakpoint(SH2_struct *context, u32 addr, u32 flags);
+int SH2DelMemoryBreakpoint(SH2_struct *context, u32 addr);
+memorybreakpoint_struct *SH2GetMemoryBreakpointList(SH2_struct *context);
+void SH2ClearMemoryBreakpoints(SH2_struct *context);
+
+void SH2Step(SH2_struct *context);
+int SH2StepOver(SH2_struct *context, void (*func)(void *, u32, void *));
+void SH2StepOut(SH2_struct *context, void (*func)(void *, u32, void *));
+
+int SH2TrackInfLoopInit(SH2_struct *context);
+void SH2TrackInfLoopDeInit(SH2_struct *context);
+void SH2TrackInfLoopStart(SH2_struct *context);
+void SH2TrackInfLoopStop(SH2_struct *context);
+void SH2TrackInfLoopClear(SH2_struct *context);
+
+typedef struct
+{
+   codebreakpoint_struct codebreakpoint[MAX_BREAKPOINTS];
+   int numcodebreakpoints;
+   memorybreakpoint_struct memorybreakpoint[MAX_BREAKPOINTS];
+   int nummemorybreakpoints;
+   void (*BreakpointCallBack)(void *, u32, void *);
+   void *BreakpointUserData;
+   int inbreakpoint;
+   int breaknow;
+} breakpoint_struct;
+
+typedef struct
+{
+   u32 addr[256];
+   int numbacktrace;
+} backtrace_struct;
+//END debug
+
 typedef struct SH2_struct_s
 {
    sh2regs_struct regs;
@@ -347,7 +428,6 @@ typedef struct SH2_struct_s
    u8 isslave;
    u8 isSleeping;
    u16 instruction;
-   u16 isInIt;
    int depth;
 
 #ifdef DMPHISTORY
@@ -370,19 +450,32 @@ typedef struct SH2_struct_s
    u32 cycleLost;
    int cdiff;
    int trace;
-#ifdef xSH2_ASYNC
-   int cycles_request;
-   int thread_running;
-   YabEventQueue *start;
-   YabEventQueue *end;
-   sem_t lock;
-   int thread_id;
-#endif
     u32 frtcycles;
     u32 wdtcycles;
 
     Dmac dma_ch0;
     Dmac dma_ch1;
+
+//DEBUG Stuff
+    backtrace_struct bt;
+    breakpoint_struct bp;
+    struct {
+             u8 enabled;
+             tilInfo_struct *match;
+             int num;
+             int maxNum;
+          } trackInfLoop;
+    struct {
+             u8 enabled;
+             void (*callBack)(void *, u32, void *);
+             enum SH2STEPTYPE type;
+             union
+             {
+                s32 levels;
+                u32 address;
+             };
+          } stepOverOut;
+//ENd debug
 } SH2_struct;
 
 typedef struct

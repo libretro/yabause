@@ -386,16 +386,13 @@ struct AlfoTables
    u8 noise_table[256];
 };
 
-
-#if defined(ASYNC_SCSP)
-//global variables
-#endif
 struct AlfoTables alfo;
 
 static YabSem *m68counterCond;
 
 void scsp_main_interrupt (u32 id);
 void scsp_sound_interrupt (u32 id);
+void* ScspAsynMainCpu( void * p );
 
 void fill_plfo_tables()
 {
@@ -4659,12 +4656,14 @@ scsp_init (u8 *scsp_ram, void (*sint_hand)(u32), void (*mint_hand)(void))
     scsp_tl_table[i] = scsp_round(pow(10, ((double)i * -0.3762) / 20) * 1024.0);
 
   scsp_reset();
-  thread_running = false;
-  g_scsp_ready = YabThreadCreateSem(0);
+  g_scsp_ready = YabThreadCreateSem(1);
   g_cpu_ready = YabThreadCreateSem(0);
   g_scsp_set_cyc_mtx = YabThreadCreateMutex();
   g_scsp_set_cond_mtx = YabThreadCreateMutex();
   g_scsp_set_cyc_cond  = YabThreadCreateCond();
+
+  thread_running = true;
+  YabThreadStart(YAB_THREAD_SCSP, ScspAsynMainCpu, NULL);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -5061,13 +5060,11 @@ ScspDeInit (void)
   ScspUnMuteAudio(1);
   scsp_mute_flags = 0;
   thread_running = false;
-#if defined(ASYNC_SCSP)
   YabThreadCondSignal(g_scsp_set_cyc_cond);
   YabSemPost(g_cpu_ready);
   YabSemPost(g_scsp_ready);
   YabThreadWake(YAB_THREAD_SCSP);
   YabThreadWait(YAB_THREAD_SCSP);
-#endif
 
   if (scspchannel[0].data32)
     free(scspchannel[0].data32);
@@ -5155,12 +5152,7 @@ __attribute__((noinline))
 #endif
 static s32 FASTCALL M68KExecBP (s32 cycles);
 
-#if defined(ASYNC_SCSP)
-void M68KExec(s32 cycles){}
 void MM68KExec(s32 cycles)
-#else
-void M68KExec(s32 cycles)
-#endif
 {
   s32 newcycles = savedcycles - cycles;
   if (LIKELY(IsM68KRunning))
@@ -5252,29 +5244,6 @@ M68KExecBP (s32 cycles)
     }
   return cyclesexecuted;
 }
-
-//////////////////////////////////////////////////////////////////////////////
-
-void
-M68KStep (void)
-{
-  M68K->Exec(1);
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-// Wait for background execution to finish (used on PSP)
-#if defined(ASYNC_SCSP)
-void M68KSync(void){}
-void MM68KSync (void)
-#else
-void M68KSync(void)
-#endif
-{
-  M68K->Sync();
-}
-
-
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -5371,19 +5340,10 @@ void ScspUnLockThread() {
 
 
 //////////////////////////////////////////////////////////////////////////////
-#if !defined(ASYNC_SCSP)
-void ScspExec(){
-  u32 audiosize;
-
-  ScspInternalVars->scsptiming2 +=
-	  ((scspsoundlen << 16) + scsplines / 2) / scsplines;
-  ScspInternalVars->scsptiming2 &= 0xFFFF; // Keep fractional part
-  ScspInternalVars->scsptiming1++;
-#else
 
 u64 newCycles = 0;
 
-void ScspAsynMainCpu( void * p ){
+void* ScspAsynMainCpu( void * p ){
 
 
 #if defined(ARCH_IS_LINUX)
@@ -5395,10 +5355,10 @@ void ScspAsynMainCpu( void * p ){
   int frame = 0;
   u64 cycleRequest = 0;
   u64 m68k_inc = 0; //how much remaining samples should be played
-  int framecnt = (44100 * samplecnt) / fps; // 11289600/60
 
   while (thread_running)
   {
+    int framecnt = (44100 * samplecnt) / fps; // 11289600/60
     while (g_scsp_lock)
     {
 	    YabThreadUSleep(1000);
@@ -5439,15 +5399,14 @@ void ScspAsynMainCpu( void * p ){
         break;
       }
     }
-    #if defined(ASYNC_SCSP)
     while (scsp_mute_flags && thread_running) {
       YabThreadUSleep((1000000 / fps));
       YabSemPost(g_scsp_ready);
       YabSemWait(g_cpu_ready);
     }
-    #endif
   }
   YabThreadWake(YAB_THREAD_SCSP);
+  return NULL;
 }
 
 void ScspAsynMainRT( void * p ){
@@ -5529,13 +5488,6 @@ void ScspAsynMainRT( void * p ){
   YabThreadWake(YAB_THREAD_SCSP);
 }
 
-void ScspExec(){
-	if (!thread_running){
-	  thread_running = true;
-	  YabThreadStart(YAB_THREAD_SCSP, ScspAsynMainCpu, NULL);
-	}
-}
-
 void ScspAddCycles(u64 cycles)
 {
     YabThreadLock(g_scsp_set_cyc_mtx);
@@ -5546,8 +5498,6 @@ void ScspAddCycles(u64 cycles)
 
 void ScspExecAsync() {
   u32 audiosize;
-
-#endif
 
 
   if (ScspInternalVars->scsptiming1 >= scsplines)
@@ -6922,6 +6872,14 @@ ScspSlotDebugAudioSaveWav (u8 slotnum, const char *filename)
   fclose (fp);
 
   return 0;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+void
+M68KStep (void)
+{
+  M68K->Exec(1);
 }
 
 //////////////////////////////////////////////////////////////////////////////

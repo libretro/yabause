@@ -33,6 +33,7 @@
 
 Scu * ScuRegs;
 scudspregs_struct * ScuDsp;
+scubp_struct * ScuBP;
 static int incFlg[4] = { 0 };
 static void ScuTestInterruptMask(void);
 
@@ -58,6 +59,16 @@ int ScuInit(void) {
    if ((ScuDsp = (scudspregs_struct *) calloc(1, sizeof(scudspregs_struct))) == NULL)
       return -1;
 
+   if ((ScuBP = (scubp_struct *) calloc(1, sizeof(scubp_struct))) == NULL)
+      return -1;
+
+   ScuDsp->jmpaddr = 0xFFFFFFFF;
+
+   for (int i = 0; i < MAX_BREAKPOINTS; i++)
+      ScuBP->codebreakpoint[i].addr = 0xFFFFFFFF;
+   ScuBP->numcodebreakpoints = 0;
+   ScuBP->BreakpointCallBack=NULL;
+   ScuBP->inbreakpoint=0;
 
    return 0;
 }
@@ -73,6 +84,9 @@ void ScuDeInit(void) {
       free(ScuDsp);
    ScuDsp = NULL;
 
+   if (ScuBP)
+      free(ScuBP);
+   ScuBP = NULL;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1270,6 +1284,15 @@ void ScuExec(u32 timing) {
       while (dsp_counter > 0) {
          u32 instruction;
 
+         // Make sure it isn't one of our breakpoints
+         for (int i=0; i < ScuBP->numcodebreakpoints; i++) {
+            if ((ScuDsp->PC == ScuBP->codebreakpoint[i].addr) && ScuBP->inbreakpoint == 0) {
+               ScuBP->inbreakpoint = 1;
+               if (ScuBP->BreakpointCallBack) ScuBP->BreakpointCallBack(ScuBP->codebreakpoint[i].addr);
+                 ScuBP->inbreakpoint = 0;
+            }
+         }
+
          if (ScuDsp->ProgControlPort.part.T0 != 0) {
            step_dsp_dma(ScuDsp);
          }
@@ -2465,6 +2488,91 @@ void ScuDspSetRegisters(scudspregs_struct *regs) {
 
 //////////////////////////////////////////////////////////////////////////////
 
+void ScuDspSetBreakpointCallBack(void (*func)(u32)) {
+   ScuBP->BreakpointCallBack = func;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+int ScuDspAddCodeBreakpoint(u32 addr) {
+   int i;
+
+   if (ScuBP->numcodebreakpoints < MAX_BREAKPOINTS) {
+      // Make sure it isn't already on the list
+      for (i = 0; i < ScuBP->numcodebreakpoints; i++)
+      {
+         if (addr == ScuBP->codebreakpoint[i].addr)
+            return -1;
+      }
+
+      ScuBP->codebreakpoint[ScuBP->numcodebreakpoints].addr = addr;
+      ScuBP->numcodebreakpoints++;
+
+      return 0;
+   }
+
+   return -1;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+static void ScuDspSortCodeBreakpoints(void) {
+   int i, i2;
+   u32 tmp;
+
+   for (i = 0; i < (MAX_BREAKPOINTS-1); i++)
+   {
+      for (i2 = i+1; i2 < MAX_BREAKPOINTS; i2++)
+      {
+         if (ScuBP->codebreakpoint[i].addr == 0xFFFFFFFF &&
+            ScuBP->codebreakpoint[i2].addr != 0xFFFFFFFF)
+         {
+            tmp = ScuBP->codebreakpoint[i].addr;
+            ScuBP->codebreakpoint[i].addr = ScuBP->codebreakpoint[i2].addr;
+            ScuBP->codebreakpoint[i2].addr = tmp;
+         }
+      }
+   }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+int ScuDspDelCodeBreakpoint(u32 addr) {
+   int i;
+
+   if (ScuBP->numcodebreakpoints > 0) {
+      for (i = 0; i < ScuBP->numcodebreakpoints; i++) {
+         if (ScuBP->codebreakpoint[i].addr == addr)
+         {
+            ScuBP->codebreakpoint[i].addr = 0xFFFFFFFF;
+            ScuDspSortCodeBreakpoints();
+            ScuBP->numcodebreakpoints--;
+            return 0;
+         }
+      }
+   }
+
+   return -1;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+scucodebreakpoint_struct *ScuDspGetBreakpointList(void) {
+   return ScuBP->codebreakpoint;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+void ScuDspClearCodeBreakpoints(void) {
+   int i;
+   for (i = 0; i < MAX_BREAKPOINTS; i++)
+      ScuBP->codebreakpoint[i].addr = 0xFFFFFFFF;
+
+   ScuBP->numcodebreakpoints = 0;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
 u8 FASTCALL ScuReadByte(SH2_struct *sh, u8* mem, u32 addr) {
    addr &= 0xFF;
 
@@ -2541,11 +2649,11 @@ u32 FASTCALL ScuReadLong(SH2_struct *sh, u8* mem, u32 addr) {
 
 //////////////////////////////////////////////////////////////////////////////
 struct intCtrl {
-  int vector;
-  int mask;
-  int status;
-  int level;
-  int clear;
+  unsigned int vector;
+  unsigned int mask;
+  unsigned int status;
+  unsigned int level;
+  unsigned int clear;
 };
 
 enum {

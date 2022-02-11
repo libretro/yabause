@@ -125,14 +125,15 @@ static int SmpcSaveBiosSettings(void) {
 
 static int SmpcLoadBiosSettings(void) {
    FILE *fp;
+   size_t nbRead = 0;
    if (smpcfilename == NULL)
       return -1;
    if ((fp = fopen(smpcfilename, "rb")) == NULL)
       return -1;
-   fread(SmpcInternalVars->SMEM, 1, sizeof(SmpcInternalVars->SMEM), fp);
+   nbRead = fread(SmpcInternalVars->SMEM, 1, sizeof(SmpcInternalVars->SMEM), fp);
    SmpcInternalVars->languageid = SmpcInternalVars->SMEM[3] & 0xF;
    fclose(fp);
-   return 0;
+   return (nbRead == sizeof(SmpcInternalVars->SMEM))?0:-1;
 }
 
 //////////////////////////////////////////////////////////////////////////////

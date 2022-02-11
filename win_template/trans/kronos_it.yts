@@ -1,374 +1,512 @@
-%1 Images (*.%2)|%1 Immagini (*.%2)
-%1/%2 blocks free|%1/%2 blocchi liberi
-&About...|&Informazioni...
+&About...|Inform&azioni...
 &Action Replay|&Action Replay
-&Backup Manager...|&Backup Manager...
-&Browse|&Sfoglia
-&Cancel|&Annulla
-&Capture Screen|&Cattura Schermata
-&Cheat List|&Lista Trucchi
-&Cheats|&Trucchi
-&Cheats List...|&Lista Trucchi...
-&Clear|&Svuota
+&Backup Manager...|Gestione &backup...
+&Browse|Sfoglia
+&Cancel|Annulla
+&Capture Screen|&Cattura schermo
+&Cheat List|Lista tru&cchi
+&Cheats List...|Lista tru&cchi...
+&Cheats|Tru&cchi
+&Clear|Elimina tutto
 &Close|&Chiudi
 &Debug|&Debug
-&Delete|&Elimina
+&Delete|Elimina
 &Emulation|&Emulazione
 &File|&File
-&Frame Skip/Limiter|&Limita/Salta Frame
-&Fullscreen|&Schermo Intero
-&Help|&Aiuto
-&Layer|&Layer
-&Load From File|&Carica da File
-&Log|&Log
-&Master SH2|&Master SH2
-&Memory Transfer|&Trasferimento Memoria
+&FPS|Mostra &FPS
+&Frame Skip/Limiter|Limita/Salta &frame
+&Fullscreen|Schermo intero
+&Help|?
+&Layer|&Livelli grafici
+&Load From File|Carica
+&Log|Registro eventi
+&Master SH2|SH2 &Master
+&Memory Transfer|Trasferi&mento memoria
+&No|&No
 &OK|&OK
 &Pause|&Pausa
-&Quit|&Esci
-&Raw Memory Address|&Raw Memory Address
-&Reset|&Resetta
-&Save To File|&Salva su File
-&Settings...|&Impostazioni...
-&Slave SH2|&Slave SH2
-&Tools|&Strumenti
-&Transfer|&Transfer
+&Question...|Domanda...
+&Quit|Esci
+&Raw Memory Address|Indi&rizzo memoria
+&Reset|&Reset
+&Save To File|&Salva
+&Settings...|Impo&stazioni...
+&Slave SH2|SH &Slave
+&Tools|S&trumenti
+&Transfer|&Trasferimento memoria...
+&Vertical synchronization|Sincronizzazione &verticale (V-Sync)
 &View|&Visualizza
-16 Mbit Backup Ram|16 Mbit Backup Ram
-16 Mbit ROM|16 Mbit ROM
-16-bit|16-bit
-16-bit Relative value(s)|16-bit Relative value(s)
-32 Mbit Backup Ram|32 Mbit Backup Ram
-32 Mbit Dram|32 Mbit Dram
-32-bit|32-bit
-3D Control Pad|3D Control Pad
-4 Mbit Backup Ram|4 Mbit Backup Ram
+%1 Images (*.%2)|Immagine %1 (*.%2)
+%1/%2 blocks free|%1 blocchi liberi su %2
+<font color="red"><b>WARNING:</b> Master Codes are <b>NOT</b> supported.</font>|<font color="red"><b>AVVISO:</b> I Master Code <b>NON</b> sono supportati.</font>
+128 Mbit Dram|DRAM da 128 Mbit
+16 Mbit ROM|ROM da 16 Mbit
+16-bit Relative value(s)|Valori relativi 16 bit
+16-bit|16 bit
+16 Mbit Backup Ram|RAM di backup da 16 Mbit
+32 Mbit Backup Ram|RAM di backup da 32 Mbit
+32 Mbit Dram|DRAM 32 Mbit
+32-bit|32 bit
+3D Control Pad|3D Pad
+3D Control Pad Configuration|Configurazione 3D Pad
+4 Mbit Backup Ram|RAM di backup da 4 Mbit
 503/512 blocks free|503/512 blocchi liberi
-510/512 blocks free|510/512 blocchi liberi
-8 Mbit Backup Ram|8 Mbit Backup Ram
-8 Mbit Dram|8 Mbit Dram
-8-bit|8-bit
-8-bit Relative value(s)|8-bit Relative value(s)
-<font color="red"><b>WARNING:</b> Master Codes are <b>NOT</b> supported.</font>|<font color="red"><b>ATTENZIONE:</b> I Codici Master <b>NON</b> sono supportati.</font>
-About...|Informazioni...
-Action Replay Code :|Codice Action Replay
-Add|Aggiungi
+510/512 blocks free|510/512 liberi
+68000 Core|Core base 68000
+8 Mbit Backup Ram|RAM di backup da 8 Mbit
+8 Mbit Dram|DRAM 8 Mbit
+8-bit Relative value(s)|Valori relativi 8 bit
+8-bit|8 bit
+About...|Informazioni
+Action Replay Code :|Codice Action Replay :
 Add Action Replay Code|Aggiungi codice Action Replay
-Add Cheat|Aggiungi Trucco
-Add Codes...|Aggiungi Codici....
-Add Raw Memory Code|Aggiungi Raw Memory Code
+Add Cheat|Aggiungi trucco
+Add Codes...|Aggiungi codici...
+Add Raw Memory Code|Aggiungi codice da memoria
+Add|Aggiungi
+Address :|Indirizzo :
 Address|Indirizzo
-Address :|Indirizzo:
 Advanced|Avanzate
-Always|Always
-Are you sure you want to delete '%1' ?|Sicuro di voler cancellare '%1'?
+All Files (*)|Tutti i file (*.*)
+All Files;|Tutti i file;
+All Files|Tutti i file
+Always|Nascondi sempre
+An error occured while writing file.|Si è verificato un errore durante la scrittura del file.
+Are you sure you want to delete '%1' ?|Sicuro di voler cancellare '%1' ?
 Are you sure you want to format '%1' ?|Sicuro di voler formattare '%1'?
 Asia (NTSC)|Asia (NTSC)
 Asia (PAL)|Asia (PAL)
-Auto-detect|Auto-detect
-Autostart|Autostart
-Awaiting input for|Awaiting input for
-Axis|Axis
-Backtrace|Backtrace
-Backup Ram Manager|Gestione Backup RAM
-Binary Files (*.bin)|Binary Files (*.bin)
+Assembly code|Codice Assembly
+Auto-detect|Rilevamento automatico
+Autostart|Avvia automaticamente all'apertura
+Awaiting input for|In attesa di input per
+Axis L Trigger|Grilletto sinistro
+Axis R Trigger|Grilletto destro
+Axis Throttle|Throttle
+Axis X|Asse X
+Axis Y|Asse Y
+Axis|Assi
+Backup Ram Manager|Gestione della RAM di backup
+BiCubic|Bicubico
+Bilinear Filtering (Restart required)|Filtro bilineare (necessario riavvio)
+Bilinear|Bilineare
+Binary Files (*.bin);;COFF Program Files (*.cof *.coff);;ELF Program Files (*.elf);;All Files (*)|File binari (*.bin);;File COFF (*.cof *.coff);;File ELF (*.elf);;Tutti i file (*.*)
+Binary Files (*.bin)|File binari (*.bin)
+Bios file path|Percorso del file BIOS :
+Bios Language|Lingua del BIOS
+Bios settings file|File in cui salvare le impostazioni del BIOS :
+Bios Settings|BIOS
 Bios|BIOS
-Block Size :|Dimensioni Blocco:
-Browse|Sfoglia
+Block Size :|Dimensioni blocco :
+Bug report|Segnala un errore
+Byte Write : %1 %2|Scrittura byte : %1 %2
+Byte Write|Scrivi byte
 Byte|Byte
-Byte Write|Scrivi Byte
-CD Images (*.iso *.cue *.bin)|Immagine CD (*.iso *.cue *.bin)
+Can't initialize Kronos.|Impossibile inizializzare Kronos.
+Can't plug in the new controller, cancelling.|Impossibile collegare il controller, l'operazione verrà annullata.
 Cancel|Annulla
-Cannot initialize|Impossibile Inizializzare
-Cannot initialize Windows SPTI Driver|Impossibile inizializzare il Driver Windows SPTI
-Cart/Memory|Cart/Memoria
+Cannot initialize Windows SPTI Driver|Impossibile avviare il driver SPTI di Windows
+Cart/Memory|Cartuccia/Memoria
+Cartridge Path|Percorso cartuccia
 Cartridge|Cartuccia
-Cd-Rom|Cd-Rom
-Central/South America (NTSC)|Central/South America (NTSC)
-Central/South America (PAL)|Central/South America (PAL)
-Cheat &Search...|Cheat &Search...
-Cheat Search|Cheat Search
-Cheat Type|Tipo di Trucco
-Cheats|Trucchi
-Cheats File|File Cheats
-Choose a binary file|Choose a binary file
-Choose a cartridge file|Choose a cartridge file
-Choose a cdrom drive/mount point|Choose a cdrom drive/mount point
-Choose a cheat file to open|Selezionare un file cheat da aprire
-Choose a cheat file to save to|Selezionare un file cheat per salvare
-Choose a file to save your state|Selezionare un file per salvare lo stato
-Choose a location for binary file|Choose a location for binary file
-Choose a location for your screenshot|Selezionare una directory per gli screenshoot
-Choose a memory file|Choose a memory file
-Choose a mpeg rom|Choose a mpeg rom
-Clear configuration|Clear configuration
+CD Images (*.iso *.ISO *.cue *.CUE *.bin *.BIN *.mds *.MDS *.ccd *.CCD *.zip *.ZIP *.chd *.CHD)|File immagine disco (*.iso *.cue *.bin *.mds *.ccd *.zip *.chd)
+CD-ROM|CD-ROM
+Central/South America (NTSC)|America centrale e meridionale (NTSC)
+Central/South America (PAL)|America centrale e meridionale (PAL)
+Cheat &Search...|Cerca trucchi...
+Cheat Search|Cerca trucchi
+Cheat Type|Tipo trucco
+Cheats|Lista trucchi
+Cheats File|File di trucchi
+Choose a binary or program file|Selezionare un file binario o di programma
+Choose a bios file|Selezionare un file BIOS
+Choose a cartridge file|Selezionare un file cartuccia
+Choose a cartridge folder|Selezionare una cartella cartucce
+Choose a cdrom drive/mount point|Selezionare unità disco o un punto di caricamento
+Choose a cheat file to open|Selezionare un file trucchi
+Choose a cheat file to save to|Selezionare un file trucchi in cui salvare
+Choose a file to save your state|Crea punto di salvataggio come file
+Choose a file to store bios settings|Selezionare un file in cui salvare le impostazioni del BIOS
+Choose a folder to store save states|Selezionare una cartella in cui salvare i punti di salvataggio
+Choose a folder to store screenshots|Selezionare una cartella in cui salvare le immagini
+Choose a location for binary file|Selezionare un percorso per i file binari
+Choose a location for your binary file|Salva file binario con nome
+Choose a location for your bitmap|Salva immagine con nome
+Choose a location for your screenshot|Salva immagine con nome
+Choose a location for your wav file|Salva audio WAV con nome
+Choose a memory file|Scegli un file di memoria
+Choose a mpeg rom|Scegli una ROM MPEG
+Choose a STV cartridge folder|Selezionare cartella con cartucce ST-V
+Clear configuration|Cancella configurazione
+Clear|Cancella
 Close|Chiudi
 Code|Codice
-Code Breakpoints|Code Breakpoints
-Comment :|Commento:
-Common Control Registers|Common Control Registers
-Compare Type|Compare Type
-DSP Control Registers|DSP Control Registers
-DSP Registers|DSP Registers
-Data Size|Data Size
-Data Size :|Dimensioni Dati:
-Data Type|Data Type
-Debug CPU|Debug CPU
-Debug M68K|Debug M68K
-Debug Master SH2|Debug Master SH2
-Debug SCU DSP|Debug SCU DSP
-Debug Slave SH2|Debug Slave SH2
-Debug VDP1|Debug VDP1
-Debug VDP2Viewer|Debug VDP2Viewer
-Del|Del
+Code Breakpoints|Interruzioni codice
+COFF Program Files (*.cof *.coff)|File COFF (*.cof *.coff)
+Coin1|Moneta 1
+Coin2|Moneta 2
+Comment :|Commento :
+Common Control Registers|Registri di controllo comuni
+Compare Type|Confronta tipo
+Compatibility List|Elenco dei giochi compatibili
+Compute Shader Video Interface|Compute Shader
+Couldn't load state file|Impossibile caricare il file di stato.
+Couldn't save state file|Impossibile salvare file di salvataggio.
+CPU Tesselation|Mediante la CPU
+Data Size :|Dimensione dei dati :
+Data Size|Dimensione
+Data Type|Tipo
+Debug CPU|Debug della CPU
+Debug M68K|Debug del M68K
+Debug Master SH2|Debug del Master SH2
+Debug SCSP|Debug del SCSP
+Debug SCU DSP|Debug del SCU DSP
+Debug Slave SH2|Debug dello Slave SH2
+Debug VDP1|Debug del VDP1
+Debug VDP2Viewer|Debug del VDP2Viewer
+Debug|Debug
+Default Dial IP|Indirizzo IP
+Default System Language|Lingua Saturn
+Deinterlacing Bob|Deinterlacciamento Bob
+Deinterlacing Debug Bob|Deinterlacciamento Debug Bob
+Deinterlacing OSSC Bob|Deinterlacciamento OSSC Bob
+Deinterlacing OSSC Debug Bob|Deinterlacciamento OSSC Debug Bob
+Deinterlacing Scanline|Linee di scansione e deinterlacciamento
+Del|Canc
 Delete|Elimina
 Description|Descrizione
-Description :|Descrizione:
+Description :|Descrizione :
+Deutsch|Tedesco
 Device List|Lista periferiche
-DirectX Input Interface|DirectX Input Interface
-DirectX Sound Interface|DirectX Sound Interface
-Disabled|Disattivo
-Disassembled Code|Disassembled Code
-Display Enabled|Display Enabled
-Display on Hover|Display on Hover
+Directory|Cartella di destinazione :
+DirectX Input Interface|DirectX
+DirectX Sound Interface|DirectX
+Disabled|Disattivato
+Disassembled Code|Codice disassemblato
+Display Enabled|Visualizza
+Display on Hover|Mostra al passaggio del mouse (schermo intero)
+Double Mission Stick Configuration|Configurazione Mission Stick doppio
+Double Mission Stick|Mission Stick doppio
+Down_P2|Giù (giocatore 2)
 Down|Giù
-Download|Download
-Draw End|Draw End
-Dummy CD Drive|Dummy CD Drive
-Dummy Input Interface|Dummy Input Interface
-Dummy OSD Interface|Dummy OSD Interface
-Dummy Sound Interface|Dummy Sound Interface
-Dummy Video Interface|Dummy Video Interface
-Edit configuration|Edit configuration
-Emu-Compatibility|Compatibilità Emulatore
-Emulation|Emulazione
+Download|Scarica
+DSP Control Registers|Registri di controllo DSP
+DSP Registers|Registri DSP
+Dummy 68k Interface|Interfaccia 68000 fasulla
+Dummy CD Drive|Unità disco fasulla
+Dummy Input Interface|Interfaccia fasulla
+Dummy OSD Interface|Interfaccia fasulla
+Dummy Sound Interface|Inferfaccia fasulla
+Dummy Video Interface|Interfaccia fasulla
+Edit configuration|Modifica configurazione
+Eject/Load ISO...|Apri immagine disco... (Aziona sportello disco)
+ELF Program Files (*elf)|File ELF (*.elf)
+Embellishment filter :|Filtro di miglioramento :
+Enable Bios Emulation|Abilita l'emulazione del BIOS
+Enable Code : %1 %2|Codice attivazione : %1 %2
+Enable Multithreading|Consenti più thread alla volta
+Enable vertical synchronization|Sincronizzazione verticale (V-Sync)
 Enable|Abilita
-Enable Frame Skip/Limiter|Enable Frame Skip/Limiter
-Enabled|Abilitato
-End Address:|Indirizzo Finale:
+Enabled|Attivato
+End Address:|Indirizzo di fine:
 English|Inglese
-Enter New Value|Enter New Value
-Europe + others (PAL)|Europe + others (PAL)
-Exact|Exact
-FPS|FPS
-File|File
-File Name :|Nome file:
-File transfer|Trasferimento file
+Enter new assembly code|Inserisci nuovo codice assembly
+Enter New Value|Inserisci nuovo valore
+Error|Errore
+Europe + others (PAL)|Europa e altri (PAL)
+Exact|Uguale
+Extend Internal backup memory to 8MB|Estendi la RAM di backup interna a 8 MB
+File Name :|Nome file :
 File:|File:
-Format|Formato
-Frame Skip/Limiter|Limitatore frame
+Finished searching up to end of memory, continue from the beginning?|La ricerca ha raggiunto la fine della memoria, continuare dall'inizio?
+Format|Formatta
+FPS|FPS
 French|Francese
-From|Da
-From File|Dal file
-From File...|Dal file...
-Fullscreen|Schermo Intero
-Fullscreen Resolution|Fullscreen Resolution
-General|Generale
-General Info|General Info
+From File...|Da file...
+General Info|Informazioni generali
+General|Generali
 German|Tedesco
-Glut OSD Interface|Glut OSD Interface
-Goto Address|Goto Address
-Greater then|Greater then
-Hard Reset|Hard Reset
-Height|Altezza
-Hex value(s)|Hex value(s)
-Hide Menubar|Hide Menubar
-Hide Toolbar|Hide Toolbar
-ISO-File Virtual Drive|ISO-File Virtual Drive
-Information...|Information...
-Input|Input
+Goto Address|Indirizzo destinazione
+Gouraud Mode :|Modalità Gouraud :
+GPU RBG :|RBG GPU (OpenGL 4.3) :
+GPU Tesselation|Mediante la GPU
+Greater than|Maggiore di
+Greater then|Maggiore di
+Gun Configuration|Configurazione Virtua Gun
+Gun/Mouse Sensitivity|Sensibilità della pistola e del mouse
+Gun|Virtua Gun
+Hex value(s)|Valore/i esadecimale/i
+Hide Menubar|Barra dei menu
+Hide Toolbar|Barra degli strumenti
+Image format|Formato immagine :
+Improved|Migliorato
+Information...|Avviso
+Inline Assembly|Assemblaggio in linea
+Input|Comandi
+Integer scaling|Ridimensionamento per fattori interi
+Internal Backup RAM|RAM di backup interna
 Invalid Address|Indirizzo non valido
+Invalid Start/End Address Combination|Combinazione indirizzi inizio/fine non valida
 Invalid Value|Valore non valido
+ISO-File Virtual Drive|ISO-File Virtual Drive (Unità virtuale per file immagine disco)
 Italian|Italiano
-Japan (NTSC)|Japan (NTSC)
+Japan (NTSC)|Giappone (NTSC)
+Japanese Modem|Modem giapponese
 Japanese|Giapponese
-Japanese Modem|Japanese Modem
-Korea (NTSC)|Korea (NTSC)
-L&oad State|L&oad State
-Language :|Lingua:
-Layer|Layer
+Korea (NTSC)|Corea (NTSC)
+Kronos Cheat Files (*.yct);;All Files (*)|File trucchi di Kronos (*.yct);;Tutti i file (*.*)
+Kronos is not initialized, can't manage backup ram.|Kronos non è inizializzato. Impossibile gestire la RAM di backup.
+Kronos Qt Gui<br />Based on Yabause %1<br /><a href="http://yabause.org">http://yabause.org</a><br />The Yabause Team<br /><a href="mailto:pasnox@gmail.com">Filipe AZEVEDO</a>|Interfaccia grafica Qt di Kronos<br />Basato sul codice di Yabause %1<br /><a href="http://yabause.org">http://yabause.org</a><br />Il team di sviluppo di Yabause<br /><a href="mailto:pasnox@gmail.com">Filipe AZEVEDO</a>
+Kronos Save State (*.yss)|Punto di salvataggio di Kronos (*.yss)
+L&oad State|Carica punt&o di salvataggio
+Language :|Lingua :		   
+Left Stick Axis Throttle|Throttle
+Left Stick Axis X|Asse X
+Left Stick Axis Y|Asse Y
+Left Stick Throttle Down|Diminuisci - throttle sinistro
+Left Stick Throttle Up|Aumenta - throttle sinistro
+Left stick:\nTrigger:      X\nLeft button:  Y\nRight button: Z|Leva sinistra\nGrilletto = X\nPulsante sinistro = Y\nPulsante destro = Z
+Left Stick Y Down|Leva sinistra in giù (Asse Y)
+Left Stick X Left|Leva sinistra a sinistra (Asse X)
+Left Stick X Right|Leva sinistra a destra (Asse X)
+Left Stick Y Up|Leva sinistra in su (Asse Y)
+Left trigger|Grilletto sinistro
+Left_P2|Sinistra (giocatore 2)
 Left|Sinistra
-Left trigger|Left trigger
-Less than|Less than
-Linux CD Drive|Linux CD Drive
-Load|Carica
-Load State|Carica stato
-Load State As|Carica stato come
-Load as executable|Carica come eseguibile
-Local Coordinates|Local Coordinates
-Log|Log
-Long|Long
-Long Write|Scrivi Log
-Loop Track Clear|Loop Track Clear
-Loop Track Start|Loop Track Start
-M68K|M68K
-M68K Registers|M68K Registers
-MSH2|MSH2
-Master SH2|Master SH2
+Less than|Minore di
+Load0|Carica n. 0
+Load1|Carica n. 1
+Load2|Carica n. 2
+Load3|Carica n. 3
+Load4|Carica n. 4
+Load5|Carica n. 5
+Load6|Carica n. 6
+Load7|Carica n. 7
+Load8|Carica n. 8
+Load9|Carica n. 9
+Log|Registro
+Long Write : %1 %2|Scrivi long : %1 %2
+Long Write|Scrivi long
+Long|Lungo
+Loop Track Clear|Cancella traccia loop
+Loop Track Start|Inizia traccia loop
+Loop Track Stop|Termina traccia loop
+Memory &Editor|Modifica m&emoria
+Memory Breakpoints|Interruzione memoria
+Memory Editor|Modifica memoria
+Memory Search|Ricerca memoria
+Memory Transfer|Trasferimento memoria
 Memory|Memoria
-Memory &Editor|Memory &Editor
-Memory Breakpoints|Memory Breakpoints
-Memory Dump|Dump Memoria
-Memory Editor|Editor Memoria
-Memory Search|Memory Search
-Memory Transfer|Trasferimento Memoria
-Memory dump|Dump Memoria
-Middle|Middle
-Mouse|Mouse
-Mouse Configuration|Mouse Configuration
-Mpeg ROM|Mpeg ROM
+Mesh Mode :|Modalità mesh :
+Middle|Centrale
+Mission Stick Configuration|Configurazione Mission Stick
+Mission Stick|Mission Stick
+Mouse Configuration|Configurazione Shuttle Mouse
+Mouse|Shuttle Mouse
+Mpeg ROM|ROM MPEG
+Musashi Interface|Interfaccia Musashi
+Mute/UnMute Sound|Audio attivo
+nanovg OSD Interface|nanovg
+Native (current resolution of the window)|Usa la risoluzione della finestra
+NBG0/RBG1 Info|Info NBG0/RBG1
 NBG0|NBG0
-NBG0/RBG1 Info|NBG0/RBG1 Info
+NBG1 Info|Info NBG1
 NBG1|NBG1
-NBG1 Info|NBG1 Info
+NBG2 Info|Info NBG2
 NBG2|NBG2
-NBG2 Info|NBG2 Info
+NBG3 Info|Info NBG3
 NBG3|NBG3
-NBG3 Info|NBG3 Info
 Netlink|Netlink
-Never|Never
+Never|Mostra sempre
+No matches found.|Nessun risultato trovato.
 None|Nessuno
-Normal Sprite|Normal Sprite
-North America (NTSC)|North America (NTSC)
-OSD Core|OSD Core
-Ok|Ok
-On fullscreen|On fullscreen
-On message|On message
-Open &CD Rom...|Open &CD Rom...
-Open &ISO...|Open &ISO...
-Open CD Rom|Apri CD Rom
-OpenGL Video Interface|OpenGL Video Interface
-Options|Options
-Other Debug|Other Debug
-Pad|Pad
-Pad Configuration|Pad Configuration
-Pause|Pausa
-Press Esc key to cancel|Press Esc key to cancel
-Pro Action Replay|Pro Action Replay
-Qt Keyboard Input Interface|Qt Keyboard Input Interface
-Quit|Esci
-R&un|Eseg&ui
+Normal format not available, trying alternative|Formato normale non disponibile, verrà tentata un'alternativa
+North America (NTSC)|America settentrionale (NTSC)
+Number of Threads|Numero di thread
+Off|Disattivato
+On fullscreen|Nascondi a schermo intero
+On message|Su messaggio
+On|Attivo
+Open &CD Rom...|Avvia &CD-ROM reale...
+Open &ISO...|Apri &immagine disco...
+Open a cartridge file|Apri un file cartuccia
+Open a mpeg rom|Apri una ROM MPEG
+Open CD Rom|Avvia CD-ROM reale
+Open SSF|Apri SSF
+Open&Tray|
+OpenGL size :|Dimensione OpenGL :
+OpenGL Video Interface|OpenGL
+Options|Opzioni
+Original (original resolution of the Saturn)|Risoluzione originale del Saturn
+Original aspect ratio|Proporzioni originali
+Original|Originale
+OSD Core|Informazioni su schermo
+Pad Configuration|Configurazione Control Pad
+Pad|Control Pad
+Play Slot|Avvia slot
+Port|Porta
+Port 1|Porta 1
+Port 2|Porta 2
+Press Esc key to cancel|Premi Esc per annullare
+Qt Keyboard Input Interface|Tastiera Qt
+R&un|Avvia
+RBG0 Info|Info RBG0
 RBG0|RBG0
-RBG0 Info|RBG0 Info
 Read|Read
 Region|Regione
-Registers|Registers
-Reset|Reset
-Resolution|Risoluzione
+Remove Peripheral|Rimuovi periferica
+Restart|Ricomincia
+Right Stick Axis Throttle|Throttle
+Right Stick Axis X|Asse X
+Right Stick Axis Y|Asse Y
+Right Stick:\nTrigger:      A\nLeft button:  B\nRight button: C|Leva destra\nGrilletto = A\nPulsante sinistro = B\nPulsante destro = C
+Right trigger|Grilletto destro
+Right_P2|Destra (giocatore 2)
 Right|Destra
-Right trigger|Right trigger
-Run|Esegui
-S&ave State|S&ave State
+S&ave State|Crea punto di s&alvataggio
+Save As Bitmap|Salva immagine
+Save As WAV|Salva come audio WAV
+Save Bitmap|Salva immagine
+Save Information|Informazioni
+Save List|Lista salvataggi
+Save MD0|Salva MD0
+Save MD1|Salva MD1
+Save MD2|Salva MD2
+Save MD3|Salva MD3
+Save Program|Salva programma
+Save Selected|Salva selezione
+Save Slot Registers|Salva slot registri
+Save States|Punti di salvataggio
+Save0|Salva n. 0
+Save1|Salva n. 1
+Save2|Salva n. 2
+Save3|Salva n. 3
+Save4|Salva n. 4
+Save5|Salva n. 5
+Save6|Salva n. 6
+Save7|Salva n. 7
+Save8|Salva n. 8
+Save9|Salva n. 9
+Save Tab|Salva tab
+Sc&reenshot|Cattu&ra schermo
+Scanline filter|Filtro linee di scansione
+Scanline off|Linee di scansione disattivate
+Scanline on|Linee di scansione attive
+Screen Enabled|Abilita
+Screen Select:|Seleziona livello:
+Screenshots|Cattura schermo
+SCSP Channels|Canali SCSP
 SCSP|SCSP
-SCU-DSP|SCU-DSP
-SDL Joystick Interface|SDL Joystick Interface
-SDL Sound Interface|SDL Sound Interface
-SH2 Debugger Interpreter|SH2 Debugger Interpreter
-SH2 Dynamic Recompiler|SH2 Dynamic Recompiler
-SH2 Interpreter|Interprete SH2
-SH2 Registers|SH2 Registers
-SSH2|SSH2
-Save|Salva
-Save As WAV|Save As WAV
-Save Bitmap|Save Bitmap
-Save Information|Salva Informazioni
-Save List|Salva lista
-Save MD0|Save MD0
-Save MD1|Save MD1
-Save MD2|Save MD2
-Save MD3|Save MD3
-Save Program|Save Program
-Save Selected|Save Selected
-Save Slot Registers|Save Slot Registers
-Save State|Salva stato
-Save State As|Salva stato come
-Save States|Salva stati
-Sc&reenshot|Sc&reenshot
-Screen Enabled|Screen Enabled
-Screenshot|Screenshot
-Search|Search
-Search Criteria|Search Criteria
-Search Memory|Search Memory
-Search Value:|Search Value:
-Search/Add Cheats|Search/Add Cheats
-Select a file to load your state|Selezionare un file per caricare il tuo stato
-Select your iso/cue/bin file|Selezionare un file iso/cue/bin
-Set PC to Start Address|Set PC to Start Address
+SDL Joystick Interface|SDL
+SDL Sound Interface|SDL
+Search Criteria|Criteri di ricerca
+Search Memory|Cerca nella memoria
+Search Value:|Cerca valore:
+Search/Add Cheats|Cerca/Aggiungi trucchi
+Search|Ricerca
+Sega Saturn Sound Format files (*.ssf *.minissf)|File audio SEGA Saturn (*.ssf *.minissf)
+Select a file to load your state|Selezionare un file punto di salvataggio
+Select your iso/cue/bin/zip file|Selezionare un file immagine disco
+Select your iso/cue/bin/zip/chd file|Selezionare un file immagine disco
+Select your ssf file|Selezionare un file SSF
+Service|Servizio
+Set PC to Start Address|Usa l'indirizzo d'inizio
 Settings|Impostazioni
-Shortcuts|Shortcuts
-Show FPS|Show FPS
-Show Log Window|Show Log Window
-Signed|Signed
-Signed 16-bit value|Signed 16-bit value
-Signed 32-bit value|Signed 32-bit value
-Signed 8-bit value|Signed 8-bit value
-Slave SH2|Slave SH2
-Slot Info|Slot Info
-Slot Number:|Slot Number:
-Software OSD Interface|Software OSD Interface
-Software Video Interface|Software Video Interface
-Sound|Suono
-Sound Core|Sistema Audio
+SH2 Debugger Interpreter|Interprete Debugger
+SH2 Interpreter|Interprete SH2
+SH2 Kronos Interpreter|Interprete di Kronos
+SH2 Registers|Registri SH2
+Shortcuts|Scorciatoie
+Shortcut|Scorciatoia
+Show FPS|Mostra FPS
+Show Log Window|Mostra finestra registro
+Signed 16-bit value|Valore 16 bit con segno
+Signed 32-bit value|Valore 32 bit con segno
+Signed 8-bit value|Valore 8 bit con segno
+Signed|Con segno
+Slot Info|Info slot
+Slot Number:|Numero slot:
+Software OSD Interface|Interfaccia software
+Software Video Interface|Elaborazione software
+Sound Core|Gestore audio
+Sound...|Audio...
+Sound|Audio
 Spanish|Spagnolo
-Start|Inizia
-Start Address:|Indirizzo Iniziale:
-Start in Fullscreen|Start in Fullscreen
+ST-V cabinet Configuration|Configurazione ST-V
+ST-V Cabinet|Controlli cabinato ST-V
+Start Address:|Indirizzo d'inizio:
+Start in Fullscreen|Avvia a schermo intero
+Start|Start
 Status|Stato
-Step Into|Step Into
-Step Out|Step Out
-Step Over|Step Over
-Store|Store
-Synchronize Saturn internal clock with set time|Synchronize Saturn internal clock with set time
-System Clipping Coordinates|System Clipping Coordinates
-Text|Text
+Step Into|Salta a
+Step Out|Esci da
+Step Over|Salta
+Stick Down|Leva in giù (Asse Y)
+Stick left button: same as A \nStick right button: same as B \nStick trigger: same as C|Pulsante sinistro sulla leva = A \nPulsante destro sulla leva = B \nGrilletto = C
+Stick Left|Leva a sinistra (Asse X)
+Stick Right|Leva a destra (Asse X)
+Stick Up|Leva in su (Asse Y)
+Stop|Ferma
+Stretch to window|Riempi lo schermo
+STV Rom game|ROM gioco ST-V
+Synchronize Saturn internal clock with set time|Personalizza ora e data interne della console
+Tesselation :|Tassellazione :
+Text|Testo
 Texture|Texture
-To|To
-To File...|Nel file...
-Tools|Strumenti
-Track Inf Loop Results|Track Inf Loop Results
-Transfer|Trasferimento
+The dummies cores don't need configuration|I software fasulli non hanno bisogno di configurazione
+Throttle Down|Throttle - diminuisci
+Throttle Up|Throttle - aumenta
+To File...|Come file...
+toolBar|Barra degli strumenti
+Trace Logging|Registrazione eventi
 Translation|Traduzione
-Type:|Type:
+Triangles using perspective correction|Triangoli con correzione prospettica
+Trigger|Grilletto
+TV effect :|Effetto TV :
+Type:|Tipo:
 Unable to add code|Impossibile aggiungere il codice
 Unable to change description|Impossibile cambiare la descrizione
 Unable to open file for loading|Impossibile aprire il file per il caricamento
 Unable to open file for saving|Impossibile aprire il file per il salvataggio
 Unable to remove code|Impossibile rimuovere il codice
-Unknow (%1)|Sconosciuto (%1)
-Unsigned|Unsigned
-Unsigned 16-bit value|Unsigned 16-bit value
-Unsigned 32-bit value|Unsigned 32-bit value
-Unsigned 8-bit value|Unsigned 8-bit value
+Unknown (%1)|Sconosciuto (%1)
+Unsigned 16-bit value|Valore 16 bit senza segno
+Unsigned 32-bit value|Valore 32 bit senza segno
+Unsigned 8-bit value|Valore 8 bit senza segno
+Unsigned|Senza segno
+Up_P2|Su (giocatore 2)
 Up|Su
-Upload|Upload
-Use System Locale|Use System Locale
+Upload|Carica
+Upscale Filter :|Filtro di ridimensionamento :
+Use SH2 cache - Experimental|Usa cache SH2 - sperimentale
+Use System Locale|Usa la lingua in uso nel computer
+Use Vdp1 Cache|Usa la cache VDP1
+User Interface Translation|Lingua Kronos
+Value :|Valore :
+Value:|Valore:
+Value|Valore
+VDP1 Command Info|Informazioni
+VDP1 Command List|Elenco istruzioni
 VDP1|VDP1
-VDP1 Command Info|VDP1 Command Info
-VDP1 Command List|VDP1 Command List
+Vdp1|VDP1
 VDP2|VDP2
-Value|Value
-Value :|Valore:
-Value:|Value:
-Vdp1|Vdp1
-Vdp2|Vdp2
+VDP2Viewer Viewer|Monitor immagini VDP2
+Video Core|Motore di rendering
+Video Driver|Motore di rendering
+Video Format|Formato video
 Video|Video
-Video Core|Sistema Video
-Video Driver|Driver Video
-Video Format|Formato Video
-View|View
-Viewer|Viewer
-Waiting Input...|In attesa di input...
-Width|Larghezza
-Window Resolution|Window Resolution
-Windows SPTI Driver|Windows SPTI Driver
+View|Visualizza
+Viewer|Mostra immagini
+Warning...|Avviso
+WAV Files (*.wav)|File WAV (*.wav)
+Wheel Configuration|Configurazione Arcade Racer
+Wheel|Arcade Racer
+Window Resolution|Proporzioni immagine
+Window size :|Risoluzione :
+Windows SPTI Driver|Unità SPTI di Windows
+Wireframe :|
+Word Write : %1 %2|Scrivi word : %1 %2
+Word Write|Scrivi word
 Word|Word
-Word Write|Word Write
-Write|Write
-Yabause Cheat Files (*.yct);;All Files (*)|Yabause File Cheat (*.yct);;Tutti i file (*)
-Yabause Qt GUI|Interfaccia Qt Yabause
-Yabause Qt Gui<br />Based on Yabause %1<br /><a href="http://yabause.org">http://yabause.org</a><br />The Yabause Team<br /><a href="mailto:pasnox@gmail.com">Filipe AZEVEDO</a>|Yabause Qt Gui<br />Based on Yabause %1<br /><a href="http://yabause.org">http://yabause.org</a><br />The Yabause Team<br /><a href="mailto:pasnox@gmail.com">Filipe AZEVEDO</a>
-Yabause Save State (*.yss)|Yabause Salvataggio Stato (*.yss)
-Yabause is not initialized, can't manage backup ram.|Yabause is not initialized, can't manage backup ram.
-http://www.emu-compatibility.com/yabause/index.php?lang=uk|http://www.emu-compatibility.com/yabause/index.php?lang=it
-http://www.monkeystudio.org|http://www.monkeystudio.org
-toolBar|Barra degli Strumenti
+Write|Scrivi
+Yes|Sì

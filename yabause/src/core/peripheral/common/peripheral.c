@@ -171,7 +171,7 @@ int IOPortAdd(int key, ioPort port, u8 index) {
   if (index >= 8) return -1;
   IOalloc[port][index].key = key;
   IOalloc[port][index].port = &IOPORT[port];
-  IOalloc[port][index].mask = (0x1 << index); 
+  IOalloc[port][index].mask = (0x1 << index);
   IOkeys[key] = &(IOalloc[port][index]);
   return 0;
 }
@@ -219,7 +219,7 @@ u8 FASTCALL IOPortReadByte(SH2_struct *context, UNUSED u8* memory,  u32 addr)
      case 0x07: val = m_system_output; break; // port D, read-backs value written
      case 0x09: val = IOPORT[PORT_E]; break; // P3
      case 0x0b: val = IOPORT[PORT_F]; break; // P4
-     case 0x0d: //PORT-G 
+     case 0x0d: //PORT-G
        if (m_ioga_mode & 0x80) // PORT-G in counter mode
        {
          val = IOPORT[PORT_G0+((m_ioga_portg >> 1) & 3)] >> (((m_ioga_portg & 1) ^ 1) * 8);
@@ -248,8 +248,8 @@ void FASTCALL IOPortWriteByte(SH2_struct *context, UNUSED u8* memory,UNUSED u32 
     case 0x07:
       m_system_output = val;
       break;
-    case 0x09: IOPORT[PORT_F] = val; 
-               IOPORT[PORT_G] = val; 
+    case 0x09: IOPORT[PORT_F] = val;
+               IOPORT[PORT_G] = val;
                break; // P3
     case 0x0b: IOPORT[PORT_E] = val; break; // P4
     case 0x0d:
@@ -994,7 +994,7 @@ void PerAxis1Value(PerAnalog_struct * analog, u32 val)
       else if (left_is_pressed && val >= 0x6f)
          analog->analogbits[0] |= ~0xBF;//release left
 
-      
+
       if (val >= 0x97)
          analog->analogbits[0] &= 0x7F;//press right
       else if(right_is_pressed && val <= 0x8f)
@@ -1306,7 +1306,7 @@ void * PerAddPeripheral(PortData_struct *port, int perid)
 
 int PerGetId(void * peripheral)
 {
-   u8 * id = peripheral;
+   u8 * id = (u8*)peripheral;
    return *id;
 }
 
@@ -1438,7 +1438,7 @@ void PerUpdateConfig(PerBaseConfig_struct * baseconfig, int nelems, void * contr
 
    perkeyconfigsize += nelems;
 
-	 PerConfig_struct *new_data = realloc(perkeyconfig, perkeyconfigsize * sizeof(PerConfig_struct));
+	 PerConfig_struct *new_data = (PerConfig_struct*)realloc(perkeyconfig, perkeyconfigsize * sizeof(PerConfig_struct));
  	if (new_data == NULL)
  	{
 		YuiMsg("Peripheral realloc Error\n");
@@ -1460,49 +1460,49 @@ void PerUpdateConfig(PerBaseConfig_struct * baseconfig, int nelems, void * contr
 
 PerPad_struct * PerPadAdd(PortData_struct * port)
 {
-   return PerAddPeripheral(port, PERPAD);
+   return (PerPad_struct *) PerAddPeripheral(port, PERPAD);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
 PerMouse_struct * PerMouseAdd(PortData_struct * port)
 {
-   return PerAddPeripheral(port, PERMOUSE);
+   return (PerMouse_struct *) PerAddPeripheral(port, PERMOUSE);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
 PerAnalog_struct * PerWheelAdd(PortData_struct * port)
 {
-   return PerAddPeripheral(port, PERWHEEL);
+   return (PerAnalog_struct *) PerAddPeripheral(port, PERWHEEL);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
 PerAnalog_struct * PerMissionStickAdd(PortData_struct * port)
 {
-   return PerAddPeripheral(port, PERMISSIONSTICK);
+   return (PerAnalog_struct *) PerAddPeripheral(port, PERMISSIONSTICK);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
 PerAnalog_struct * Per3DPadAdd(PortData_struct * port)
 {
-   return PerAddPeripheral(port, PER3DPAD);
+   return (PerAnalog_struct *) PerAddPeripheral(port, PER3DPAD);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
 PerAnalog_struct * PerTwinSticksAdd(PortData_struct * port)
 {
-   return PerAddPeripheral(port, PERTWINSTICKS);
+   return (PerAnalog_struct *) PerAddPeripheral(port, PERTWINSTICKS);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
 PerGun_struct * PerGunAdd(PortData_struct * port)
 {
-   return PerAddPeripheral(port, PERGUN);
+   return (PerGun_struct *) PerAddPeripheral(port, PERGUN);
 }
 
 PerCab_struct * PerCabAdd(PortData_struct * port)
@@ -1558,7 +1558,7 @@ int PERDummyHandleEvents(void) {
 
 u32 PERDummyScan(u32 flags) {
    // Scan and return next action based on flags value
-   // See PERSF_* in peripheral.h for full list of flags. 
+   // See PERSF_* in peripheral.h for full list of flags.
    // If no specified flags are supported return 0
 
    return 0;

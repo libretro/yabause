@@ -1,373 +1,486 @@
-%1 Images (*.%2)|%1 Образы (*.%2)
+%1 Images (*.%2)|Образы %1 (*.%2)
 %1/%2 blocks free|%1/%2 свободных блоков
-&About...|&Об эмуляторе...
-&Action Replay|&Взломщик кодов
-&Backup Manager...|Управление &резервными копиями...
-&Browse|&Открыть
+3D Control Pad Configuration|Настроййка 3D Control Pad
+&About...|&Об эмуляторе
+&Action Replay|&Action Replay читы
+&Backup Manager...|&Менеджер резервных копий
+&Browse|&Просмотр
 &Cancel|&Отмена
-&Capture Screen|&Сделать снимок экрана
-&Cheat List|Список &читов
-&Cheats|&Читы
-&Cheats List...|Список чи&тов...
+&Capture Screen|&Сделать скриншот
+&Cheat List|&Список читов
+&Cheats|&Cheats
+&Cheats List...|&Список читкодов
 &Clear|&Очистить
 &Close|&Закрыть
-&Debug|&Отладка
+&Debug|&Отладчик
 &Delete|&Удалить
 &Emulation|&Эмуляция
 &File|&Файл
-&Frame Skip/Limiter|&Пропуск/ограничитель кадров
-&Fullscreen|&На весь экран
+&Fullscreen|&Во весь экран
 &Help|&Помощь
 &Layer|&Слой
 &Load From File|&Загрузить из файла
-&Log|&Журнал
-&Master SH2|&Master SH2
-&Memory Transfer|Перенести &память
+&Master SH2|SH2 &мастер
+&Memory Transfer|&Передача памяти
 &OK|&ОК
-&Pause|&Остановить
+&Pause|&Пауза
 &Quit|&Выход
-&Raw Memory Address|&Прямой адрес памяти
+&Raw Memory Address|Необработанный адрес &памяти
 &Reset|&Сброс
 &Save To File|&Сохранить в файл
-&Settings...|&Настройка...
-&Slave SH2|&Slave SH2
+&Settings...|&Настройки
+&Slave SH2|&SH2 раб
 &Tools|&Инструменты
-&Transfer|&Перенести
-&View|&Вид
-16 Mbit Backup Ram|16 Мбит резервная RAM 
-16 Mbit ROM|16 Мбит ROM 
+&Transfer|&Перемещение памяти
+&Vertical synchronization|Вертикальная синхронизация
+&View|&Отображение
 16-bit|16-бит
-16-bit Relative value(s)|16-битные относительные значения 
-32 Mbit Backup Ram|32 Мбит резервная RAM
-32 Mbit Dram|32 Мбит DRAM
+16-bit Relative value(s)| Относительное значение(я) 16-бит
+16 Mbit Backup Ram|16 Мбит резервная копия ОЗУ
+16 Mbit ROM|16 Мбит ОЗУ
 32-bit|32-бит
-3D Control Pad|3D Контроллер
-4 Mbit Backup Ram|4 Мбит резервная RAM
-503/512 blocks free|503/512 свободных блоков
-510/512 blocks free|510/512 свободных блоков
-8 Mbit Backup Ram|8 Мбит резервная RAM
-8 Mbit Dram|8 Мбит DRAM
+32 Mbit Backup Ram|32 Мбит резервная копия ОЗУ
+32 Mbit Dram|Dram 32 Мбит
+3D Control Pad|3D Control Pad
+4 Mbit Backup Ram|4 Мбит резервная копия ОЗУ
+503/512 blocks free|503/512 блоков свободно
+510/512 blocks free|510/512 блоков свободно
+68000 Core|Ядро 68000 :
+8 Mbit Backup Ram|8 Мбит резервная копия ОЗУ
+8 Mbit Dram|Dram 8 Mбит
 8-bit|8-бит
-8-bit Relative value(s)|8-битные относительные значения 
-<font color="red"><b>WARNING:</b> Master Codes are <b>NOT</b> supported.</font>|<font color="red"><b>ВНИМАНИЕ:</b> Мастер кодов <b>НЕ</b> поддерживается.</font>
-About...|Об эмуляторе...
-Action Replay Code :|Код взломщика кодов
+8-bit Relative value(s)|8-бит Относительное значение(я)
+<font color="red"><b>WARNING:</b> Master Codes are <b>NOT</b> supported.</font>|<font color="red"><b>Внимание :</b> мастер код <b>не</b> поддерживается.</font>
+About...|Об эмуляторе
+Action Replay Code :|Action Replay читы :
 Add|Добавить
-Add Action Replay Code|Добавить код во взломщик кодов
+Add Action Replay Code|Добавить Action Replay чит
 Add Cheat|Добавить чит
-Add Codes...|Добавить коды...
-Add Raw Memory Code|Добавить код в память
+Add Codes...|Добавить читы...
+Add Raw Memory Code|Добавить необработанный код памяти
 Address|Адрес
-Address :|Адрес :
-Advanced|Дополнительно
+Address :|Адреса :
+Advanced|Продвинутые
+All Files|Все файлы
+All Files;|Все файлы
+All Files (*)|Все файлы (*)
 Always|Всегда
+An error occured while writing file.|Произошла ошибка при записи файла.
 Are you sure you want to delete '%1' ?|Вы уверены, что хотите удалить '%1' ?
 Are you sure you want to format '%1' ?|Вы уверены, что хотите форматировать '%1' ?
 Asia (NTSC)|Азия (NTSC)
-Asia (PAL)|Азия (PAL)
-Auto-detect|Автоопределение
+Asia (PAL)|Азия(PAL)
+Assembly code|Код сборки
+Auto-detect|Автоматическое обнаружение
 Autostart|Автозапуск
-Awaiting input for|Ожидание ввода для
+Awaiting input for|Ожидание ввода
 Axis|Оси
-Backtrace|Отслеживание
-Backup Ram Manager|Управление резервной памятью
-Binary Files (*.bin)|Двочиные файлы (*.bin)
-Bios|Биос
-Block Size :|Размер блока:
-Browse|Открыть
+Axis Throttle|Настройка Оси
+Axis X|Ось X
+Axis Y|Ось Y
+Axis L Trigger|Ось L триггер
+Axis R Trigger|Ось R триггер
+Backup Ram Manager|Менеджер бэкапа ОЗУ
+BiCubic|Бикубическая
+Bilinear|Билинейная
+Bilinear Filtering (Restart required)|Билинейная фильтрация (Требуется перезапуск)
+Binary Files (*.bin)|Bin файлы (*.bin)
+Binary Files (*.bin);;COFF Program Files (*.cof *.coff);;ELF Program Files (*.elf);;All Files (*)|Bin файлы (*.bin);;COFF программные файлы (*.cof *.coff);;ELF программный файл(*.elf);;Все файлы (*)
+Bios|BIOS :
+Bios file path|Путь к файлу BIOS
+Bios Settings|Настройка BIOS
+Bios Language|Язык BIOS
+Bios settings file|Настройка файла BIOS
+Block Size :|Размер блока :
+Bug report|Сообщить о баге
 Byte|Байт
-Byte Write|Запись байт
-CD Images (*.iso *.cue *.bin)|Образы CD (*.iso *.cue *.bin)
+Byte Write|Запись байтов
+Byte Write : %1 %2|Запись байтов : %1 %2
 Cancel|Отмена
-Cannot initialize|Невозможно запустить
-Cannot initialize Windows SPTI Driver|Невозможно запустить драйвер Windows SPTI 
+Cannot initialize Windows SPTI Driver|Не удается инициализировать драйвер Windows SPTI
+Can't plug in the new controller, cancelling.|Невозможно подключить новый контроллер, отмена.
+Can't initialize Kronos|Невозможно инициализировать Kronos.
 Cart/Memory|Картридж/Память
-Cartridge|Картридж
-Cd-Rom|CD-ROM
-Central/South America (NTSC)|Центальная/Южная Америка (NTSC)
-Central/South America (PAL)|Центальная/Южная Америка (PAL)
-Cheat &Search...|&Поиск читов...
-Cheat Search|Поиск читов...
-Cheat Type|Тип чита
-Cheats|Читы
-Cheats File|Файл читов
-Choose a binary file|Выбрать двоичный файл
+Cartridge|Картридж :
+Cartridge Path|Путь до картриджа
+CD Images (*.iso *.cue *.bin *.mds *.ccd *.zip)|Образы CD (*.iso *.cue *.bin *.mds *.ccd *.zip)
+CD-ROM|CD-ROM
+Central/South America (NTSC)|Центральная/Южная Америка (NTSC)
+Central/South America (PAL)|Центральная/Южная Америка (PAL)
+Cheats File|Чит файл
+Cheat &Search...|Поиск читов
+Cheat Search|Поиск читов
+Cheat Type|Вид чита
+Choose a binary or program file|Выберите BIN или программный файл
+Choose a bios file|Выберите BIOS файл
 Choose a cartridge file|Выбрать файл картриджа
-Choose a cdrom drive/mount point|Выбрать точку монтирования/CD-ROM
-Choose a cheat file to open|Выбрать файл чита для открытия
-Choose a cheat file to save to|Выбрать файл чита для сохранения в
-Choose a file to save your state|Выбрать файл для загрузки состояния
-Choose a location for binary file|Выбрать папку для двоичного файла
-Choose a location for your screenshot|Выбрать папку для скриншота
-Choose a memory file|Выбрать файл памяти
-Choose a mpeg rom|Выбрать MPEG ROM 
-Clear configuration|Очистить конфигурацию
+Choose a cartridge folder|Выбрать папку с картриджем
+Choose a cdrom drive/mount point|Выбрать дисковод/виртуальный привод
+Choose a cheat file to open|Выбрать чит файл для открытия
+Choose a cheat file to save to|Выбрать чит файл для сохранения
+Choose a file to save your state|Выбрать файл для быстрого сохранения
+Choose a file to store bios settings|Выбрать файл для сохранения настроек BIOS
+Choose a folder to store save states|Выбрать путь для сохранения состояний
+Choose a folder to store screenshots|Выбрать путь для сохранения скриншотов
+Choose a location for binary file|Выбрать путь до BIN файла
+Choose a location for your binary file|Выбрать путь до вашего BIN файла
+Choose a location for your bitmap|Выбрать путь до вашего Bitmap
+Choose a location for your screenshot|Выбрать путь до вашего скриншота
+Choose a location for your wav file|Выбрать путь до WAV файла
+Choose a memory file|Выберите файл памяти
+Choose a mpeg rom|Выберите mpeg ROM
+Choose a STV cartridge folder|Выберите папку картриджа STV
+Clear|Сброс
+Clear configuration|Сбросить настройки
 Close|Закрыть
-Code|Код
-Code Breakpoints|Точки останова кода
+Code|Читкод
+Code Breakpoints|Точки прерывания кода :
+COFF Program Files (*.cof *.coff)|COFF программные файлы (*.cof *.coff)
 Comment :|Комментарий :
-Common Control Registers|Регистры общего управления
+Common Control Registers|Общие регистры Управления
 Compare Type|Сравнить тип
-DSP Control Registers|DSP регистры управления
-DSP Registers|DSP регистры
+Compatibility List|Список совместимости
+Compute Shader Video Interface|Compute Shader
+Couldn't save state file|Не удалось сохранить быстрое сохранение
+Couldn't load state file|Не удалось загрузить быстрое сохранение
+CPU Tesselation|Тесселяция CPU
 Data Size|Размер данных
 Data Size :|Размер данных :
 Data Type|Тип данных
-Debug CPU|Отладка ЦПУ
-Debug M68K|Отладка  M68K
-Debug Master SH2|Отладка Master SH2
+Debug|Отладка
+Debug CPU|Отладка CPU
+Debug M68K|ОтладкаM68K
+Debug Master SH2|Отладка мастер SH2
+Debug SCSP|Отладка SCSP
 Debug SCU DSP|Отладка SCU DSP
-Debug Slave SH2|Отладка Slave SH2
+Debug Slave SH2|Отладка SH2 Esclave
 Debug VDP1|Отладка VDP1
-Debug VDP2Viewer|Отладка просмотрщика VDP2
+Debug VDP2Viewer|Отладка VDP2Viewer
+Default Dial IP|IP-адрес набора номера по умолчанию
+Default System Language|Язык консоли по умолчанию
+Deinterlacing Bob|Деинтерлейсинг Bob
+Deinterlacing Debug Bob|Деинтерлейсинг отладка Bob
+Deinterlacing OSSC Bob|Деинтерлейсинг OSSC Bob
+Deinterlacing OSSC Debug Bob|Деинтерлейсинг отладка OSSC Bob
+Deinterlacing Scanline|Деинтерлейсинг Scanline
 Del|Удалить
 Delete|Удалить
 Description|Описание
 Description :|Описание :
+Deutsch|Немецкий
 Device List|Список устройств
-DirectX Input Interface|Интерфейс ввода DirectX
+Directory|Путь
+DirectX Input Interface|Интерфейс управления DirectX
 DirectX Sound Interface|Интерфейс звука DirectX
-Disabled|Отключено
-Disassembled Code|Дизассемблированный код
+Disabled|Выключить
+Disassembled Code|Дизассемблированный код :
 Display Enabled|Дисплей включен
-Display on Hover|Показывать при наведении
+Display on Hover|Отображение при наведении
+Double Mission Stick|Double Mission Stick
+Double Mission Stick Configuration|Настройка Double Mission Stick
 Down|Вниз
+Down_P2|Вниз_И2
 Download|Скачать
-Draw End|Конец отрисовки
-Dummy CD Drive|Фиктивный привод CD
-Dummy Input Interface|Фиктивный интерфейс ввода
-Dummy OSD Interface|Фиктивный OSD интерфейс
-Dummy Sound Interface|Фиктивный аудиоинтерфейс
-Dummy Video Interface|Фиктивный видеоинтерфейс
+DSP Control Registers|Регистры управления DSP
+DSP Registers|Регистры DSP
+Dummy 68k Interface|Виртуальный интерфейс 68k
+Dummy CD Drive|Виртуальный СD-ROM
+Dummy Input Interface|Виртуальный Входной Интерфейс
+Dummy OSD Interface|Виртуальный
+Dummy Sound Interface|Виртуальный Звуковой Интерфейс
+Dummy Video Interface|Виртуальный Видео Интерфейс
 Edit configuration|Изменить конфигурацию
-Emu-Compatibility|Совместимость эмулятора
-Emulation|Эмуляция
+Eject/Load ISO...|Вставить/Извлечь ISO
+ELF Program Files (*elf)|ELF программный файл (*.elf)
+Embellishment filter :|Фильтрация текстур :
 Enable|Включить
-Enable Frame Skip/Limiter|Включить пропуск/ограничитель кадров
+Enable Bios Emulation|Включить эмуляцию BIOS
+Enable Code : %1 %2|Включить чит : %1 %2
+Enable Multithreading|Включить многопоточность
+Enable vertical synchronization|Включить вертикальную синхронизацию
 Enabled|Включено
-End Address:|Конечный адрес:
+End Address:|Конечный адрес :
 English|Английский
-Enter New Value|Ввод нового значения
+Enter new assembly code|Ввести новый код сборки
+Enter New Value|Ввести новое значение
+Error|Ошибка
 Europe + others (PAL)|Европа + другие (PAL)
-Exact|Ровно
-FPS|Кадров в секунду
-File|Файл
-File Name :|Имя файла :
-File transfer|Перенос файла
-File:|Файл:
-Format|Формат
-Frame Skip/Limiter|Пропуск/ограничитель кадров
+Exact|Равно
+Extend Internal backup memory to 8MB|Расширить внутреннюю резервную память до 8 МБ
+File:|Файл :
+File Name :|Имя Файла :
+Finished searching up to end of memory, continue from the beginning?|Fin de la recherche terminé, recommencez depuis le début du fichier ?
+Format|Форматировать
+FPS|FPS
 French|Французский
-From|Из
-From File|Из файла
-From File...|Из файла...
-Fullscreen|На весь экран
-Fullscreen Resolution|Разрешение полного экрана
-General|Общее
-General Info|Общая информация
+From File...|Загрузить из файла
+General|Основные
+General Info|Основная информация
 German|Немецкий
-Glut OSD Interface|Glut ODS интерфейс
 Goto Address|Перейти по адресу
+Gouraud Mode :|Режим Gouraud :
+GPU RBG :|GPU RBG (OpenGl 4.3) :
+GPU Tesselation|Тесселяция GPU
 Greater then|Больше, чем
-Hard Reset|Перезапуск
-Height|Высота
-Hex value(s)|Шестнадцатиричное значение
-Hide Menubar|Спрятать панель меню
-Hide Toolbar|Спрятать панель инструментов
-ISO-File Virtual Drive|Виртуальный привод ISO файлов
+Gun|Световой пистолет
+Gun Configuration|Настройка пистолета
+Gun/Mouse Sensitivity|Чувствительность Мыши/Пистолета
+Hex value(s)|Значение(я) Héx
+Hide Menubar|Прятать меню
+Hide Toolbar|Прятать панель инструментов
+Image format|Формат скриншотов
+Improved|Улучшенный
 Information...|Информация...
+Inline Assembly|Встроенная Сборка
 Input|Ввод
-Invalid Address|Неправильный адрес
-Invalid Value|Неправильное значение
+Integer scaling|Целочисленное масштабирование
+Internal Backup RAM|Внутренняя резервная копия ОЗУ
+Invalid Address|Неверный адрес
+Invalid Start/End Address Combination|Недопустимая комбинация Начального/Конечного Адресов
+Invalid Value|Недопустимое значение
+ISO-File Virtual Drive|ISO-Файл Виртуальный Привод
 Italian|Итальянский
 Japan (NTSC)|Япония (NTSC)
 Japanese|Японский
-Japanese Modem|Модем Япония
+Japanese Modem|Японский Модем
 Korea (NTSC)|Корея (NTSC)
-L&oad State|Загрузить &состояние
+Kronos Cheat Files (*.yct);;All Files (*)|Kronos чит файлы (*ycf);;Все файлы (*)
+Kronos is not initialized, can't manage backup ram.|Kronos не инициализирован, не может управлять резервной оперативной памятью.
+Kronos Qt GUI|Kronos Qt GUI
+Kronos Qt Gui<br />Based on Yabause %1<br /><a href="http://yabause.org">http://yabause.org</a><br />The Yabause Team<br /><a href="mailto:pasnox@gmail.com">Filipe AZEVEDO</a>|Графический интрефейс QT Kronos<br />Основан на Yabause %1 :<br /><a href="http://yabause.org">http://yabause.org</a><br />команда Yabause :<br /><a href="mailto:pasnox@gmail.com">Filipe AZEVEDO</a>
+Kronos Save State (*.yss)|Kronos сохранение состояния (*.yss)
 Language :|Язык :
-Layer|Слой
-Left|Налево
-Left trigger|Левый триггер
+Load0|Загрузить из слота 0
+Load1|Загрузить из слота 1
+Load2|Загрузить из слота 2
+Load3|Загрузить из слота 3
+Load4|Загрузить из слота 4
+Load5|Загрузить из слота 5
+Load6|Загрузить из слота 6
+Load7|Загрузить из слота 7
+Load8|Загрузить из слота 8
+Load9|Загрузить из слота 9	
+L&oad State|&Быстрая загрузка
+Left|Влево
+Left_P2|Влево игрок 2
+Left stick:\nTrigger:      X\nLeft button:  Y\nRight button: Z|Левый стик :\nТриггер : X\nЛевая кнопка: Y\nПравая кнопка: Z
+Left Stick Axis X|Левый Стик Ось X
+Left Stick Axis Y|Правый Стик Ось Y
+Left Stick Axis Throttle|Левый стик настройка колёсика
+Left Stick Throttle Down|Левый стик колёсико вниз
+Left Stick Throttle Up|Левый стик колёсико вверх
+Left trigger|Левый шифт
 Less than|Меньше, чем
-Linux CD Drive|Привод CD Linux
-Load|Загрузить
-Load State|Загрузить состояние
-Load State As|Загрузить состояние как
-Load as executable|Загрузить на выполнение
-Local Coordinates|Местные координаты
-Log|Журнал
-Long|Длинный
-Long Write|Длинное слово
-Loop Track Clear|Очистить отслеживание циклов
-Loop Track Start|Начать отслеживание циклов
-M68K|M68K
-M68K Registers|Регистры M68K
-MSH2|MSH2
-Master SH2|Master SH2 
-Memory|Память
-Memory &Editor|&Редактор памяти
-Memory Breakpoints|Точки останова памяти
-Memory Dump|Образ памяти
-Memory Editor|Редактор памяти
-Memory Search|Поиск памяти
-Memory Transfer|Перенос памяти
-Memory dump|Образ памяти
-Middle|Средний
+Long|Длинна
+Long Write|Длина Записи
+Long Write : %1 %2|Длина Записи: %1 %2
+Loop Track Clear|Очистка Цикла Трека
+Loop Track Start|Начало Цикла Трека
+Loop Track Stop|Остановка Цикал Трека
+Memory|Память :
+Memory Breakpoints|Точки Разрыва Памяти :
+Memory Editor|Редактор Памяти
+Memory &Editor|&Редактор Памяти
+Memory Search|Поиск в Памяти
+Memory Transfer|Перемещение Памяти
+Mesh Mode :|Режим Сетки :
+Middle|СКМ
+Mission Stick|Mission Stick
+Mission Stick Configuration|Настройка Mission Stick
 Mouse|Мышь
-Mouse Configuration|Конфигурация мыши
-Mpeg ROM|MPEG ROM 
+Mouse Configuration|Настройка мыши
+Mpeg ROM|ROM MPEG :
+Musashi Interface|Musashi
+nanovg OSD Interface|Nanovg
+Native (current resolution of the window)|Текущее разрешение окна
 NBG0|NBG0
-NBG0/RBG1 Info|Информация о NBG0/RBG1
+NBG0/RBG1 Info|Инфо NBG0/RBG1
 NBG1|NBG1
-NBG1 Info|Информация о NBG1
+NBG1 Info|Инфо NBG1
 NBG2|NBG2
-NBG2 Info|Информация о NBG2
+NBG2 Info|Инфо NBG2
 NBG3|NBG3
-NBG3 Info|Информация о NBG3
-Netlink|Netlink
+NBG3 Info|Инфо NBG3
+Netlink|Сетевое соединение
 Never|Никогда
+&No|&Нет
+No matches found.|Совпадений не найдено.
 None|Нет
-Normal Sprite|Обычные спрайты
-North America (NTSC)|Северная Америка (NTSC)
-OSD Core|Движок OSD
-Ok|ОК
+Normal format not available, trying alternative|Обычный формат недоступен, попробуйте альтернативный
+North America (NTSC)|Северная Америка(NTSC)
+Number of Threads|Количество потоков у процессора
 On fullscreen|При полном экране
-On message|При сообщении
-Open &CD Rom...|Открыть &CD ROM
-Open &ISO...|Открыть &ISO...
-Open CD Rom|Открыть CD ROM
-OpenGL Video Interface|Видеоинтерфейс OpenGL
+On message|В сообщении
+Open &CD Rom...|Открыть CD-ROM
+Open &ISO...|Открыть ISO
+Open a cartridge file|Открыть файл картриджа
+Open a mpeg rom|Открыть MPEG ROM
+Open CD Rom|Открыть CD-ROM
+OpenGL Video Interface|OpenGL
 Options|Опции
-Other Debug|Другая отладка
-Pad|Джойстик
-Pad Configuration|Конфигурация джойстика
-Pause|Остановить
-Press Esc key to cancel|Нажмите клавишу Esc для отмены
-Pro Action Replay|Взломщик кодов Pro
-Qt Keyboard Input Interface|Интерфейс клавиатуры ввода Qt
-Quit|Выход
+Original|Оригинальный
+Original (original resolution of the Saturn)|Оригинальное(Разрешение как на Saturn)
+Original aspect ratio|Оригинальное соотношение
+OSD Core|OSD Ядро
+Pad|Геймпад
+Pad Configuration|Настройка геймпада
+Pause|Пауза
+Port|Порт
+Press Esc key to cancel|Нажмите Esc для отмены
+Pro Action Replay|Pro Action Replay
+Qt Keyboard Input Interface|Qt Клавиатурного ввода
+&Question...|Вопрос...
+RBG0|RGB0
+RBG0 Info|Инфо RBG0
+Read|Чтение
+Record|Запись
+Region|Регион:
+Remove Peripheral|Удалить Периферийное устройство
+Restart|Перезапуск
+Right|Вправо
+Right_P2|Вправо_И2
+Right Stick:\nTrigger:      A\nLeft button:  B\nRight button: C|Правый стик :\nТриггер : A\nЛевая кнопка :  B\nПравая кнопка: C
+Right Stick Axis X|Правый стик ось X
+Right Stick Axis Y|Правый стик ось Y
+Right Stick Axis Throttle|Правый стик настройка колёсика
+Right trigger|Правый шифт
 R&un|З&апуск
-RBG0|RBG0
-RBG0 Info|Информация о RBG0
-Read|Прочесть
-Region|Регион
-Registers|Регистры
-Reset|Сбросить
-Resolution|Разрешение
-Right|Направо
-Right trigger|Правый триггер
-Run|Выполнить
-S&ave State|&Сохранить состояние
-SCSP|SCSP
-SCU-DSP|SCU-DSP
-SDL Joystick Interface|SDL интерфейс джойстика
-SDL Sound Interface|SDL интерфейс звука
-SH2 Debugger Interpreter|Интерпретатор отладки SH2
-SH2 Dynamic Recompiler|Динамический рекомпилятор SH2
-SH2 Interpreter|Интерпретатор SH2
-SH2 Registers|Регистры SH2
-SSH2|SSH2
-Save|Сохранить
+Save0|Сохранить в слот 0
+Save1|Сохранить в слот 1
+Save2|Сохранить в слот 2
+Save3|Сохранить в слот 3
+Save4|Сохранить в слот 4
+Save5|Сохранить в слот 5
+Save6|Сохранить в слот 6
+Save7|Сохранить в слот 7
+Save8|Сохранить в слот 8
+Save9|Сохранить в слот 9
+Save As Bitmap|Сохранить как Bitmap
 Save As WAV|Сохранить как WAV
-Save Bitmap|Сохранить карту битов
-Save Information|Сохранить информацию
-Save List|Сохранить список
+Save Bitmap|Сохранить Bitmap
+Save Information|Сохранить Информацию
+Save List|Сохранить лист
 Save MD0|Сохранить MD0
 Save MD1|Сохранить MD1
 Save MD2|Сохранить MD2
 Save MD3|Сохранить MD3
-Save Program|Сохранить программу
-Save Selected|Сохранить выбранное
-Save Slot Registers|Сохранить регистры слота
-Save State|Сохранить состояние
-Save State As|Сохранить состояние как
-Save States|Сохранить состояния
-Sc&reenshot|&Скриншот
-Screen Enabled|Экран включен
-Screenshot|Скриншот
+Save Program|Сохранить Программу
+Save Selected|Сохранить выбранные
+Save Slot Registers|Сохранение Регистров Слотов
+S&ave State|Быстрое сохранение
+Save States|Быстрое сохранение
+Scanline filter|Scanline фильтр
+Scanline off|Scanline Выкл
+Scanline on|Scanline Вкл
+Screen Enabled|Экран Включён
+Screen Select:|Выбор Экрана
+Sc&reenshot|Скриншот
+Screenshots|Параметры скриншотов
+SCSP|SCSP
+SCSP Channels|каналы SCSP
+SDL Joystick Interface|SDL интерфейс джойстика
+SDL Sound Interface|SDL звуковой интерфейс
 Search|Поиск
-Search Criteria|Критерий поиска
-Search Memory|Поиск в памяти
-Search Value:|Значение поиска:
-Search/Add Cheats|Искать/добавить читы
-Select a file to load your state|Выбрать файл для загрузки состояния
-Select your iso/cue/bin file|Выбрать ваш  файл iso/cue/bin
-Set PC to Start Address|Настроить ПК на старт адреса
-Settings|Конфигурация
+Search/Add Cheats|Поиск/Добавление читов
+Search Criteria|Критерии поиска
+Search Memory|Поиска в памяти
+Search Value:|Поиск значения :
+Select a file to load your state|Выберите файл для загрузки быстрого сохранения
+Select your iso/cue/bin/zip/chd file|Выберите ISO/CUE/BIN/ZIP/CHD
+Set PC to Start Address|Настроить ПК для начального адреса
+Settings|Настройки
+SH2 Debugger Interpreter|Интерпретатор отладчика SH2
+SH2 Interpreter|Интерпретатор SH2 :
+SH2 Kronos Interpreter|Интерпретатор SH2 Kronos
+SH2 Registers|Регистры SH2 :
 Shortcuts|Горячие клавиши
-Show FPS|Показывать кадры в секунду
-Show Log Window|Показывать окно журнала
-Signed|Назначено
-Signed 16-bit value|16-бит назначенное значение
-Signed 32-bit value|32бит назначенное значение
-Signed 8-bit value|8-бит назначенное значение
-Slave SH2|Slave SH2
-Slot Info|Информация слота
-Slot Number:|Номер слота:
-Software OSD Interface|Программный интерфейс OSD
-Software Video Interface|Программный интерфейс видео
+Show FPS|Показать FPS
+Show Log Window|Показат окно отладки
+Signed|Подписано
+Signed 8-bit value|Подписано 8-бит значение
+Signed 16-bit value|Подписано 16-бит значение
+Signed 32-bit value|Подписано 32-бит значение
+Slot Info|Информация о Слоте
+Slot Number:|Номер слота :
+Software OSD Interface|Программное
+Software Video Interface|Программное
+Sound...|Звук
 Sound|Звук
-Sound Core|Движок звука
+Sound Core|Звуковое ядро :
 Spanish|Испанский
-Start|Запустить
-Start Address:|Начальный адрес:
-Start in Fullscreen|Запустить на весь экран
+ST-V cabinet Configuration|Конфигурация кабинета ST-V
+ST-V Cabinet|Кабинет ST-V
+STV Rom game|STV ROM игры
+Start|Старт
+Start Address:|Начальный адрес :
+Start in Fullscreen|Запуск в полноэкранном режиме
 Status|Статус
 Step Into|Шаг в
 Step Out|Шаг из
-Step Over|Шаг через
-Store|Запомнить
-Synchronize Saturn internal clock with set time|Синхронизировать внутреннее время Saturn с системным временем
-System Clipping Coordinates|Координаты системного отсечения
+Step Over|Конец шага
+Stick Down|Стик вниз
+Stick left button: same as A \nStick right button: same as B \nStick trigger: same as C|Левая кнопка на стике: A \nПравая кнопка на стике: B \nТриггер стика: C
+Stick Left|Стик Влево
+Stick Right|Стик Вправо
+Stick Up|Стик Вверх
+Stop|Стоп
+Stretch to window|Растянуть на всё окно
+Synchronize Saturn internal clock with set time|Указать время и дату
+Tesselation :|Тесселяция :
 Text|Текст
 Texture|Текстура
-To|В
-To File...|В файл...
-Tools|Инструменты
-Track Inf Loop Results|Результаты отслеживания бесконечных циклов
-Transfer|Перенос
-Translation|Перевод
-Type:|Тип:
-Unable to add code|Нет возможности добавить код
-Unable to change description|Нет возможности изменить описание
-Unable to open file for loading|Нет возможности открыть файл для загрузки
-Unable to open file for saving|Нет возможности открыть файл для сохранения
-Unable to remove code|Нет возможности удалить код
-Unknow (%1)|Неизвестно (%1)
-Unsigned|Неназначено
-Unsigned 16-bit value|16-бит неназначенное значение 
-Unsigned 32-bit value|32-бит неназначенное значение
-Unsigned 8-bit value|8-бит неназначенное значение
-Up|Вверх
-Upload|Загрузить
-Use System Locale|Использовать язык системы
-VDP1|VDP1
-VDP1 Command Info|VDP1 данные команд
-VDP1 Command List|VDP1 список команд
-VDP2|Vdp2
-Value|Значение
-Value :|Значение :
-Value:|Значение:
-Vdp1|Vdp1
-Vdp2|Vdp2
-Video|Видео
-Video Core|Движок видео
-Video Driver|Драйвер видео
-Video Format|Формат видео
-View|Вид
-Viewer|Просмотрщик
-Waiting Input...|Ожидание ввода...
-Width|Ширина
-Window Resolution|Разрешение окна
-Windows SPTI Driver|Драйвер Windows SPTI
-Word Write|Записать слово
-Write|Записать
-Yabause Cheat Files (*.yct);;All Files (*)|Файлы читов Yabause (*.yct);;Все файлы (*)
-Yabause Qt GUI|Yabause Qt интерфейс
-Yabause Qt Gui<br />Based on Yabause %1<br /><a href="http://yabause.org">http://yabause.org</a><br />The Yabause Team<br /><a href="mailto:pasnox@gmail.com">Filipe AZEVEDO</a>|Yabause Qt интерфейс<br />Основан на Yabause %1<br /><a href="http://yabause.org">http://yabause.org</a><br />Команда Yabause<br /><a href="mailto:pasnox@gmail.com">Filipe AZEVEDO</a>
-Yabause Save State (*.yss)|Сохранение состояния Yabause (*.yss)
-Yabause is not initialized, can't manage backup ram.|Yabause не запущен, резерная RAM не работает.
-http://www.emu-compatibility.com/yabause/index.php?lang=uk|http://www.emu-compatibility.com/yabause/index.php?lang=uk
-http://www.monkeystudio.org|http://www.monkeystudio.org
+The dummies cores don't need configuration|Манекенам ядра не нужна настройки.
+Throttle Down|Колёсико вниз
+Throttle Up|Колёсико вверх
+To File...|Сохранить в файл
 toolBar|Панель инструментов
+Trace Logging|Ведение журнала трассировки
+Translation|Перевод :
+Triangles using perspective correction|Triangles с использованием коррекции перспективы
+Trigger|Курок
+TV effect :|эффект ТВ :
+Type:|Тип :
+Unable to add code|Невозможно добавить код
+Unable to change description|Невозможно изменить описание
+Unable to open file for loading|Не удается открыть файл для загрузки
+Unable to open file for saving|Не удается открыть файл для сохранения
+Unable to remove code|Невозможно удалить код
+Unknown (%1)|Неизвестный (%1)
+Unsigned|Неподписано
+Unsigned 8-bit value|Неподписанное значение 8-бит
+Unsigned 16-bit value|Неподписанное значение 16-бит
+Unsigned 32-bit value|Неподписанно 32-бит
+Up|Вверх
+Up_P2|Вверх_И2
+Upload|Загрузить
+Upscale Filter :|Upscale фильтр :
+Use SH2 cache - Experimental|Испльзовать SH2 кэш - экспериментально
+Use System Locale|Использовать язык системы
+Use Vdp1 Cache|Использовать VDP1 кэш
+User Interface Translation|Язык пользовательского интерфейса:
+Value|Значение
+Value:|Значение :
+Value :|Значение :
+VDP1|VDP1
+VDP1 Command Info|Информация о команде VDP1
+VDP1 Command List|Лист команд VDP1
+VDP2|VDP2
+VDP2Viewer Viewer|Просмотре VDP2Viewer
+Video|Видео
+Video Core|Видео Ядро
+Video Driver|Видео Драйвер
+Video Format|Формат Видео
+View|Вид
+Viewer|Средство просмотра
+WAV Files (*.wav)|Файлы WAV (*.wav)
+Wheel|Руль
+Wheel Configuration|Настройка руля
+Window Resolution|Пропорции экрана:
+Windows SPTI Driver|Драйвер Windows SPTI
+Window size :|Разрешение рендеринга :
+Wireframe :|Wireframe :
+Word|Слово
+Word Write|Запись слова
+Word Write : %1 %2|Записать слово : %1 %2
+Write|Записать
+Yes|Да

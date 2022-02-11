@@ -180,7 +180,7 @@ void * YabMemMap(char * filename, u32 size ) {
     return NULL;
   }
 
-  p = mmap(0, sb.st_size, PROT_READ| PROT_WRITE, MAP_SHARED, fd, 0);
+  p = (char*)mmap(0, sb.st_size, PROT_READ| PROT_WRITE, MAP_SHARED, fd, 0);
   if (p == MAP_FAILED) {
     perror("mmap");
     return NULL;
@@ -225,7 +225,7 @@ u8 * T1MemoryInit(u32 size)
 
    return mem;
 #else
-   return calloc(size, sizeof(u8));
+   return (u8*)calloc(size, sizeof(u8));
 #endif
 }
 
@@ -1551,7 +1551,7 @@ void FormatBackupRamFile(FILE *fp, u32 size) {
   fflush(fp);
 }
 
-void FormatBackupRam(void *mem, u32 size)
+void FormatBackupRam(u8 *mem, u32 size)
 {
    int i, i2;
    u32 i3;
@@ -1751,12 +1751,13 @@ int YabSaveStateStream(void ** stream)
    int temp;
    u32 temp32;
    u8 endian;
+   char header[4] = "YSS";
 
    // Set buffer position to 0
    MemStateSetOffset(0);
 
    // Write signature
-   MemStateWrite("YSS", 1, 3, stream);
+   MemStateWrite((void*)header, 1, 3, stream);
 
    // Write endianness byte
 #ifdef WORDS_BIGENDIAN

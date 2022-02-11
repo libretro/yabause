@@ -184,6 +184,7 @@ int OSDUseBuffer(void)
 void ToggleFPS()
 {
    OSDToggle(OSDMSG_FPS);
+   OSDToggle(OSDMSG_VDP1_FPS);
 }
 
 int GetOSDToggle(void)
@@ -194,6 +195,7 @@ int GetOSDToggle(void)
 void SetOSDToggle(int toggle)
 {
    OSDSetVisible(OSDMSG_FPS, toggle);
+   OSDSetVisible(OSDMSG_VDP1_FPS, toggle);
 }
 
 void DisplayMessage(const char* str)

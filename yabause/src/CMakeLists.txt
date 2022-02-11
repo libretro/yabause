@@ -6,6 +6,39 @@ include (CheckCSourceCompiles)
 include(CheckFunctionExists)
 include(CheckIncludeFile)
 
+option(KRONOS_LINUX_USE_PERFETTO "Trace execution with perfetto" OFF)
+if (KRONOS_LINUX_USE_PERFETTO)
+find_package(Git QUIET)
+if(GIT_FOUND)
+if(NOT EXISTS "${PROJECT_SOURCE_DIR}/perfetto/sdk/perfetto.cc")
+#once runned, a trace is generated kronos.pftrace
+#load the trace on ui.perfetto.dev
+
+    message(STATUS "Import perfetto v22.1")
+    execute_process(COMMAND ${GIT_EXECUTABLE} clone https://android.googlesource.com/platform/external/perfetto -b v22.1
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+										OUTPUT_QUIET
+										ERROR_QUIET
+                    RESULT_VARIABLE GIT_SUBMOD_RESULT)
+    if(NOT GIT_SUBMOD_RESULT EQUAL "0")
+        message(FATAL_ERROR "git clone https://android.googlesource.com/platform/external/perfetto -b v22.1 failed with ${GIT_SUBMOD_RESULT}")
+    endif()
+else ()
+message(STATUS "Perfetto v22.1 already imported")
+endif()
+if(NOT EXISTS "${PROJECT_SOURCE_DIR}/perfetto/sdk/perfetto.cc")
+    message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
+else()
+	find_package(Threads)
+	# Define a static library for Perfetto.
+	include_directories(perfetto/sdk)
+	add_library( perfetto STATIC perfetto/sdk/perfetto.cc)
+	set(KRONOS_LIBRARIES ${KRONOS_LIBRARIES} perfetto ${CMAKE_THREAD_LIBS_INIT})
+	add_definitions(-D_USE_PERFETTO_TRACE_)
+endif()
+endif(GIT_FOUND)
+endif (KRONOS_LINUX_USE_PERFETTO)
+
 include_directories(sys/bios/include)
 include_directories(sys/vdp1/include)
 include_directories(sys/vdp2/include)
@@ -46,14 +79,19 @@ option(YAB_FORCE_GLES31 "force to use OpenGLES 3.1" OFF)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/CMakeTests)
 
 set(kronos_HEADERS
+	${kronos_HEADERS}
 	sys/bios/include/bios.h
 	sys/vdp1/include/vdp1.h
 	sys/vdp2/include/vdp2.h
   sys/vdp2/include/vdp2debug.h
 	sys/sh2/include/sh2core.h
+  sys/sh2/include/sh2iasm.h
+  sys/sh2/include/sh2d.h
+  sys/sh2/include/sh-opc.h
 	sys/scu/include/scu.h
 	sys/scsp/include/scsp.h
 	sys/scsp/include/scspdsp.h
+  sys/scsp/include/m68kd.h
 	sys/smpc/include/smpc.h
 	sys/memory/include/memory.h
 	sys/memory/include/cs0.h
@@ -101,6 +139,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fomit-frame-pointer")
 endif (CMAKE_COMPILER_IS_GNUCC)
 
 set(kronos_SOURCES
+	${kronos_SOURCES}
   utils/src/cheat.c
   utils/src/db.c
 	utils/src/gameinfo.c
@@ -114,9 +153,12 @@ set(kronos_SOURCES
 	sys/vdp1/src/vdp1.c
 	sys/vdp2/src/vdp2.c
 	sys/sh2/src/sh2core.c
+  sys/sh2/src/sh2iasm.c
+  sys/sh2/src/sh2d.c
 	sys/scu/src/scu.c
 	sys/scsp/src/scsp.c
 	sys/scsp/src/scspdsp.c
+  sys/scsp/src/m68kd.c
 	sys/smpc/src/smpc.c
 	sys/memory/src/memory.c
 	sys/memory/src/cs0.c
@@ -165,11 +207,6 @@ endif()
 include(${CMAKE_SOURCE_DIR}/l10n/CMakeLists.txt)
 
 #-------------------------------------------------------
-
-option(YAB_WANT_SH2_ASYNC "Execute slave SH2 emulation in a thread" OFF)
-if (YAB_WANT_SH2_ASYNC)
-  add_definitions(-DxSH2_ASYNC=1)
-endif()
 
 option(YAB_WANT_DYNAREC_KRONOS "Enable Sh2 dynarec by Kronos" ON)
 if (YAB_WANT_DYNAREC_KRONOS)
@@ -755,6 +792,12 @@ else()
 endif()
 
 add_dependencies(kronos m68kmake)
+
+if (KRONOS_LINUX_USE_PERFETTO)
+message(STATUS "Switch to g++")
+file(GLOB_RECURSE CFILES ${kronos_SOURCES})
+SET_SOURCE_FILES_PROPERTIES(${CFILES} PROPERTIES LANGUAGE CXX )
+endif (KRONOS_LINUX_USE_PERFETTO)
 
 macro(yab_port_start)
 	if (YAB_PORT_BUILT AND NOT YAB_MULTIBUILD)

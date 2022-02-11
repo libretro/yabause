@@ -49,7 +49,7 @@ typedef struct {
 #define MAPPING_NB 5
 
 joymapping_struct joyMapping[MAPPING_NB] = {
-   {"SZMy-power LTD CO.  Dual Box WII", 
+   {"SZMy-power LTD CO.  Dual Box WII",
       {
          JS_EVENT_BUTTON<<8 | 12, //PERPAD_UP
          JS_EVENT_BUTTON<<8 | 13, //PERPAD_RIGHT
@@ -85,7 +85,7 @@ joymapping_struct joyMapping[MAPPING_NB] = {
          -1,                      //SERVICE_TOGGLE_EXIT
       }
    },
-   {"Sony PLAYSTATION(R)3 Controller", 
+   {"Sony PLAYSTATION(R)3 Controller",
       {
          JS_EVENT_BUTTON<<8 | 4, //PERPAD_UP
          JS_EVENT_BUTTON<<8 | 5, //PERPAD_RIGHT
@@ -121,7 +121,7 @@ joymapping_struct joyMapping[MAPPING_NB] = {
          -1,                      //SERVICE_TOGGLE_EXIT
       }
    },
-   {"HuiJia  USB GamePad", 
+   {"HuiJia  USB GamePad",
       {
          JS_EVENT_BUTTON<<8 | 12, //PERPAD_UP
          JS_EVENT_BUTTON<<8 | 13, //PERPAD_RIGHT
@@ -157,7 +157,7 @@ joymapping_struct joyMapping[MAPPING_NB] = {
          JS_EVENT_BUTTON<<8 | 0,  //SERVICE_TOGGLE_EXIT
       }
    },
-   {"Thrustmaster Run'N' Drive", 
+   {"Thrustmaster Run'N' Drive",
       {
          JS_EVENT_AXIS<<8 | 0x10000| 8, //PERPAD_UP
          JS_EVENT_AXIS<<8 | 7, //PERPAD_RIGHT
@@ -436,7 +436,7 @@ static int LinuxJoyInit(perlinuxjoy_struct * joystick, const char * path, int id
 
    if (joystick->axiscount > MAXAXIS) joystick->axiscount = MAXAXIS;
 
-   joystick->axis = malloc(sizeof(int) * joystick->axiscount);
+   joystick->axis = (int*)malloc(sizeof(int) * joystick->axiscount);
    for(i = 0;i < joystick->axiscount;i++)
    {
       joystick->axis[i] = axisinit[i];
@@ -550,7 +550,7 @@ int PERLinuxJoyInit(void)
    glob("/dev/input/js*", 0, NULL, &globbuf);
 
    joycount = globbuf.gl_pathc;
-   joysticks = calloc(sizeof(perlinuxjoy_struct), joycount);
+   joysticks = (perlinuxjoy_struct*)calloc(sizeof(perlinuxjoy_struct), joycount);
    for(i = 0;i < globbuf.gl_pathc;i++) {
       perlinuxjoy_struct *joy = joysticks + j;
       j = (LinuxJoyInit(joy, globbuf.gl_pathv[i], j)<0)?j:j+1;
@@ -558,7 +558,7 @@ int PERLinuxJoyInit(void)
    joycount = j;
    globfree(&globbuf);
 
-   if (globbuf.gl_pathc <= 0) 
+   if (globbuf.gl_pathc <= 0)
      KeyInit();
 
    return 0;
@@ -586,7 +586,7 @@ int PERLinuxJoyHandleEvents(void)
       LinuxJoyHandleEvents(joysticks + i);
 
    if (requestExit) return -1;
-   
+
    // return success
    return 0;
 }

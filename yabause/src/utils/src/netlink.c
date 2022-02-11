@@ -215,7 +215,7 @@ void NetlinkUpdateReceivedDataInt()
 
 //////////////////////////////////////////////////////////////////////////////
 
-void remove_all_chars(char* str, char c) 
+void remove_all_chars(char* str, char c)
 {
    char *pr = str, *pw = str;
    while (*pr) {
@@ -273,7 +273,7 @@ void FASTCALL NetlinkWriteByte(SH2_struct *context, u8* memory, u32 addr, u8 val
                NetlinkArea->inbufferend=1;
             }
             NetlinkArea->inbuffersize++;
-            
+
             // If interrupt has been triggered because THB is empty, reset it
             if ((NetlinkArea->reg.IER & 0x2) && (NetlinkArea->reg.IIR & 0xF) == 0x2)
                NetlinkArea->reg.IIR = (NetlinkArea->reg.IIR & 0xF0) | 0x1;
@@ -308,7 +308,7 @@ void FASTCALL NetlinkWriteByte(SH2_struct *context, u8* memory, u32 addr, u8 val
                         case '&':
                            // Figure out second part of command
                            i++;
-   
+
                            switch (toupper(NetlinkArea->inbuffer[i]))
                            {
                               case 'C':
@@ -480,7 +480,7 @@ void FASTCALL NetlinkWriteByte(SH2_struct *context, u8* memory, u32 addr, u8 val
                            // Negotiation Progress Message Selection
                            NetlinkFetchATParameter(NetlinkArea->inbuffer[i+1], &i);
                            break;
-                        default: 
+                        default:
                            NETLINK_LOG("Unsupported AT command %c", NetlinkArea->inbuffer[i]);
                            break;
                      }
@@ -527,7 +527,7 @@ void FASTCALL NetlinkWriteByte(SH2_struct *context, u8* memory, u32 addr, u8 val
                   {
                      // Set Data available bit in LSR
                      NetlinkArea->reg.LSR |= 0x01;
-   
+
                      // Trigger Interrrupt
                      NetlinkArea->reg.IIR = 0x4;
                      ScuSendExternalInterrupt12();
@@ -619,8 +619,8 @@ void FASTCALL NetlinkWriteByte(SH2_struct *context, u8* memory, u32 addr, u8 val
 //////////////////////////////////////////////////////////////////////////////
 
 int NetlinkInit(const char *ip, const char *port)
-{  
-   if ((NetlinkArea = malloc(sizeof(Netlink))) == NULL)
+{
+   if ((NetlinkArea = (Netlink*)malloc(sizeof(Netlink))) == NULL)
    {
       Cs2Area->carttype = CART_NONE;
       YabSetError(YAB_ERR_CANNOTINIT, (void *)"Netlink");
@@ -788,7 +788,7 @@ void NetlinkExec(u32 timing)
 
 //////////////////////////////////////////////////////////////////////////////
 #ifdef USESOCKET
-void netlink_client(void *data)
+void* netlink_client(void *data)
 {
    netlink_thread *client=(netlink_thread *)data;
 
@@ -824,7 +824,7 @@ void netlink_client(void *data)
             //NETLINK_LOG("failed.\n");
          }
       }
-      
+
       if (YabSockIsReadSet(client->sock))
       {
          //NETLINK_LOG("Data is ready from external source...");
@@ -840,6 +840,7 @@ void netlink_client(void *data)
    }
 
    free(data);
+   return NULL;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -931,7 +932,7 @@ static int NetworkInit(const char *port)
 //////////////////////////////////////////////////////////////////////////////
 
 void netlink_connect(void *data)
-{   
+{
    netlink_thread *connect=(netlink_thread *)data;
 
    netlink_connect_thread_running = 1;

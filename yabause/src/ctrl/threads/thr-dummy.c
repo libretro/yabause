@@ -23,7 +23,7 @@
 
 //////////////////////////////////////////////////////////////////////////////
 
-int YabThreadStart(unsigned int id, void (*func)(void *), void *arg) { return -1; }
+int YabThreadStart(unsigned int id, void* (*func)(void *), void *arg) { return -1; }
 
 void YabThreadWait(unsigned int id) {}
 

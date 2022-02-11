@@ -72,7 +72,7 @@ static int hnd_key_once = 0;
 
 //////////////////////////////////////////////////////////////////////////////
 
-int YabThreadStart(unsigned int id, void (*func)(void *), void *arg)
+int YabThreadStart(unsigned int id, void* (*func)(void *), void *arg)
 {
 #if !defined(ARCH_IS_LINUX) && !defined(ARCH_IS_MACOSX)
 #ifdef HAVE_THREAD_STORAGE

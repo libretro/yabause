@@ -30,12 +30,14 @@ UIHexInput::UIHexInput( u32 value, int size, QWidget* p )
    QString text;
    sprintf(format, "%%0%dX", size * 2);
    text.sprintf(format, value);
-	
+
 	this->value = value;
 	this->size = size;
-  
-	leValue->setValidator(new HexValidator(0x00000000, 0xFFFFFFFF >> (4-size * 8) , leValue));
-   leValue->setText(text);
+
+	leValue->setValidator(new HexValidator(0x00000000, 0xFFFFFFFF >> (4 - size * 8), leValue));
+  leValue->setText(text);
+  leValue->setSelection(0, text.size());
+  leValue->setFocus();
 
 	// retranslate widgets
 	QtYabause::retranslateWidget( this );

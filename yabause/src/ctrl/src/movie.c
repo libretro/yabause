@@ -320,7 +320,7 @@ void StopMovie(void) {
 
 int SaveMovie(const char *filename) {
 
-	char* str=malloc(1024);
+	char* str=(char*)malloc(1024);
 
 	if(Movie.Status == Playback)
 		StopMovie();
@@ -347,7 +347,7 @@ int SaveMovie(const char *filename) {
 
 int PlayMovie(const char *filename) {
 
-	char* str=malloc(1024);
+	char* str=(char*)malloc(1024);
 
 	if(Movie.Status == Recording)
 		StopMovie();
@@ -432,7 +432,7 @@ void ReadMovieInState(const void * stream) {
 struct MovieBufferStruct* ReadMovieIntoABuffer(FILE* fp) {
 
 	int fpos;
-   struct MovieBufferStruct* tempbuffer = malloc(sizeof(struct MovieBufferStruct));
+   struct MovieBufferStruct* tempbuffer = (struct MovieBufferStruct*)malloc(sizeof(struct MovieBufferStruct));
    size_t num_read = 0;
 
 	fpos = ftell(fp);//save current pos
@@ -462,7 +462,7 @@ const char *MakeMovieStateName(const char *filename) {
 	if(Movie.Status == Recording || Movie.Status == Playback) {
 		const size_t newsize = strlen(filename) + 5 + 1;
 		free(retbuf);
-		retbuf = malloc(newsize);
+		retbuf = (char*)malloc(newsize);
 		if (!retbuf) {
 			return NULL;  // out of memory
 		}

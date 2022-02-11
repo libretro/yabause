@@ -70,10 +70,6 @@ typedef struct
 
 #define MAX_BREAKPOINTS 10
 
-//#if defined(ARCH_IS_LINUX)
-#define ASYNC_SCSP
-//#endif
-
 typedef struct
 {
   u32 scsptiming1;
@@ -102,9 +98,7 @@ void M68KStart(void);
 void M68KStop(void);
 void ScspReset(void);
 int ScspChangeVideoFormat(int type);
-void M68KExec(s32 cycles);
 void ScspAddCycles(u64 cycles);
-void ScspExec(void);
 void ScspConvert32uto16s(s32 *srcL, s32 *srcR, s16 *dst, u32 len);
 void ScspReceiveCDDA(const u8 *sector);
 int SoundSaveState(void ** stream);
@@ -141,8 +135,6 @@ void scsp_update_timer(u32 len);
 
 u32 FASTCALL c68k_word_read(const u32 adr);
 
-void M68KStep(void);
-void M68KSync(void);
 void M68KWriteNotify(u32 address, u32 size);
 void M68KGetRegisters(m68kregs_struct *regs);
 void M68KSetRegisters(m68kregs_struct *regs);
@@ -161,6 +153,8 @@ void scsp_debug_set_mode(int mode);
 void new_scsp_exec(s32 cycles);
 
 void SyncScsp();
+
+void M68KStep(void);
 
 extern void ScspLockThread();
 extern void ScspUnLockThread();

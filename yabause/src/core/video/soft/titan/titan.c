@@ -207,7 +207,7 @@ void TitanRenderSimplifiedCheck(pixel_t * buf, int start, int end, int can_use_s
 }
 
 #define DECLARE_PRIORITY_THREAD(FUNC_NAME, THREAD_NUMBER) \
-void FUNC_NAME(void* data) \
+void* FUNC_NAME(void* data) \
 { \
    for (;;) \
    { \
@@ -219,6 +219,7 @@ void FUNC_NAME(void* data) \
       } \
       YabThreadSleep(); \
    } \
+   return NULL; \
 }
 
 DECLARE_PRIORITY_THREAD(VidsoftPriorityThread0, 0);

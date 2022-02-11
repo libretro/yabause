@@ -51,7 +51,7 @@ void MemorySearch::setStartAddress( u32 address )
    curAddress = startAddress = address;
 }
 
-void MemorySearch::process() 
+void MemorySearch::process()
 {
    result_struct *results;
    u32 numResults=1;
@@ -104,7 +104,7 @@ void MemorySearch::cancel()
    emit searchResult(false, true, 0);
 }
 
-UIMemoryEditor::UIMemoryEditor( YabauseThread *mYabauseThread, QWidget* p )
+UIMemoryEditor::UIMemoryEditor( enum UIDebugCPU::PROCTYPE proc, YabauseThread *mYabauseThread, QWidget* p )
 	: QDialog( p )
 {
 	// set up dialog
@@ -123,14 +123,42 @@ UIMemoryEditor::UIMemoryEditor( YabauseThread *mYabauseThread, QWidget* p )
       saMemoryEditor->setEnabled(false);
       pbGotoAddress->setEnabled(false);
       pbSaveSelected->setEnabled(false);
-	  pbSaveTab->setEnabled(false);
+	    pbSaveTab->setEnabled(false);
       pbSearchMemory->setEnabled(false);
    }
    else
       saMemoryEditor->setFocus();
-   
+
+	this->proc = proc;
+
 	// retranslate widgets
 	QtYabause::retranslateWidget( this );
+
+  saMemoryEditor->restoreCursorPosition();
+}
+
+void UIMemoryEditor::closeEvent(QCloseEvent* evt)
+{
+  saMemoryEditor->saveCursorPosition();
+  QDialog::closeEvent(evt);
+}
+
+void UIMemoryEditor::accept()
+{
+  saMemoryEditor->saveCursorPosition();
+  QDialog::accept();
+}
+
+void UIMemoryEditor::reject()
+{
+  saMemoryEditor->saveCursorPosition();
+  QDialog::reject();
+}
+
+void UIMemoryEditor::done(int r)
+{
+  saMemoryEditor->saveCursorPosition();
+  QDialog::done(r);
 }
 
 void UIMemoryEditor::on_pbGotoAddress_clicked()
@@ -162,7 +190,7 @@ void UIMemoryEditor::on_pbSaveTab_clicked()
 void UIMemoryEditor::on_pbSearchMemory_clicked()
 {
    UIMemorySearch memorySearch( this );
-   
+
    if (searchStartAddress == 0 && searchEndAddress == 0)
    {
       UIHexEditorWnd *hexEditorWnd=(UIHexEditorWnd *)saMemoryEditor->currentWidget();
@@ -175,7 +203,7 @@ void UIMemoryEditor::on_pbSearchMemory_clicked()
    {
       MemorySearch search( &memorySearch );
       QProgressDialog progress;
-      
+
       progress.setLabelText("Searching memory...");
 
       connect(&search, SIGNAL(searchResult(bool, bool, u32)), this, SLOT(searchResult(bool, bool, u32)));

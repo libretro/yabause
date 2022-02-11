@@ -17,6 +17,7 @@
 	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 */
 #include "UIHexEditor.h"
+#include "Settings.h"
 #include <QApplication>
 #include <QClipboard>
 #include <QPainter>
@@ -28,8 +29,8 @@ UIHexEditor::UIHexEditor( QWidget* p )
    QList<QString> tabList;
    QList<u32> startList;
    QList<u32> endList;
-   tabList   << "All"      << "BIOS"     << "LWRAM"    << "HWRAM"     << 
-                "CS0"      << "CS1"      << "CS2"      << "68K RAM"   << 
+   tabList   << "All"      << "BIOS"     << "LWRAM"    << "HWRAM"     <<
+                "CS0"      << "CS1"      << "CS2"      << "68K RAM"   <<
                 "VDP1 RAM" << "VDP1 FB"  << "VDP2 RAM" << "VDP2 CRAM";
    startList << 0x00000000 << 0x00000000 << 0x00200000 << 0x06000000 <<
                 0x02000000 << 0x04000000 << 0x05800000 << 0x05A00000 <<
@@ -51,6 +52,18 @@ void UIHexEditor::goToAddress( u32 address, bool setCursor )
 {
    UIHexEditorWnd *hexEditorWnd=(UIHexEditorWnd *)currentWidget();
    hexEditorWnd->goToAddress(address, setCursor);
+}
+
+void UIHexEditor::saveCursorPosition()
+{
+   UIHexEditorWnd *hexEditorWnd=(UIHexEditorWnd *)currentWidget();
+   hexEditorWnd->saveCursorPosition();
+}
+
+void UIHexEditor::restoreCursorPosition()
+{
+   UIHexEditorWnd *hexEditorWnd=(UIHexEditorWnd *)currentWidget();
+   hexEditorWnd->restoreCursorPosition();
 }
 
 u32 UIHexEditor::getStartAddress()
@@ -164,6 +177,20 @@ void UIHexEditorWnd::goToAddress(u32 address, bool setCursor)
       resetSelection(address * 2);
    }
    viewport()->update();
+}
+
+void UIHexEditorWnd::saveCursorPosition()
+{
+  Settings *settings = QtYabause::settings();
+  settings->setValue("Debug/MemoryEditorCaretPosition",
+                     QVariant(verticalScrollBar()->value()));
+}
+
+void UIHexEditorWnd::restoreCursorPosition()
+{
+   Settings* settings = QtYabause::settings();
+   verticalScrollBar()->setValue(
+       settings->value("Debug/MemoryEditorCaretPosition", QVariant(0)).toInt());
 }
 
 u8 UIHexEditorWnd::readByte(u32 addr)
@@ -561,7 +588,7 @@ void UIHexEditorWnd::mouseMoveEvent(QMouseEvent * event)
       blinkCursor = false;
       viewport()->update();
       s64 actPos = cursorPos(pos);
-      
+
       if (viewport()->rect().contains(pos))
          autoScrollTimer.stop();
       else if (!autoScrollTimer.isActive())
@@ -684,7 +711,7 @@ void UIHexEditorWnd::drawAddressArea(QPainter *painter, int firstLineIdx, u32 la
    {
       if (posBa == lineIdx)
       {
-         painter->setPen(colHighlighted);         
+         painter->setPen(colHighlighted);
          painter->fillRect(QRect(posAddr, yPos-fontAscent, posHex - (gapSizeAddrHex / 2), fontHeight), highLighted);
       }
       else
@@ -747,7 +774,7 @@ void UIHexEditorWnd::drawHexArea(QPainter *painter, int firstLineIdx, u32 lastLi
             }
 
             // Paint hex value
-            text=QString("%1").arg(readByte(addr + lineIdx + colIdx - firstLineIdx), 2, 16, QChar('0')).toUpper();               
+            text=QString("%1").arg(readByte(addr + lineIdx + colIdx - firstLineIdx), 2, 16, QChar('0')).toUpper();
             painter->drawText(xPos, yPos, text);
             xPos += text.length() * fontWidth;
          }
@@ -798,7 +825,7 @@ void UIHexEditorWnd::drawTextArea(QPainter *painter, int firstLineIdx, u32 lastL
 
 void UIHexEditorWnd::paintEvent(QPaintEvent *event)
 {
-   QPainter painter(viewport());   
+   QPainter painter(viewport());
    int bottom = event->rect().bottom();
    int pos=verticalScrollBar()->value();
 

@@ -74,9 +74,6 @@ static s32 FASTCALL M68KDummyExec(UNUSED s32 cycle) {
 	return 0;
 }
 
-static void M68KDummySync(void) {
-}
-
 static u32 M68KDummyGetDReg(UNUSED u32 num) {
 	return 0;
 }
@@ -153,7 +150,6 @@ M68K_struct M68KDummy = {
 	M68KDummyDeInit,
 	M68KDummyReset,
 	M68KDummyExec,
-	M68KDummySync,
 	M68KDummyGetDReg,
 	M68KDummyGetAReg,
 	M68KDummyGetPC,

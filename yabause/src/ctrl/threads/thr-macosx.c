@@ -55,7 +55,7 @@ static void *wrapper(void *hnd) {
     return NULL;
 }
 
-int YabThreadStart(unsigned int id, void (*func)(void *), void *arg) {
+int YabThreadStart(unsigned int id, void* (*func)(void *), void *arg) {
     /* Create the key to access the thread handle if we haven't made it yet. */
     pthread_once(&hnd_key_once, make_key);
 
@@ -97,7 +97,7 @@ int YabThreadStart(unsigned int id, void (*func)(void *), void *arg) {
 void YabThreadWait(unsigned int id) {
     /* Make sure the thread is running. */
     if(!thread_handle[id].running)
-        return; 
+        return;
 
     /* Join the thread to wait for it to finish. */
     pthread_join(thread_handle[id].thd, NULL);

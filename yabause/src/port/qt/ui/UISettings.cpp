@@ -347,6 +347,8 @@ void UISettings::tbBrowse_clicked()
 		requestNewFile( QtYabause::translate( "Choose a memory file" ), leMemory );
 	else if ( tb == tbMpegROM )
 		requestFile( QtYabause::translate( "Open a mpeg rom" ), leMpegROM );
+	else if ( tb == tbAddr2Line )
+		requestFile( QtYabause::translate( "Choose the location of the addr2line executable" ), leAddr2Line );
 }
 
 void UISettings::on_cbInput_currentIndexChanged( int id )
@@ -796,6 +798,9 @@ void UISettings::loadSettings()
 	bgShowToolbar->setId( rbToolbarAlways, BD_ALWAYSHIDE );
 	bgShowToolbar->button( s->value( "View/Toolbar", BD_HIDEFS ).toInt() )->setChecked( true );
 
+	// debug
+	leAddr2Line->setText( s->value( "Debug/Addr2Line" ).toString() );
+
 	//shortcuts
 	{
 		auto const actions = parent()->findChildren<QAction *>();
@@ -908,6 +913,9 @@ void UISettings::saveSettings()
 		s->setValue(action->text(), action->shortcut().toString());
 	}
 	s->endGroup();
+
+	// debug
+	s->setValue( "Debug/Addr2Line", leAddr2Line->text() );
 }
 
 void UISettings::accept()

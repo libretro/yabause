@@ -85,6 +85,25 @@ typedef struct {
 
 extern Vdp1External_struct Vdp1External;
 
+typedef enum {
+  VDPCT_NORMAL_SPRITE = 0,
+  VDPCT_SCALED_SPRITE = 1,
+  VDPCT_DISTORTED_SPRITE = 2,
+  VDPCT_DISTORTED_SPRITEN = 3,
+  VDPCT_POLYGON = 4,
+  VDPCT_POLYLINE = 5,
+  VDPCT_LINE = 6,
+  VDPCT_POLYLINEN = 7,
+  VDPCT_USER_CLIPPING_COORDINATES = 8,
+  VDPCT_SYSTEM_CLIPPING_COORDINATES = 9,
+  VDPCT_LOCAL_COORDINATES = 10,
+  VDPCT_USER_CLIPPING_COORDINATESN = 11,
+
+  VDPCT_INVALID = 12,
+  VDPCT_DRAW_END
+
+} Vdp1CommandType;
+
 typedef struct
 {
   u32 CMDCTRL;
@@ -217,8 +236,10 @@ int Vdp1SaveState(void ** stream);
 int Vdp1LoadState(const void * stream, int version, int size);
 
 char *Vdp1DebugGetCommandNumberName(u32 number);
+Vdp1CommandType Vdp1DebugGetCommandType(u32 number);
 void Vdp1DebugCommand(u32 number, char *outstring);
 u32 *Vdp1DebugTexture(u32 number, int *w, int *h);
+u8 *Vdp1DebugRawTexture(u32 number, int *w, int *h, int *numBytes);
 void ToggleVDP1(void);
 
 void Vdp1HBlankIN(void);

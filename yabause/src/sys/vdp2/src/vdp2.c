@@ -411,7 +411,6 @@ void Vdp2Reset(void) {
    Vdp2Regs->COBB = 0x0000;
 
    yabsys.VBlankLineCount = 225;
-   yabsys.screenOn = 0;
    Vdp2Internal.ColorMode = 0;
 
    Vdp2External.disptoggle = 0xFF;
@@ -750,7 +749,7 @@ u16 FASTCALL Vdp2ReadWord(SH2_struct *context, u8* mem, u32 addr) {
          Vdp2Regs->TVSTAT &= 0xFCFF;
 
          // if TVMD's DISP bit is cleared, TVSTAT's VBLANK bit is always set
-         if (yabsys.screenOn != 0)
+         if ((Vdp2Regs->TVMD & 0x8000)!=0)
             return tvstat;
          else
             return (tvstat | 0x8);
@@ -1293,7 +1292,6 @@ void FASTCALL Vdp2WriteWord(SH2_struct *context, u8* mem, u32 addr, u16 val) {
    {
       case 0x000:
          Vdp2Regs->TVMD = val;
-         yabsys.screenOn = (Vdp2Regs->TVMD & 0x8000)!=0;
          yabsys.VBlankLineCount = 225+(val & 0x30);
          if (yabsys.VBlankLineCount > 256) yabsys.VBlankLineCount = 256;
          return;

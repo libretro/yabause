@@ -1588,7 +1588,6 @@ int FASTCALL BiosHandleFunc(SH2_struct * sh)
 {
    int addr = (sh->regs.PC & 0xFFFFF);
    SH2GetRegisters(sh, &sh->regs);
-   sh->isInIt = 0;
    // Let's see if it's a bios function
    switch((addr - 0x200) >> 2)
    {
@@ -2040,7 +2039,7 @@ int BiosBUPExport(SH2_struct *sh, u32 device, const char *savename, char ** buf,
   }
 
   LOG("BiosBUPExport from %08X size %08X", tableaddr, datasize);
-  *buf = malloc(datasize);
+  *buf = (char*)malloc(datasize);
   if( (*buf) ==NULL ){
     LOG("Failed to allocate *buf");
     return -1;

@@ -38,6 +38,10 @@
 /* Import the configuration for this build */
 #include "m68kconf.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 /* ======================================================================== */
 /* ============================ GENERAL DEFINES =========================== */
@@ -354,5 +358,9 @@ unsigned int m68k_disassemble(char* str_buff, unsigned int pc, unsigned int cpu_
 /* ======================================================================== */
 /* ============================== END OF FILE ============================= */
 /* ======================================================================== */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* M68K__HEADER */
