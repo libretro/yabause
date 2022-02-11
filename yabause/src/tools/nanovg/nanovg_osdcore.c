@@ -271,12 +271,15 @@ void OSDNanovgDisplayMessage(OSDMessage_struct * message, pixel_t * buffer, int 
   int maxlen = 0;
   int i = 0;
 
-  if (message->type != OSDMSG_FPS) return;
+  if ((message->type != OSDMSG_FPS)&&(message->type != OSDMSG_VDP1_FPS)) return;
 
   VIDCore->GetGlSize(&vidwidth, &vidheight);
   Width = vidwidth - 2 * LeftX;
 
   switch (message->type) {
+  case OSDMSG_VDP1_FPS:
+    TxtY = Height + TxtY;
+    break;
   case OSDMSG_STATUS:
     TxtY = vidheight - (Height + TxtY);
     break;

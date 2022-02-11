@@ -190,12 +190,12 @@ YabSock YabSockAccept(YabSock sock)
 
 int YabSockSend(YabSock sock, const void *buf, int len, int flags)
 {
-   return send(sock, buf, len, flags);
+   return send(sock, (const char*)buf, len, flags);
 }
 
 int YabSockReceive(YabSock sock, void *buf, int len, int flags)
 {
-   return recv(sock, buf, len, flags);
+   return recv(sock, (char *)buf, len, flags);
 }
 
 

@@ -486,7 +486,7 @@ void cryptoReset()
 	line_buffer_size = 0;
 }
 
-void cyptoSetKey(u32 privKey)
+void cryptoSetKey(u32 privKey)
 {
   cryptoKey = privKey;
 }

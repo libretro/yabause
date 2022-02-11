@@ -1496,7 +1496,7 @@ static int ISOCDInit(const char * iso) {
       return -1;
    }
 
-   ext = strrchr(iso, '.');
+   ext = strrchr((char*)iso, '.');
 
    // Figure out what kind of image format we're dealing with
    if (strcasecmp(ext, ".CUE") == 0)
@@ -1685,7 +1685,7 @@ static int ISOCDReadSectorFAD(u32 FAD, void *buffer) {
      return 0;
    }
    offset = currentTrack->file_offset + (FAD-currentTrack->fad_start) * currentTrack->sector_size;
-   
+
    if (currentTrack->isZip != 1) {
       if (offset > currentTrack->file_size) offset = currentTrack->file_size;
       filestream_seek(currentTrack->fp, offset, RETRO_VFS_SEEK_POSITION_START);
@@ -1719,7 +1719,7 @@ static int ISOCDReadSectorFAD(u32 FAD, void *buffer) {
             180, 205, 230, 255, 88, 113, 97, 163, 188, 213, 238, 147
          };
          u8 subcode_buffer[96 * 3];
-         
+
          if (currentTrack->isZip != 1) {
             num_read = filestream_read(currentTrack->fp, buffer, 2352);
 
@@ -1803,7 +1803,7 @@ static int LoadCHD(const char *chd_filename, RFILE *iso_file)
   int postgap = 0;
 
   int meta_outlen = 512 * 1024;
-  u8 * buf = malloc(meta_outlen);
+  u8 * buf = (u8*)malloc(meta_outlen);
   u32 resultlen;
   u32 resulttag;
   u8 resultflags;
@@ -1829,7 +1829,7 @@ static int LoadCHD(const char *chd_filename, RFILE *iso_file)
   pChdInfo->header = chd_get_header(pChdInfo->chd);
 
   trk[num_tracks].fad_start = frame + pregap + 150;
-  
+
   while ( chd_get_metadata(pChdInfo->chd, 0, num_tracks, buf, meta_outlen, &resultlen, &resulttag, &resultflags) == CHDERR_NONE )  {
 
     LOG("track info %s", buf);
@@ -1931,7 +1931,7 @@ static int LoadCHD(const char *chd_filename, RFILE *iso_file)
       trk[num_tracks].sector_size = 2352;
       //trk[num_tracks].pregap = 0;
     }
-   
+
     //trk[num_tracks].fad_start = trk[num_tracks].fad_start + pregap;
     //trk[num_tracks].fad_end = trk[num_tracks].fad_start + (frame - 1) + postgap;
     //frame = trk[num_tracks].fad_end+1;
@@ -1950,7 +1950,7 @@ static int LoadCHD(const char *chd_filename, RFILE *iso_file)
   for (i = 0; i < num_tracks; i++)
   {
     trk[i].fad_start = logofs + trk[i].pregap;
-    
+
     trk[i].physframeofs = physofs;
     trk[i].chdframeofs = chdofs;
     trk[i].logframeofs = logofs;

@@ -20,6 +20,10 @@
 #ifndef VIDSOFT_H
 #define VIDSOFT_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "vdp1.h"
 
 #define VIDCORE_SOFT   3
@@ -30,7 +34,7 @@ extern VideoInterface_struct VIDSoft;
 
 void VIDSoftVdp2DrawScreen(int screen);
 
-void VIDSoftSetBilinear(int b); 
+void VIDSoftSetBilinear(int b);
 
 void VIDSoftSetNumPriorityThreads(int num);
 
@@ -40,6 +44,9 @@ void VIDSoftSetNumLayerThreads(int num);
 
 void VIDSoftSetVdp1ThreadEnable(int b);
 
-void VidsoftWaitForVdp1Thread();
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif

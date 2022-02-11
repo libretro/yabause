@@ -2032,7 +2032,7 @@ struct {
 }vidsoft_thread_context;
 
 #define DECLARE_THREAD(NAME, LAYER, FUNC) \
-void NAME(void * data) \
+void* NAME(void * data) \
 { \
    for (;;) \
    { \
@@ -2044,6 +2044,7 @@ void NAME(void * data) \
       } \
       YabThreadSleep(); \
    } \
+   return NULL; \
 }
 
 DECLARE_THREAD(VidsoftRbg0Thread, TITAN_RBG0, Vdp2DrawRBG0)
@@ -2061,7 +2062,7 @@ void VIDSoftSetNumLayerThreads(int num)
 
 //////////////////////////////////////////////////////////////////////////////
 
-void VidsoftVdp1Thread(void* data)
+void* VidsoftVdp1Thread(void* data)
 {
    for (;;)
    {
@@ -2075,6 +2076,7 @@ void VidsoftVdp1Thread(void* data)
 
       YabThreadSleep();
    }
+   return NULL;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -2095,7 +2097,7 @@ void VIDSoftSetVdp1ThreadEnable(int b)
 
 }
 
-void VidsoftSpriteThread(void * data)
+void* VidsoftSpriteThread(void * data)
 {
    for (;;)
    {
@@ -2107,6 +2109,7 @@ void VidsoftSpriteThread(void * data)
       }
       YabThreadSleep();
    }
+   return NULL;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -2882,7 +2885,7 @@ typedef struct {
 static int DrawLineCallback(int x, int y, int i, void *data, Vdp1* regs, vdp1cmd_struct * cmd, u8* ram, u8* back_framebuffer)
 {
 	int currentStep;
-	DrawLineData *linedata = data;
+	DrawLineData *linedata = (DrawLineData *)data;
 
 	leftColumnColor.r += linedata->xredstep;
 	leftColumnColor.g += linedata->xgreenstep;
@@ -2975,7 +2978,7 @@ int yright[1000];
 
 static int
 storeLineCoords(int x, int y, int i, void *arrays, Vdp1* regs, vdp1cmd_struct * cmd, u8* ram, u8* back_framebuffer) {
-	int **intArrays = arrays;
+	int **intArrays = (int **)arrays;
 
 	intArrays[0][i] = x;
 	intArrays[1][i] = y;

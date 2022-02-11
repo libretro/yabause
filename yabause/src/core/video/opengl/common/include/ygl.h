@@ -816,7 +816,7 @@ int YglProgramChange( YglLevel * level, int prgid );
 int Ygl_cleanupNormal(void * p, YglTextureManager *tm);
 
 int YglSetupWindow(YglProgram * prg);
-int Vdp2GenerateWindowInfo(Vdp2 *varVdp2Regs);
+void Vdp2GenerateWindowInfo(Vdp2 *varVdp2Regs);
 
 void YglEraseWriteVDP1(int id);
 void YglFrameChangeVDP1();

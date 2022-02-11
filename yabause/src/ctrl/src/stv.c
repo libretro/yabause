@@ -4,7 +4,7 @@
 
 #ifndef WIN32
 #include <sys/types.h>
-#include <dirent.h> 
+#include <dirent.h>
 #else
 #include <windows.h>
 #endif
@@ -20,6 +20,11 @@
 #include "eeprom.h"
 #include "decrypt.h"
 #include "zlib.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #define LOGSTV
 //YuiMsg
@@ -83,7 +88,7 @@ void sanjeon_init(void) {
 }
 
 
-Bios BiosList = 
+Bios BiosList =
 {
     "stvbios",
     "STV Bios",
@@ -221,7 +226,7 @@ Game GameList[NB_STV_GAMES]={
         GAME_END, "", 0, 0, 0
     },
     STV,
-  }, 
+  },
   {
     "cotton2",
     NULL,
@@ -2371,7 +2376,7 @@ int copyBios(JZFile *zip, void* id) {
     while(availableGames[gameId].entry->blobs[i].type != GAME_END) {
       if (availableGames[gameId].entry->blobs[i].type == BIOS_BLOB) {
         // We need a specific bios
-        biosname = malloc(strlen(availableGames[gameId].entry->blobs[i].filename) + 1);
+        biosname = (char*)malloc(strlen(availableGames[gameId].entry->blobs[i].filename) + 1);
         strcpy(biosname, availableGames[gameId].entry->blobs[i].filename);
       }
       i++;
@@ -2506,9 +2511,9 @@ int recordCallback(JZFile *zip, int idx, JZFileHeader *header, char *filename, v
 
     LOGSTV("%s\n", filename);
 #ifdef __LIBRETRO__
-    char *last = strrchr(info->filename, PATH_DEFAULT_SLASH_C());
+    char *last = (char *)strrchr(info->filename, PATH_DEFAULT_SLASH_C());
 #else
-    char *last = strrchr(info->filename, '/');
+    char *last = (char *)strrchr(info->filename, '/');
 #endif
     if (last != NULL) {
       if (strcmp(last+1, "stvbios.zip") == 0) {
@@ -2637,7 +2642,7 @@ int loadBios(int id){
   while(biosLink.entry->blobs[i].type != GAME_END) {
     if (biosLink.entry->blobs[i].type == BIOS_BLOB) {
       isBiosFound |= biosFound[i];
-    } 
+    }
     i++;
   }
   return isBiosFound;
@@ -2692,7 +2697,7 @@ int loadGame(int gameId){
     LOGSTV("%s has been sucessfully loaded\n", availableGames[gameId].entry->name);
     if (availableGames[gameId].entry->eeprom != NULL || hasEeprom == 0)
       eeprom_start(availableGames[gameId].entry->eeprom);
-    cyptoSetKey(availableGames[gameId].entry->key);
+    cryptoSetKey(availableGames[gameId].entry->key);
     yabsys.isRotated = availableGames[gameId].entry->rotated;
     yabsys.stvInputType = availableGames[gameId].entry->input;
     if (availableGames[gameId].entry->init != NULL) availableGames[gameId].entry->init();
@@ -2719,9 +2724,9 @@ int STVGetRomList(const char* path, int force){
   if (d) {
     //Force a detection of the bios first
     unsigned int len = strlen(path)+strlen("/")+strlen("stvbios.zip")+1;
-    unsigned char *file = malloc(len);
-    snprintf(file, len, "%s/stvbios.zip",path);
-    updateGameList(file, &nbGames);
+    unsigned char *file = (unsigned char *)malloc(len);
+    snprintf((char*)file, len, "%s/stvbios.zip",path);
+    updateGameList((const char *)file, &nbGames);
     free(file);
     while ((dir = readdir(d)) != NULL) {
       if (dir->d_type == DT_REG)
@@ -2729,9 +2734,9 @@ int STVGetRomList(const char* path, int force){
         char *dot = strrchr(dir->d_name, '.');
         if (dot && !strcmp(dot, ".zip")) {
           len = strlen(path)+strlen("/")+strlen(dir->d_name)+1;
-          file = malloc(len);
-          snprintf(file, len, "%s/%s",path, dir->d_name);
-          updateGameList(file, &nbGames);
+          file = (unsigned char *)malloc(len);
+          snprintf((char *)file, len, "%s/%s",path, dir->d_name);
+          updateGameList((const char *)file, &nbGames);
           free(file);
         }
       }
@@ -2895,3 +2900,8 @@ int STVDeInit(){
   yabsys.isSTV = 0;
   return 0;
 }
+
+#ifdef __cplusplus
+}
+#endif
+

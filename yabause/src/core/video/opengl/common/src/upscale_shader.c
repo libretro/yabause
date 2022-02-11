@@ -78,7 +78,7 @@ int YglUpscaleFramebuffer(u32 srcTexture, u32 targetFbo, float w, float h, float
   glBindFramebuffer(GL_FRAMEBUFFER, targetFbo);
 
   if (up_lut_tex == -1) {
-    glGenTextures(1, &up_lut_tex);
+    glGenTextures(1, (GLuint*)&up_lut_tex);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
     glBindTexture(GL_TEXTURE_2D, up_lut_tex);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, hq4x_LUT.width, hq4x_LUT.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, hq4x_LUT.pixel_data);
@@ -161,7 +161,7 @@ int YglUpscaleFramebuffer(u32 srcTexture, u32 targetFbo, float w, float h, float
     d_size = glGetUniformLocation(up_prg, "DrawingSize");
     t_size = glGetUniformLocation(up_prg, "TextureSize");
     if (upscale_vbo == 0) {
-      glGenBuffers(1, &upscale_vbo);
+      glGenBuffers(1, (GLuint*)&upscale_vbo);
       glBindBuffer(GL_ARRAY_BUFFER, upscale_vbo);
       glBufferData(GL_ARRAY_BUFFER, 16*sizeof(float), vertexPosition, GL_STREAM_DRAW);
     }

@@ -57,19 +57,19 @@ void YabSetError(int type, const void *extra)
    switch (type)
    {
       case YAB_ERR_FILENOTFOUND:
-         AllocAmendPrintString(_("File not found: "), extra);
+         AllocAmendPrintString(_("File not found: "), (const char *)extra);
          break;
       case YAB_ERR_MEMORYALLOC:
          YuiErrorMsg(_("Error allocating memory"));
          break;
       case YAB_ERR_FILEREAD:
-         AllocAmendPrintString(_("Error reading file: "), extra);
+         AllocAmendPrintString(_("Error reading file: "), (const char *)extra);
          break;
       case YAB_ERR_FILEWRITE:
-         AllocAmendPrintString(_("Error writing file: "), extra);
+         AllocAmendPrintString(_("Error writing file: "), (const char *)extra);
          break;
       case YAB_ERR_CANNOTINIT:
-         AllocAmendPrintString(_("Cannot initialize "), extra);
+         AllocAmendPrintString(_("Cannot initialize "), (const char *)extra);
          break;
       case YAB_ERR_SH2INVALIDOPCODE:
 #ifdef DMPHISTORY
@@ -111,7 +111,7 @@ void YabSetError(int type, const void *extra)
          YuiErrorMsg(_("SH2 write error")); // fix me
          break;
       case YAB_ERR_SDL:
-         AllocAmendPrintString(_("SDL Error: "), extra);
+         AllocAmendPrintString(_("SDL Error: "), (const char *)extra);
          break;
       case YAB_ERR_OTHER:
          YuiErrorMsg((char *)extra);
@@ -134,7 +134,7 @@ void YabErrorMsg(const char * format, ...) {
     n = vsnprintf(NULL, 0, format, l);
     va_end(l);
 
-    buffer = malloc(n + 1);
+    buffer = (char *)malloc(n + 1);
 
     va_start(l, format);
     vsprintf(buffer, format, l);

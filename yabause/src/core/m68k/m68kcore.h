@@ -44,7 +44,6 @@ typedef struct {
 	void (*Reset)(void);
 
 	s32 FASTCALL (*Exec)(s32 cycle);
-        void (*Sync)(void);
 
 	u32 (*GetDReg)(u32 num);
 	u32 (*GetAReg)(u32 num);
@@ -78,7 +77,6 @@ extern M68K_struct * M68K;
 int M68KInit(int coreid);
 
 extern M68K_struct M68KDummy;
-extern M68K_struct M68KQ68;
 extern M68K_struct M68KMusashi;
 
 #ifdef __cplusplus

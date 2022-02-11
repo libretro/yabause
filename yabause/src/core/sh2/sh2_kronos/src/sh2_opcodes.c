@@ -82,7 +82,6 @@ void SH2undecoded(SH2_struct * sh)
 
    // Jump to Exception service routine
    sh->regs.PC = SH2MappedMemoryReadLong(sh, sh->regs.VBR+(vectnum<<2));
-   sh->isInIt = 0;
    sh->cycles++;
 }
 
@@ -139,12 +138,12 @@ static void SH2addv(SH2_struct * sh, u32 n, u32 m)
       dest = 0;
    else
       dest = 1;
-  
+
    if ((s32) sh->regs.R[m] >= 0)
       src = 0;
    else
       src = 1;
-  
+
    src += dest;
    sh->regs.R[n] += sh->regs.R[m];
 
@@ -154,7 +153,7 @@ static void SH2addv(SH2_struct * sh, u32 n, u32 m)
       ans = 1;
 
    ans += dest;
-  
+
    if (src == 0 || src == 2)
       if (ans == 1)
          sh->regs.SR.part.T = 1;
@@ -1642,7 +1641,6 @@ static void SH2rte(SH2_struct * sh)
    sh->regs.R[15] += 4;
    sh->cycles += 4;
    SH2delay(sh, temp + 2);
-   sh->isInIt = 0;
 }
 
 

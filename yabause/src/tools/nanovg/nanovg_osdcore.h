@@ -21,8 +21,6 @@
 #ifndef NANOVG_OSDCORE_H
 #define NANOVG_OSDCORE_H
 
-extern OSD_struct OSDNnovg;
-
 #if 0
 #include "core.h"
 
@@ -76,6 +74,9 @@ void ToggleFPS(void);
 int  GetOSDToggle(void);
 void SetOSDToggle(int toggle);
 void DisplayMessage(const char* str);
+#else
+#include "osdcore.h"
+extern OSD_struct OSDNnovg;
 #endif
 
 #endif

@@ -54,7 +54,7 @@ u32 FASTCALL JapModemCs0ReadLong(SH2_struct *context, u8* mem, UNUSED u32 addr)
 }
 
 u8 FASTCALL JapModemCs1ReadByte(SH2_struct *context, u8* mem, UNUSED u32 addr)
-{   
+{
    NETLINK_LOG("%08X Cs1 byte read. PC = %08X", addr, MSH2->regs.PC);
    return 0xFF;
 }
@@ -101,8 +101,8 @@ void FASTCALL JapModemCs2WriteByte(SH2_struct *context, u8* mem, u32 addr, u8 va
 }
 
 int JapModemInit(const char *ip, const char *port)
-{  
-   if ((JapModemArea = malloc(sizeof(JapModem))) == NULL)
+{
+   if ((JapModemArea = (JapModem*)malloc(sizeof(JapModem))) == NULL)
    {
       Cs2Area->carttype = CART_NONE;
       YabSetError(YAB_ERR_CANNOTINIT, (void *)"Japanese Modem");

@@ -45,27 +45,33 @@ pid_t gettid(void)
 //////////////////////////////////////////////////////////////////////////////
 
 // Thread handles for each Yabause subthread
-static pthread_t thread_handle[YAB_NUM_THREADS];
+static pthread_t thread_handle[YAB_NUM_THREADS] = {0};
 
 //////////////////////////////////////////////////////////////////////////////
 
 static void dummy_sighandler(int signum_unused) {}  // For thread sleep/wake
 
-static void thread_exit_handler(int signum_unused) { 
+static void thread_exit_handler(int signum_unused) {
   pthread_exit(0);
 }
 
-int YabThreadStart(unsigned int id, void (*func)(void *), void *arg)
+int YabThreadStart(unsigned int id, void* (*func)(void *), void *arg)
 {
    // Set up a dummy signal handler for SIGUSR1 so we can return from pause()
    // in YabThreadSleep()
-   static const struct sigaction sa = {.sa_handler = dummy_sighandler};
+   struct sigaction sa;
+   sa.sa_handler = dummy_sighandler;
+   sigemptyset (&sa.sa_mask);
+   sa.sa_flags = 0;
    if (sigaction(SIGUSR1, &sa, NULL) != 0)
    {
       perror("sigaction(SIGUSR1)");
       return -1;
    }
-   static const struct sigaction sb = {.sa_handler = thread_exit_handler};
+   struct sigaction sb;
+   sb.sa_handler = thread_exit_handler;
+   sigemptyset (&sb.sa_mask);
+   sb.sa_flags = 0;
    if (sigaction(SIGUSR2, &sb, NULL) != 0)
    {
       perror("sigaction(SIGUSR2)");
@@ -78,7 +84,7 @@ int YabThreadStart(unsigned int id, void (*func)(void *), void *arg)
       return -1;
    }
 
-   if ((errno = pthread_create(&thread_handle[id], NULL, (void *)func, arg)) != 0)
+   if ((errno = pthread_create(&thread_handle[id], NULL, func, arg)) != 0)
    {
       perror("pthread_create");
       return -1;
@@ -263,7 +269,7 @@ YabSem * YabThreadCreateSem(int val){
 void YabThreadFreeSem( YabSem * mtx ){
     if( mtx != NULL ){
         YabSem_pthread * pmtx;
-        pmtx = (YabSem_pthread *)mtx;        
+        pmtx = (YabSem_pthread *)mtx;
         sem_destroy(&pmtx->sem);
         free(pmtx);
     }
@@ -295,7 +301,7 @@ YabMutex * YabThreadCreateMutex(){
 void YabThreadFreeMutex( YabMutex * mtx ){
     if( mtx != NULL ){
         YabMutex_pthread * pmtx;
-        pmtx = (YabMutex_pthread *)mtx;        
+        pmtx = (YabMutex_pthread *)mtx;
         pthread_mutex_destroy(&pmtx->mutex);
         free(pmtx);
     }
@@ -333,7 +339,7 @@ void YabThreadCondWait(YabCond *ctx, YabMutex * mtx) {
     YabCond_pthread * pctx;
     YabMutex_pthread * pmtx;
     pctx = (YabCond_pthread *)ctx;
-    pmtx = (YabMutex_pthread *)mtx; 
+    pmtx = (YabMutex_pthread *)mtx;
     YabThreadLock(mtx);
     while( pthread_cond_wait(&pctx->cond, &pmtx->mutex) != 0 );
     YabThreadUnLock(mtx);
@@ -355,17 +361,16 @@ YabCond * YabThreadCreateCond(){
 void YabThreadFreeCond( YabCond *mtx ) {
     if( mtx != NULL ){
         YabCond_pthread * pmtx;
-        pmtx = (YabCond_pthread *)mtx;        
+        pmtx = (YabCond_pthread *)mtx;
         pthread_cond_destroy(&pmtx->cond);
         free(pmtx);
     }
 }
 
-#define _GNU_SOURCE
 #include <sched.h>
 
 #if !(defined ARCH_IS_LINUX) || (defined ANDROID)
- 
+
 extern int clone(int (*)(void*), void*, int, void*, ...);
 extern int unshare(int);
 extern int sched_getcpu(void);
@@ -462,7 +467,7 @@ extern int __sched_cpucount(size_t setsize, cpu_set_t* set);
 
 void YabThreadSetCurrentThreadAffinityMask(int mask)
 {
-#if 0    
+#if 0
     int err, syscallres;
     pid_t pid = gettid();
 
@@ -471,7 +476,7 @@ void YabThreadSetCurrentThreadAffinityMask(int mask)
 	CPU_SET(mask, &my_set);
 	CPU_SET(mask+4, &my_set);
 	sched_setaffinity(pid,sizeof(my_set), &my_set);
-#endif    
+#endif
 }
 
 #include <sys/syscall.h>

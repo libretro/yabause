@@ -84,7 +84,7 @@ int Ygl_uniformVdp1CommonParam(void * p, YglTextureManager *tm, Vdp2 *varVdp2Reg
   YglProgram * prg;
 //  YglVdp1CommonParam * param;
 
-  prg = p;
+  prg = (YglProgram*)p;
   glEnableVertexAttribArray(prg->vertexp);
   glEnableVertexAttribArray(prg->texcoordp);
   if (prg->vaid > 0) {
@@ -132,7 +132,7 @@ int Ygl_uniformVdp1CommonParam(void * p, YglTextureManager *tm, Vdp2 *varVdp2Reg
 
 int Ygl_cleanupVdp1CommonParam(void * p, YglTextureManager *tm){
   YglProgram * prg;
-  prg = p;
+  prg = (YglProgram*)p;
   if (prg->vaid > 0) {
     glDisableVertexAttribArray(prg->vaid);
   }
@@ -182,7 +182,7 @@ int Ygl_uniformNormal(void * p, YglTextureManager *tm, Vdp2 *varVdp2Regs, int id
 {
 
   YglProgram * prg;
-  prg = p;
+  prg = (YglProgram*)p;
   glEnableVertexAttribArray(0);
   glEnableVertexAttribArray(1);
   glUniform1i(id_normal_s_texture, 0);
@@ -192,7 +192,7 @@ int Ygl_uniformNormal(void * p, YglTextureManager *tm, Vdp2 *varVdp2Regs, int id
 int Ygl_cleanupNormal(void * p, YglTextureManager *tm)
 {
   YglProgram * prg;
-  prg = p;
+  prg = (YglProgram*)p;
   return 0;
 }
 
@@ -247,7 +247,7 @@ int Ygl_uniformNormalCram(void * p, YglTextureManager *tm, Vdp2 *varVdp2Regs, in
 {
 
   YglProgram * prg;
-  prg = p;
+  prg = (YglProgram*)p;
   glEnableVertexAttribArray(0);
   glEnableVertexAttribArray(1);
   glUniform1i(id_normal_cram_s_texture, 0);
@@ -276,7 +276,7 @@ int Ygl_cleanupNormalCram(void * p, YglTextureManager *tm)
   glBindTexture(GL_TEXTURE_2D, 0);
   glActiveTexture(GL_TEXTURE2);
   glBindTexture(GL_TEXTURE_2D, 0);
-  prg = p;
+  prg = (YglProgram*)p;
   return 0;
 }
 
@@ -308,7 +308,7 @@ int Ygl_uniformAddColCram(void * p, YglTextureManager *tm, Vdp2 *varVdp2Regs, in
 {
 
   YglProgram * prg;
-  prg = p;
+  prg = (YglProgram*)p;
   glEnableVertexAttribArray(0);
   glEnableVertexAttribArray(1);
   glUniform1i(id_normal_cram_s_texture_addcol, 0);
@@ -390,7 +390,7 @@ int Ygl_useUpscaleBuffer(void){
 int Ygl_uniformMosaic(void * p, YglTextureManager *tm, Vdp2 *varVdp2Regs, int id)
 {
   YglProgram * prg;
-  prg = p;
+  prg = (YglProgram*)p;
 
   Ygl_useTmpBuffer();
   glViewport(0, 0, _Ygl->rwidth, _Ygl->rheight);
@@ -422,7 +422,7 @@ int Ygl_uniformMosaic(void * p, YglTextureManager *tm, Vdp2 *varVdp2Regs, int id
 int Ygl_cleanupMosaic(void * p, YglTextureManager *tm)
 {
   YglProgram * prg;
-  prg = p;
+  prg = (YglProgram*)p;
 
   // Bind Default frame buffer
   Ygl_releaseTmpBuffer();
@@ -640,7 +640,7 @@ SHADER_VERSION_TESS
 int Ygl_uniformStartUserClip(void * p, YglTextureManager *tm, Vdp2 *varVdp2Regs, int id )
 {
    YglProgram * prg;
-   prg = p;
+   prg = (YglProgram*)p;
 
    glEnableVertexAttribArray(0);
    glDisableVertexAttribArray(1);
@@ -716,7 +716,7 @@ int Ygl_uniformEndUserClip(void * p, YglTextureManager *tm, Vdp2 *varVdp2Regs, i
 {
 
    YglProgram * prg;
-   prg = p;
+   prg = (YglProgram*)p;
    glDisable(GL_STENCIL_TEST);
    _Ygl->vdp1_stencil_mode = 0;
    glStencilFunc(GL_ALWAYS,0,0xFF);

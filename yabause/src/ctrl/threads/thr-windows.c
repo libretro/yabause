@@ -30,7 +30,7 @@
 struct thd_s {
    int running;
    HANDLE thd;
-   void (*func)(void *);
+   void* (*func)(void *);
    void *arg;
    CRITICAL_SECTION mutex;
    HANDLE cond;
@@ -42,7 +42,7 @@ static int hnd_key_once=FALSE;
 
 //////////////////////////////////////////////////////////////////////////////
 
-static DWORD wrapper(void *hnd) 
+static DWORD wrapper(void *hnd)
 {
    struct thd_s *hnds = (struct thd_s *)hnd;
 
@@ -57,8 +57,8 @@ static DWORD wrapper(void *hnd)
    return 0;
 }
 
-int YabThreadStart(unsigned int id, void (*func)(void *), void *arg) 
-{ 
+int YabThreadStart(unsigned int id, void* (*func)(void *), void *arg)
+{
    if (!hnd_key_once)
    {
       hnd_key=TlsAlloc();
@@ -70,7 +70,7 @@ int YabThreadStart(unsigned int id, void (*func)(void *), void *arg)
       fprintf(stderr, "YabThreadStart: thread %u is already started!\n", id);
       return -1;
    }
-   
+
    // Create CS and condition variable for thread
    InitializeCriticalSection(&thread_handle[id].mutex);
    if ((thread_handle[id].cond = CreateEvent(NULL, FALSE, FALSE, NULL)) == NULL)
@@ -87,13 +87,13 @@ int YabThreadStart(unsigned int id, void (*func)(void *), void *arg)
       perror("CreateThread");
       return -1;
    }
-   
+
    thread_handle[id].running = 1;
 
-   return 0; 
+   return 0;
 }
 
-void YabThreadWait(unsigned int id) 
+void YabThreadWait(unsigned int id)
 {
    if (!thread_handle[id].thd)
       return;  // Thread wasn't running in the first place
@@ -106,7 +106,7 @@ void YabThreadWait(unsigned int id)
    	   CloseHandle(thread_handle[id].cond);
 }
 
-void YabThreadYield(void) 
+void YabThreadYield(void)
 {
 	SleepEx(0, 0);
 }
@@ -116,13 +116,13 @@ void YabThreadUSleep( u32 stime )
 	SleepEx(stime/1000, 0);
 }
 
-void YabThreadSleep(void) 
+void YabThreadSleep(void)
 {
    struct thd_s *thd = (struct thd_s *)TlsGetValue(hnd_key);
    WaitForSingleObject(thd->cond,INFINITE);
 }
 
-void YabThreadRemoteSleep(unsigned int id) 
+void YabThreadRemoteSleep(unsigned int id)
 {
    if (!thread_handle[id].thd)
       return;  // Thread wasn't running in the first place
@@ -130,7 +130,7 @@ void YabThreadRemoteSleep(unsigned int id)
    WaitForSingleObject(thread_handle[id].cond,INFINITE);
 }
 
-void YabThreadWake(unsigned int id) 
+void YabThreadWake(unsigned int id)
 {
    if (!thread_handle[id].thd)
       return;  // Thread wasn't running in the first place
@@ -206,7 +206,7 @@ void* YabWaitEventQueue(YabEventQueue * queue_t){
   queue->out %= queue->capacity;
   ReleaseSRWLockExclusive(&(queue->mutex));
   WakeConditionVariable(&queue->cond_full);
-  return value; 
+  return value;
 }
 
 int YaGetQueueSize(YabEventQueue * queue_t){
@@ -244,7 +244,7 @@ YabSem * YabThreadCreateSem(int val){
 void YabThreadFreeSem( YabSem * mtx ){
     if( mtx != NULL ){
         YabSem_win32 * pmtx;
-        pmtx = (YabSem_win32 *)mtx;        
+        pmtx = (YabSem_win32 *)mtx;
         CloseHandle(pmtx->sem);
         free(pmtx);
     }

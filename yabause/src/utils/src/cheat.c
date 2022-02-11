@@ -75,7 +75,7 @@ int CheatAddCode(int type, u32 addr, u32 val)
    // Make sure we still have room
    if (numcheats >= cheatsize)
    {
-      cheatlist = realloc(cheatlist, sizeof(cheatlist_struct) * (cheatsize * 2));
+      cheatlist = (cheatlist_struct *)realloc(cheatlist, sizeof(cheatlist_struct) * (cheatsize * 2));
       cheatsize *= 2;
    }
 
@@ -363,7 +363,7 @@ int CheatLoad(const char *filename)
 
    if (numcheats >= cheatsize)
    {
-      cheatlist = realloc(cheatlist, sizeof(cheatlist_struct) * (cheatsize * 2));
+      cheatlist = (cheatlist_struct *)realloc(cheatlist, sizeof(cheatlist_struct) * (cheatsize * 2));
       memset((void *)cheatlist, 0, sizeof(cheatlist_struct) * (cheatsize * 2));
       cheatsize *= 2;
    }

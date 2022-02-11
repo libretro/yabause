@@ -95,7 +95,7 @@ extern void FASTCALL IOPortWriteByte(SH2_struct *context, UNUSED u8* memory,UNUS
  * Searches through the PERCoreList array for the given coreid.
  * If found, PERCore is set to the address of that core and
  * the core's Init function is called.
- * 
+ *
  * @param coreid the peripheral core to be used
  * @return 0 if core has been inited, -1 otherwise
  */

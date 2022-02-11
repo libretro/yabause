@@ -85,7 +85,7 @@ static int soundlen;
 #define LOG printf
 #endif
 
-static void sound_update_thd(void *ptr __attribute__((unused)))    {
+static void* sound_update_thd(void *ptr __attribute__((unused)))    {
     ALint proc;
     ALuint buf;
 
@@ -165,7 +165,7 @@ static void sound_update_thd(void *ptr __attribute__((unused)))    {
 		YabThreadYield();
     }
 
-    //return NULL;
+    return NULL;
 }
 
 int total_len = 0;

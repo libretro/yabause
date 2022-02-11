@@ -1,7 +1,4 @@
-![CMake Windows](https://github.com/rob-ack/yabause/actions/workflows/cmake.windows.yml/badge.svg)
-![CMake Linux](https://github.com/rob-ack/yabause/actions/workflows/cmake.linux.ubuntu.yml/badge.svg)
-[![CMake Linux with QT](https://github.com/rob-ack/yabause/actions/workflows/cmake.linux.ubuntu.qt.yml/badge.svg)](https://github.com/rob-ack/yabause/actions/workflows/cmake.linux.ubuntu.qt.yml)
-[![Travis CI Build Status](https://travis-ci.com/FCare/Kronos.svg?branch=extui-align)](https://travis-ci.com/github/FCare/Kronos)
+[![Last Release Status](https://github.com/FCare/Kronos/actions/workflows/release_on_tag.yml/badge.svg)
 
 # Sega Saturn Emulated Hardware
 
@@ -22,7 +19,6 @@ Currently used are:
 
 - Windows
 - Linux (Debian)
-- Android
 
 ### QT Version
 
@@ -58,12 +54,6 @@ Is the Frontend which is used for manual tests
 ### Windows
 
 Works quite well on a modern Hardware.
-
-### Android
-
-This library is considered to run on Android while newer version have not been Tested yet.
-It is excpected that the CMake system needs some work to build for android correctly.
-It is recommended to try to make a LibRetro build for Android. Ty to use the older make script for reference.
 
 ### Raspberry Pi 4 Raspberian OS
 
