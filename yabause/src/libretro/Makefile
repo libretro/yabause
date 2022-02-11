@@ -80,6 +80,11 @@ ifneq (,$(findstring unix,$(platform)))
 		FLAGS += -DARM
 	endif
 
+	# riscv64
+	ifneq ($(findstring riscv64,$(shell uname -a)),)
+		HAVE_SSE = 0
+	endif
+
 ifneq ($(findstring Linux,$(shell uname -s)),)
 	HAVE_CDROM = 1
 endif
