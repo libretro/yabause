@@ -195,7 +195,7 @@ typedef struct
    u16 char_bank[4];
    u16 pname_bank[4];
    u8 alpha_per_line[270];
-   u16 draw_line;
+   int draw_line;
 
 } vdp2draw_struct;
 
