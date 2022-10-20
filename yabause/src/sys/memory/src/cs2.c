@@ -1618,17 +1618,21 @@ void Cs2PlayDisc(void) {
   pdepos = ((Cs2Area->reg.CR3 & 0xFF) << 16) | Cs2Area->reg.CR4;
   pdpmode = Cs2Area->reg.CR3 >> 8;
 
-  //CDLOG("[CDB] Command: Play; Start = 0x%06x, End = 0x%06x, Mode = 0x%02x", pdspos, pdepos, pdpmode);
+  CDLOG("[CDB] Command: Play; Start = 0x%06x, End = 0x%06x, Mode = 0x%02x", pdspos, pdepos, pdpmode);
+  u32 current_fad = Cs2Area->FAD;
 
   // Convert Start Position to playFAD
   if (pdspos == 0xFFFFFF || pdpmode == 0xFF) // This still isn't right
   {
      // No Change
+	 CDLOG("[CDB] pos = current");
   }
   else if (pdspos & 0x800000)
   {
      // FAD Mode
      Cs2Area->playFAD = (pdspos & 0xFFFFF);
+	 
+	 CDLOG("[CDB] pos = FAD:%02X", Cs2Area->playFAD);
 
      Cs2SetupDefaultPlayStats(Cs2FADToTrack(Cs2Area->playFAD), 0);
 
@@ -1650,11 +1654,15 @@ void Cs2PlayDisc(void) {
         Cs2Area->playFAD = Cs2Area->FAD;
         Cs2Area->track = (u8)(pdspos >> 8);
         Cs2Area->index = (u8)pdspos;
+		
+		CDLOG("[CDB] pos = TRACK:%02X FAD:%02X upd", (u8)(pdspos >> 8), Cs2Area->FAD );
      }
      else
      {
         // Preserve Pickup Position
         Cs2SetupDefaultPlayStats((u8)(pdspos >> 8), 0);
+		
+		CDLOG("[CDB] pos = TRACK:%02X FAD:%02X noupd", (u8)(pdspos >> 8), Cs2Area->FAD );
      }
   }
 
@@ -1727,7 +1735,8 @@ void Cs2SeekDisc(void) {
 		Cs2Area->track = 0xFF;
 		Cs2Area->index = 0xFF;
 		Cs2Area->FAD = 0xFFFFFFFF;
-
+		
+		CDLOG("[CDB] Seek pos = CDB_STAT_STANDBY" );
 	}
 	// Pause
 	else if ((Cs2Area->reg.CR1 & 0xFF) == 0xFF && Cs2Area->reg.CR2 == 0xFFFF){
@@ -1740,9 +1749,11 @@ void Cs2SeekDisc(void) {
      u32 sdFAD;
     int i;
 
-     sdFAD = ((Cs2Area->reg.CR1 & 0x0F) << 16) | Cs2Area->reg.CR2;
+     sdFAD = ((Cs2Area->reg.CR1 & 0xFF) << 16) | Cs2Area->reg.CR2;
+     sdFAD = (sdFAD & 0xFFFFF);
+	 
     Cs2Area->status = CDB_STAT_PAUSE;
-    for (i = 0; i < 16; i++){
+    for (i = 0; i < 99; i++){
        u32 tfad = Cs2Area->TOC[i] & 0x00FFFFFF;
        if (tfad >= sdFAD){
           Cs2SetupDefaultPlayStats(i, 1);
@@ -1750,7 +1761,7 @@ void Cs2SeekDisc(void) {
           break;
        }
     }
-
+	CDLOG("[CDB] Seek pos = FAD:%02X", Cs2Area->FAD );
   }
   else
   {
@@ -1761,6 +1772,8 @@ void Cs2SeekDisc(void) {
         Cs2Area->status = CDB_STAT_PAUSE;
         Cs2SetupDefaultPlayStats((Cs2Area->reg.CR2 >> 8), 1);
         Cs2Area->index = Cs2Area->reg.CR2 & 0xFF;
+		
+		CDLOG("[CDB] Seek pos = TRACK:%02X FAD:%02X", Cs2Area->track, Cs2Area->FAD );
 	 }
      else
      {
@@ -1772,6 +1785,8 @@ void Cs2SeekDisc(void) {
         Cs2Area->track = 0xFF;
         Cs2Area->index = 0xFF;
         Cs2Area->FAD = 0xFFFFFFFF;
+		
+		CDLOG("[CDB] Seek pos = CDB_STAT_STANDBY" );
      }
   }
 
