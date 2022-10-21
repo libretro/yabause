@@ -794,8 +794,13 @@ void op5(struct Slot * slot)
       else if (slot->regs.alfows == 3)
          alfo_val = alfo.noise_table[slot->state.lfo_pos];
 
-      lfo_add = (((alfo_val + 1)) >> (7 - slot->regs.alfos)) << 1;
-      sample = apply_volume(slot->regs.tl, slot->state.attenuation + lfo_add, slot->state.output);
+      // Direct Sound
+      if( slot->regs.sd ){
+        sample = slot->state.output;
+      }else{
+        lfo_add = (((alfo_val + 1)) >> (7 - slot->regs.alfos)) << 1;
+        sample = apply_volume(slot->regs.tl, slot->state.attenuation + lfo_add, slot->state.output);
+      }
       slot->state.output = sample;
    }
 }
