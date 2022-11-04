@@ -1262,7 +1262,7 @@ void ScuExec(u32 timing) {
      //}
    }
 #else
-  ScuDmaProc(ScuRegs, (int)timing<<4+0xF);
+  ScuDmaProc(ScuRegs, (int)timing);
 #endif
 
    // is dsp executing?
