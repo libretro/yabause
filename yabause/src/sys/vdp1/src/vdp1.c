@@ -1268,7 +1268,7 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
          case 0: // normal sprite draw
             ctrl = &cmdBufferBeingProcessed[nbCmdToProcess];
             ctrl->dirty = 0;
-            Vdp1ReadCommand(&ctrl->cmd, regs->addr, Vdp1Ram);
+            Vdp1ReadCommand(&ctrl->cmd, regs->addr, ram);
             if (!sameCmd(&ctrl->cmd, &oldCmd)) {
               oldCmd = ctrl->cmd;
               checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
@@ -1282,7 +1282,7 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
          case 1: // scaled sprite draw
             ctrl = &cmdBufferBeingProcessed[nbCmdToProcess];
             ctrl->dirty = 0;
-            Vdp1ReadCommand(&ctrl->cmd, regs->addr, Vdp1Ram);
+            Vdp1ReadCommand(&ctrl->cmd, regs->addr, ram);
             if (!sameCmd(&ctrl->cmd, &oldCmd)) {
               oldCmd = ctrl->cmd;
               ctrl->ignitionLine = MIN(yabsys.LineCount + yabsys.vdp1cycles/cylesPerLine,yabsys.MaxLineCount-1);
@@ -1298,7 +1298,7 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
                  (Hardcore 4x4 for instance) use it instead of 2 */
             ctrl = &cmdBufferBeingProcessed[nbCmdToProcess];
             ctrl->dirty = 0;
-            Vdp1ReadCommand(&ctrl->cmd, regs->addr, Vdp1Ram);
+            Vdp1ReadCommand(&ctrl->cmd, regs->addr, ram);
             if (!sameCmd(&ctrl->cmd, &oldCmd)) {
               oldCmd = ctrl->cmd;
               ctrl->ignitionLine = MIN(yabsys.LineCount + yabsys.vdp1cycles/cylesPerLine,yabsys.MaxLineCount-1);
@@ -1312,7 +1312,7 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
          case 4: // polygon draw
             ctrl = &cmdBufferBeingProcessed[nbCmdToProcess];
             ctrl->dirty = 0;
-            Vdp1ReadCommand(&ctrl->cmd, regs->addr, Vdp1Ram);
+            Vdp1ReadCommand(&ctrl->cmd, regs->addr, ram);
             if (!sameCmd(&ctrl->cmd, &oldCmd)) {
               oldCmd = ctrl->cmd;
               ctrl->ignitionLine = MIN(yabsys.LineCount + yabsys.vdp1cycles/cylesPerLine,yabsys.MaxLineCount-1);
@@ -1325,7 +1325,7 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
          case 7: // undocumented mirror
             ctrl = &cmdBufferBeingProcessed[nbCmdToProcess];
             ctrl->dirty = 0;
-            Vdp1ReadCommand(&ctrl->cmd, regs->addr, Vdp1Ram);
+            Vdp1ReadCommand(&ctrl->cmd, regs->addr, ram);
             if (!sameCmd(&ctrl->cmd, &oldCmd)) {
               oldCmd = ctrl->cmd;
               ctrl->ignitionLine = MIN(yabsys.LineCount + yabsys.vdp1cycles/cylesPerLine,yabsys.MaxLineCount-1);
@@ -1337,7 +1337,7 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
          case 6: // line draw
             ctrl = &cmdBufferBeingProcessed[nbCmdToProcess];
             ctrl->dirty = 0;
-            Vdp1ReadCommand(&ctrl->cmd, regs->addr, Vdp1Ram);
+            Vdp1ReadCommand(&ctrl->cmd, regs->addr, ram);
             if (!sameCmd(&ctrl->cmd, &oldCmd)) {
               oldCmd = ctrl->cmd;
               ctrl->ignitionLine = MIN(yabsys.LineCount + yabsys.vdp1cycles/cylesPerLine,yabsys.MaxLineCount-1);
@@ -1470,15 +1470,15 @@ void Vdp1FakeDrawCommands(u8 * ram, Vdp1 * regs)
             break;
          case 8: // user clipping coordinates
          case 11: // undocumented mirror
-            Vdp1ReadCommand(&cmd, regs->addr, Vdp1Ram);
+            Vdp1ReadCommand(&cmd, regs->addr, ram);
             VIDCore->Vdp1UserClipping(&cmd, ram, regs);
             break;
          case 9: // system clipping coordinates
-            Vdp1ReadCommand(&cmd, regs->addr, Vdp1Ram);
+            Vdp1ReadCommand(&cmd, regs->addr, ram);
             VIDCore->Vdp1SystemClipping(&cmd, ram, regs);
             break;
          case 10: // local coordinate
-            Vdp1ReadCommand(&cmd, regs->addr, Vdp1Ram);
+            Vdp1ReadCommand(&cmd, regs->addr, ram);
             VIDCore->Vdp1LocalCoordinate(&cmd, ram, regs);
             break;
          default: // Abort

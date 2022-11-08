@@ -1084,26 +1084,7 @@ void ScuDmaProc(scudmainfo_struct * dma, int time) {
   SucDmaCheck(dma, time);
 }
 
-//////////////////////////////////////////////////////////////////////////////
-void ScuExec(u32 timing) {
-  // ScuTestInterruptMask();
-   if ( ScuRegs->T1MD & 0x1 ){
-     if ((ScuRegs->T1MD & 0x80) == 0) {
-       ScuTimer1Exec(timing);
-     }
-     else {
-       if (yabsys.LineCount == ScuRegs->T0C || ScuRegs->T0C > 500 ) {
-         ScuTimer1Exec(timing);
-       }
-     }
-   }
-
-  ScuDmaProc(&ScuRegs->dma0, (int)timing);
-  ScuDmaProc(&ScuRegs->dma1, (int)timing);
-  ScuDmaProc(&ScuRegs->dma2, (int)timing);
-
-   // is dsp executing?
-   if (ScuDsp->ProgControlPort.part.EX) {
+static void ScuDspExec(u32 timing) {
 
 #ifdef DSPLOG
      if (slogp == NULL){
@@ -1707,6 +1688,29 @@ void ScuExec(u32 timing) {
          }
          dsp_counter--;
       }
+   }
+
+//////////////////////////////////////////////////////////////////////////////
+void ScuExec(u32 timing) {
+  // ScuTestInterruptMask();
+  ScuDmaProc(&ScuRegs->dma0, (int)timing);
+  ScuDmaProc(&ScuRegs->dma1, (int)timing);
+  ScuDmaProc(&ScuRegs->dma2, (int)timing);
+
+   // is dsp executing?
+   if (ScuDsp->ProgControlPort.part.EX) {
+     ScuDspExec(timing);
+   }
+
+   if ( ScuRegs->T1MD & 0x1 ){
+     if ((ScuRegs->T1MD & 0x80) == 0) {
+       ScuTimer1Exec(timing);
+     }
+     else {
+       if (yabsys.LineCount == ScuRegs->T0C || ScuRegs->T0C > 500 ) {
+         ScuTimer1Exec(timing);
+       }
+     }
    }
 }
 
