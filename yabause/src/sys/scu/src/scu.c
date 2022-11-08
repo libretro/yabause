@@ -273,140 +273,6 @@ static void DoDMA(u32 ReadAddress, unsigned int ReadAdd,
    }  // Fill / copy
 }
 
-//////////////////////////////////////
-
-static void FASTCALL ScuDMA(scudmainfo_struct *dmainfo) {
-   u8 ReadAdd, WriteAdd;
-   u32 trans_size = 0;
-
-   if (dmainfo->AddValue & 0x100)
-      ReadAdd = 4;
-   else
-      ReadAdd = 0;
-
-   switch(dmainfo->AddValue & 0x7) {
-      case 0x0:
-         WriteAdd = 0;
-         break;
-      case 0x1:
-         WriteAdd = 2;
-         break;
-      case 0x2:
-         WriteAdd = 4;
-         break;
-      case 0x3:
-         WriteAdd = 8;
-         break;
-      case 0x4:
-         WriteAdd = 16;
-         break;
-      case 0x5:
-         WriteAdd = 32;
-         break;
-      case 0x6:
-         WriteAdd = 64;
-         break;
-      case 0x7:
-         WriteAdd = 128;
-         break;
-      default:
-         WriteAdd = 0;
-         break;
-   }
-
-   if (dmainfo->ModeAddressUpdate & 0x1000000) {
-      // Indirect DMA
-
-      for (;;) {
-         u32 ThisTransferSize = DMAMappedMemoryReadLong(dmainfo->WriteAddress);
-         u32 ThisWriteAddress = DMAMappedMemoryReadLong(dmainfo->WriteAddress+4);
-         u32 ThisReadAddress  = DMAMappedMemoryReadLong(dmainfo->WriteAddress+8);
-
-         //LOG("SCU Indirect DMA: src %08x, dst %08x, size = %08x %x\n", ThisReadAddress, ThisWriteAddress, ThisTransferSize, dmainfo->WriteAddress+4);
-         DoDMA(ThisReadAddress & 0x7FFFFFFF, ReadAdd, ThisWriteAddress,
-               WriteAdd, ThisTransferSize);
-
-         if (ThisReadAddress & 0x80000000)
-            break;
-
-         dmainfo->WriteAddress+= 0xC;
-         trans_size += ThisTransferSize;
-      }
-
-      switch(dmainfo->mode) {
-         case 0:
-           if (trans_size > 1024) {
-             ScuRegs->dma0_time = trans_size;
-           }
-           else {
-             ScuSendLevel0DMAEnd();
-           }
-           break;
-         case 1:
-          if (trans_size > 1024) {
-             ScuRegs->dma1_time = trans_size;
-           }
-           else {
-             ScuSendLevel1DMAEnd();
-           }
-            break;
-         case 2:
-           if (trans_size > 1024) {
-             ScuRegs->dma2_time = trans_size;
-           }
-           else {
-             ScuSendLevel2DMAEnd();
-           }
-            break;
-      }
-   }
-   else {
-      // Direct DMA
-
-      if (dmainfo->mode > 0) {
-         dmainfo->TransferNumber &= 0xFFF;
-
-         if (dmainfo->TransferNumber == 0)
-            dmainfo->TransferNumber = 0x1000;
-      }
-      else {
-         if (dmainfo->TransferNumber == 0)
-            dmainfo->TransferNumber = 0x100000;
-      }
-
-      DoDMA(dmainfo->ReadAddress, ReadAdd, dmainfo->WriteAddress, WriteAdd,
-            dmainfo->TransferNumber);
-
-      switch(dmainfo->mode) {
-         case 0:
-
-           if (dmainfo->TransferNumber > 1024) {
-             ScuRegs->dma0_time = dmainfo->TransferNumber;
-           }
-           else {
-             ScuSendLevel0DMAEnd();
-           }
-            break;
-         case 1:
-           if (dmainfo->TransferNumber > 1024) {
-             ScuRegs->dma1_time = dmainfo->TransferNumber;
-           }
-           else {
-             ScuSendLevel1DMAEnd();
-           }
-            break;
-         case 2:
-           if (dmainfo->TransferNumber > 1024) {
-             ScuRegs->dma2_time = dmainfo->TransferNumber;
-           }
-           else {
-             ScuSendLevel2DMAEnd();
-           }
-            break;
-      }
-   }
-}
-
 //////////////////////////////////////////////////////////////////////////////
 
 static u32 readgensrc(u8 num)
@@ -1214,13 +1080,8 @@ void SucDmaCheck(scudmainfo_struct * dma, int time) {
 }
 
 
-void ScuDmaProc(Scu * scu, int time) {
-#if OLD_DMA
-  return;
-#endif
-  SucDmaCheck(&scu->dma0, time);
-  SucDmaCheck(&scu->dma1, time);
-  SucDmaCheck(&scu->dma2, time);
+void ScuDmaProc(scudmainfo_struct * dma, int time) {
+  SucDmaCheck(dma, time);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1237,33 +1098,9 @@ void ScuExec(u32 timing) {
      }
    }
 
-#if OLD_DMA
-   if (ScuRegs->dma0_time > 0) {
-     //ScuRegs->dma0_time -= (timing << 4); // ToDo: memory clock
-     //if (ScuRegs->dma0_time < 0) {
-       ScuSendLevel0DMAEnd();
-       ScuRegs->dma0_time = 0;
-     //}
-   }
-
-   else if (ScuRegs->dma1_time > 0) {
-     //ScuRegs->dma1_time -= (timing << 4); // ToDo: memory clock
-     //if (ScuRegs->dma1_time < 0) {
-     ScuSendLevel1DMAEnd();
-     ScuRegs->dma1_time = 0;
-     //}
-   }
-
-   else if (ScuRegs->dma2_time > 0) {
-     //ScuRegs->dma0_time -= (timing << 4); // ToDo: memory clock
-     //if (ScuRegs->dma0_time < 0) {
-     ScuSendLevel2DMAEnd();
-     ScuRegs->dma2_time = 0;
-     //}
-   }
-#else
-  ScuDmaProc(ScuRegs, (int)timing);
-#endif
+  ScuDmaProc(&ScuRegs->dma0, (int)timing);
+  ScuDmaProc(&ScuRegs->dma1, (int)timing);
+  ScuDmaProc(&ScuRegs->dma2, (int)timing);
 
    // is dsp executing?
    if (ScuDsp->ProgControlPort.part.EX) {
@@ -2767,7 +2604,7 @@ void FASTCALL ScuWriteLong(SH2_struct *sh, u8* mem, u32 addr, u32 val) {
       if ((val & 0x1) && ((ScuRegs->D0MD&0x7)==0x7) )
          {
             if (ScuRegs->dma0.TransferNumber != 0) {
-              ScuDmaProc(ScuRegs, 0x7FFFFFFF);
+              ScuDmaProc(&ScuRegs->dma0, 0x7FFFFFFF);
             }
             ScuRegs->dma0.mode = 0;
             ScuRegs->dma0.ReadAddress = ScuRegs->D0R;
@@ -2775,12 +2612,8 @@ void FASTCALL ScuWriteLong(SH2_struct *sh, u8* mem, u32 addr, u32 val) {
             ScuRegs->dma0.TransferNumber = ScuRegs->D0C;
             ScuRegs->dma0.AddValue = ScuRegs->D0AD;
             ScuRegs->dma0.ModeAddressUpdate = ScuRegs->D0MD;
-#if OLD_DMA
-            ScuDMA(&ScuRegs->dma0);
-#else
             ScuSetAddValue(&ScuRegs->dma0);
-            ScuDmaProc(ScuRegs, 128);
-#endif
+            ScuDmaProc(&ScuRegs->dma0, 128);
          }
          ScuRegs->D0EN = val;
          break;
@@ -2803,7 +2636,7 @@ void FASTCALL ScuWriteLong(SH2_struct *sh, u8* mem, u32 addr, u32 val) {
       if ((val & 0x1) && ((ScuRegs->D1MD&0x07) == 0x7))
          {
             if (ScuRegs->dma1.TransferNumber != 0) {
-              ScuDmaProc(ScuRegs, 0x7FFFFFFF);
+              ScuDmaProc(&ScuRegs->dma1, 0x7FFFFFFF);
             }
 
             ScuRegs->dma1.mode = 1;
@@ -2812,13 +2645,8 @@ void FASTCALL ScuWriteLong(SH2_struct *sh, u8* mem, u32 addr, u32 val) {
             ScuRegs->dma1.TransferNumber = ScuRegs->D1C;
             ScuRegs->dma1.AddValue = ScuRegs->D1AD;
             ScuRegs->dma1.ModeAddressUpdate = ScuRegs->D1MD;
-#if OLD_DMA
-            ScuDMA(&ScuRegs->dma1);
-#else
             ScuSetAddValue(&ScuRegs->dma1);
-            ScuDmaProc(ScuRegs,128);
-#endif
-
+            ScuDmaProc(&ScuRegs->dma1, 128);
 
          }
          ScuRegs->D1EN = val;
@@ -2843,7 +2671,7 @@ void FASTCALL ScuWriteLong(SH2_struct *sh, u8* mem, u32 addr, u32 val) {
          {
 
             if (ScuRegs->dma2.TransferNumber != 0) {
-              ScuDmaProc(ScuRegs, 0x7FFFFFFF);
+              ScuDmaProc(&ScuRegs->dma2, 0x7FFFFFFF);
             }
 
             ScuRegs->dma2.mode = 2;
@@ -2852,12 +2680,8 @@ void FASTCALL ScuWriteLong(SH2_struct *sh, u8* mem, u32 addr, u32 val) {
             ScuRegs->dma2.TransferNumber = ScuRegs->D2C;
             ScuRegs->dma2.AddValue = ScuRegs->D2AD;
             ScuRegs->dma2.ModeAddressUpdate = ScuRegs->D2MD;
-#if OLD_DMA
-            ScuDMA(&ScuRegs->dma2);
-#else
             ScuSetAddValue(&ScuRegs->dma2);
-            ScuDmaProc(ScuRegs, 128);
-#endif
+            ScuDmaProc(&ScuRegs->dma2, 128);
 
          }
          ScuRegs->D2EN = val;
@@ -3018,7 +2842,7 @@ static INLINE void ScuChekIntrruptDMA(int id){
 
   if ((ScuRegs->D0EN & 0x100) && (ScuRegs->D0MD & 0x07) == id){
     if (ScuRegs->dma0.TransferNumber > 0) {
-      ScuDmaProc(ScuRegs, 0x7FFFFFFF);
+      ScuDmaProc(&ScuRegs->dma0, 0x7FFFFFFF);
     }
     ScuRegs->dma0.mode = 0;
     ScuRegs->dma0.ReadAddress = ScuRegs->D0R;
@@ -3026,17 +2850,13 @@ static INLINE void ScuChekIntrruptDMA(int id){
     ScuRegs->dma0.TransferNumber = ScuRegs->D0C;
     ScuRegs->dma0.AddValue = ScuRegs->D0AD;
     ScuRegs->dma0.ModeAddressUpdate = ScuRegs->D0MD;
-#if OLD_DMA
-    ScuDMA(&ScuRegs->dma0);
-#else
     ScuSetAddValue(&ScuRegs->dma0);
-    ScuDmaProc(ScuRegs, 128);
-#endif
+    ScuDmaProc(&ScuRegs->dma0, 128);
     ScuRegs->D0EN = 0;
   }
   if ((ScuRegs->D1EN & 0x100) && (ScuRegs->D1MD & 0x07) == id){
     if (ScuRegs->dma1.TransferNumber > 0) {
-      ScuDmaProc(ScuRegs, 0x7FFFFFFF);
+      ScuDmaProc(&ScuRegs->dma1, 0x7FFFFFFF);
     }
     scudmainfo_struct dmainfo;
     ScuRegs->dma1.mode = 1;
@@ -3045,17 +2865,13 @@ static INLINE void ScuChekIntrruptDMA(int id){
     ScuRegs->dma1.TransferNumber = ScuRegs->D1C;
     ScuRegs->dma1.AddValue = ScuRegs->D1AD;
     ScuRegs->dma1.ModeAddressUpdate = ScuRegs->D1MD;
-#if OLD_DMA
-    ScuDMA(&ScuRegs->dma1);
-#else
     ScuSetAddValue(&ScuRegs->dma1);
-    ScuDmaProc(ScuRegs, 128);
-#endif
+    ScuDmaProc(&ScuRegs->dma1, 128);
     ScuRegs->D1EN = 0;
   }
   if ((ScuRegs->D2EN & 0x100) && (ScuRegs->D2MD & 0x07) == id){
     if (ScuRegs->dma2.TransferNumber > 0) {
-      ScuDmaProc(ScuRegs, 0x7FFFFFFF);
+      ScuDmaProc(&ScuRegs->dma2, 0x7FFFFFFF);
     }
     ScuRegs->dma2.mode = 2;
     ScuRegs->dma2.ReadAddress = ScuRegs->D2R;
@@ -3063,12 +2879,8 @@ static INLINE void ScuChekIntrruptDMA(int id){
     ScuRegs->dma2.TransferNumber = ScuRegs->D2C;
     ScuRegs->dma2.AddValue = ScuRegs->D2AD;
     ScuRegs->dma2.ModeAddressUpdate = ScuRegs->D2MD;
-#if OLD_DMA
-    ScuDMA(&ScuRegs->dma2);
-#else
     ScuSetAddValue(&ScuRegs->dma2);
-    ScuDmaProc(ScuRegs, 128);
-#endif
+    ScuDmaProc(&ScuRegs->dma2, 128);
     ScuRegs->D2EN = 0;
   }
 }
