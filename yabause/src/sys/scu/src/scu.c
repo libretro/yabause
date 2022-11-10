@@ -879,11 +879,11 @@ void SucDmaExec(scudmainfo_struct * dma, int * time ) {
       if (constant_source) {
         u32 val;
         if (dma->ReadAddress & 2) {  // Avoid misaligned access
-          val = DMAMappedMemoryReadWord((dma->ReadAddress&0x0FFFFFFF)) << 16
-            | DMAMappedMemoryReadWord((dma->ReadAddress&0x0FFFFFFF) + 2);
+          val = DMAMappedMemoryReadWord((dma->ReadAddress)) << 16
+            | DMAMappedMemoryReadWord((dma->ReadAddress) + 2);
         }
         else {
-          val = DMAMappedMemoryReadLong((dma->ReadAddress & 0x0FFFFFFF));
+          val = DMAMappedMemoryReadLong((dma->ReadAddress));
         }
 
         u32 start = dma->WriteAddress;
@@ -907,7 +907,7 @@ void SucDmaExec(scudmainfo_struct * dma, int * time ) {
         u32 start = dma->WriteAddress;
         while ( *time > 0) {
           *time -= 1;
-          u32 tmp = DMAMappedMemoryReadLong((dma->ReadAddress & 0x0FFFFFFF));
+          u32 tmp = DMAMappedMemoryReadLong((dma->ReadAddress));
           DMAMappedMemoryWriteWord(dma->WriteAddress, (u16)(tmp >> 16));
           dma->WriteAddress += dma->WriteAdd;
           DMAMappedMemoryWriteWord(dma->WriteAddress, (u16)tmp);
@@ -928,7 +928,7 @@ void SucDmaExec(scudmainfo_struct * dma, int * time ) {
       // Fill in 32-bit units (always aligned).
       u32 start = dma->WriteAddress;
       if (constant_source) {
-        u32 val = DMAMappedMemoryReadLong((dma->ReadAddress & 0x0FFFFFFF));
+        u32 val = DMAMappedMemoryReadLong((dma->ReadAddress));
         while ( *time > 0) {
           *time -= 1;
           DMAMappedMemoryWriteLong(dma->WriteAddress, val);
@@ -945,7 +945,7 @@ void SucDmaExec(scudmainfo_struct * dma, int * time ) {
       else {
         while (*time > 0) {
           *time -= 1;
-          u32 val = DMAMappedMemoryReadLong((dma->ReadAddress & 0x0FFFFFFF));
+          u32 val = DMAMappedMemoryReadLong((dma->ReadAddress));
           DMAMappedMemoryWriteLong(dma->WriteAddress, val);
           dma->ReadAddress += dma->ReadAdd;
           dma->WriteAddress += dma->WriteAdd;
@@ -969,11 +969,12 @@ void SucDmaExec(scudmainfo_struct * dma, int * time ) {
     // Access to B-BUS?
     if (((dma->WriteAddress & 0x1FFFFFFF) >= 0x5A00000 && (dma->WriteAddress & 0x1FFFFFFF) < 0x5FF0000)) {
       // Copy in 16-bit units, avoiding misaligned accesses.
+      // printf("Transfer %d blocks\n", dma->TransferNumber);
       u32 counter = 0;
       u32 start = dma->WriteAddress;
       while (*time > 0) {
         *time -= 1;
-        u16 tmp = DMAMappedMemoryReadWord((dma->ReadAddress & 0x0FFFFFFF));
+        u16 tmp = DMAMappedMemoryReadWord(dma->ReadAddress);
         DMAMappedMemoryWriteWord(dma->WriteAddress, tmp);
         dma->WriteAddress += dma->WriteAdd;
         dma->ReadAddress += 2;
@@ -991,7 +992,7 @@ void SucDmaExec(scudmainfo_struct * dma, int * time ) {
       u32 start = dma->WriteAddress;
       while ( *time > 0) {
         *time -= 1;
-        u16 tmp = DMAMappedMemoryReadWord((dma->ReadAddress & 0x0FFFFFFF));
+        u16 tmp = DMAMappedMemoryReadWord((dma->ReadAddress));
         DMAMappedMemoryWriteWord(dma->WriteAddress, tmp);
         dma->WriteAddress += (dma->WriteAdd >> 1);
         dma->ReadAddress += 2;
@@ -1010,7 +1011,7 @@ void SucDmaExec(scudmainfo_struct * dma, int * time ) {
       u32 start = dma->WriteAddress;
       while (*time > 0) {
         *time -= 1;
-        u32 val = DMAMappedMemoryReadLong((dma->ReadAddress & 0x0FFFFFFF));
+        u32 val = DMAMappedMemoryReadLong((dma->ReadAddress));
         DMAMappedMemoryWriteLong(dma->WriteAddress, val );
         dma->ReadAddress += 4;
         dma->WriteAddress += dma->WriteAdd;
@@ -1032,7 +1033,7 @@ void SucDmaExec(scudmainfo_struct * dma, int * time ) {
 }
 
 
-void SucDmaCheck(scudmainfo_struct * dma, int time) {
+void ScuDmaCheck(scudmainfo_struct * dma, int time) {
   int atime = time;
   if (dma->TransferNumber > 0) {
     if (dma->ModeAddressUpdate & 0x1000000) {
@@ -2887,7 +2888,6 @@ static INLINE void ScuChekIntrruptDMA(int id){
     if (ScuRegs->dma1.TransferNumber > 0) {
       ScuDmaProc(&ScuRegs->dma1, 0x7FFFFFFF);
     }
-    scudmainfo_struct dmainfo;
     ScuRegs->dma1.mode = 1;
     ScuRegs->dma1.ReadAddress = ScuRegs->D1R;
     ScuRegs->dma1.WriteAddress = ScuRegs->D1W;
