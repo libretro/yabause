@@ -1803,11 +1803,11 @@ int YabSaveStateStream(void ** stream)
    MemStateWrite((void *)&yabsys.LineCount, sizeof(int), 1, stream);
    MemStateWrite((void *)&yabsys.VBlankLineCount, sizeof(int), 1, stream);
    MemStateWrite((void *)&yabsys.MaxLineCount, sizeof(int), 1, stream);
-   temp = yabsys.DecilineStop;
+   temp = yabsys.DecilineStop >> YABSYS_TIMING_BITS;;
    MemStateWrite((void *)&temp, sizeof(int), 1, stream);
    temp = (yabsys.CurSH2FreqType == CLKTYPE_26MHZ) ? 268 : 286;
    MemStateWrite((void *)&temp, sizeof(int), 1, stream);
-   temp32 = (yabsys.UsecFrac * temp / 10);
+   temp32 = (yabsys.UsecFrac * temp / 10) >> YABSYS_TIMING_BITS;
    MemStateWrite((void *)&temp32, sizeof(u32), 1, stream);
    MemStateWrite((void *)&yabsys.CurSH2FreqType, sizeof(int), 1, stream);
    MemStateWrite((void *)&yabsys.IsPal, sizeof(int), 1, stream);
@@ -2074,7 +2074,7 @@ int YabLoadStateStream(const void * stream, size_t size_stream)
    MemStateRead((void *)&yabsys.CurSH2FreqType, sizeof(int), 1, stream);
    MemStateRead((void *)&yabsys.IsPal, sizeof(int), 1, stream);
    YabauseChangeTiming(yabsys.CurSH2FreqType);
-   yabsys.UsecFrac = temp32 * temp / 10;
+   yabsys.UsecFrac = (temp32 << YABSYS_TIMING_BITS) * temp / 10;
 
    if (headerversion > 1) {
 
