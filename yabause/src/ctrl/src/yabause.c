@@ -177,8 +177,8 @@ void YabauseChangeTiming(int freqtype) {
    const double freq_base = yabsys.IsPal ? 28437500.0
       : (39375000.0 / 11.0) * 8.0;  // i.e. 8 * 3.579545... = 28.636363... MHz
    const double freq_mult = (freqtype == CLKTYPE_26MHZ) ? 15.0/16.0 : 1.0;
-   const double freq_shifted = (freq_base * freq_mult);
-   const double usec_shifted = 1.0e6;
+   const double freq_shifted = (freq_base * freq_mult) * (1 << YABSYS_TIMING_BITS);
+   const double usec_shifted = 1.0e6 * (1 << YABSYS_TIMING_BITS);
    const double line_time = yabsys.IsPal ? 1.0 /  50        / 313
                                          : 1.0 / (60/1.001) / 263;
    const double line_clk_cnt = line_time * (freq_base * freq_mult);
@@ -832,7 +832,7 @@ int YabauseEmulate(void) {
       }
 
       PROFILE_START("SCU");
-      ScuExec(yabsys.DecilineStop / 2);
+      ScuExec((yabsys.DecilineStop>>YABSYS_TIMING_BITS) / 2);
       PROFILE_STOP("SCU");
 
       yabsys.UsecFrac += usecinc;
@@ -840,8 +840,9 @@ int YabauseEmulate(void) {
       SmpcExec(yabsys.UsecFrac);
       PROFILE_STOP("SMPC");
       PROFILE_START("CDB");
-      Cs2Exec(yabsys.UsecFrac);
+      Cs2Exec(yabsys.UsecFrac >> YABSYS_TIMING_BITS);
       PROFILE_STOP("CDB");
+      yabsys.UsecFrac &= YABSYS_TIMING_MASK;
 
       saved_m68k_cycles  += m68k_cycles_per_deciline;
       // ScspAddCycles(m68k_cycles_per_deciline);

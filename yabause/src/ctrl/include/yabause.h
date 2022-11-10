@@ -106,6 +106,9 @@ void EnableAutoFrameSkip(void);
 int isAutoFrameSkip(void);
 void DisableAutoFrameSkip(void);
 
+#define YABSYS_TIMING_BITS  20
+#define YABSYS_TIMING_MASK  ((1 << YABSYS_TIMING_BITS) - 1)
+
 #define DECILINE_STEP (20)
 
 typedef struct
