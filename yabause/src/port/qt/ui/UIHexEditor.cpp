@@ -197,9 +197,9 @@ u8 UIHexEditorWnd::readByte(u32 addr)
 {
    if ((addr >= 0x05D00000 && addr < 0x05D80000) ||
       (addr >= 0x05F80000 && addr < 0x05FC0000))
-      return MappedMemoryReadWord(NULL, addr & (~0x1)) >> ((1-(addr & 0x1))<<3);
+      return DMAMappedMemoryReadWord(addr & (~0x1)) >> ((1-(addr & 0x1))<<3);
    else
-      return MappedMemoryReadByte(NULL, addr);
+      return DMAMappedMemoryReadByte(addr);
 }
 
 void UIHexEditorWnd::writeByte(u32 addr, u8 val)
@@ -207,12 +207,12 @@ void UIHexEditorWnd::writeByte(u32 addr, u8 val)
    if ((addr >= 0x05D00000 && addr < 0x05D80000) ||
       (addr >= 0x05F80000 && addr < 0x05FC0000))
    {
-      u16 word = MappedMemoryReadWord(NULL, addr & (~0x1)) & (0xFF << ((addr & 0x1)<<3) );
+      u16 word = DMAMappedMemoryReadWord(addr & (~0x1)) & (0xFF << ((addr & 0x1)<<3) );
       word |= (val << ((1-(addr & 0x1))<<3));
-      MappedMemoryWriteWord(NULL, addr & (~0x1), word);
+      DMAMappedMemoryWriteWord(addr & (~0x1), word);
    }
    else
-      MappedMemoryWriteByte(NULL, addr, val);
+      DMAMappedMemoryWriteByte(addr, val);
 }
 
 void UIHexEditorWnd::clear(u32 index, int len)

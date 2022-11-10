@@ -39,10 +39,10 @@ UICheatSearch::UICheatSearch( QWidget* p, QList <cheatsearch_struct> *search,
       pbSearch->setEnabled( false );
       pbAddCheat->setEnabled( false );
    }
-      
+
    getSearchTypes();
    listResults();
-	
+
 	// retranslate widgets
 	QtYabause::retranslateWidget( this );
 }
@@ -121,7 +121,7 @@ void UICheatSearch::setSearchTypes()
 void UICheatSearch::listResults()
 {
    u32 i;
-   
+
    // Clear old info
    twSearchResults->clear();
    pbAddCheat->setEnabled(false);
@@ -141,13 +141,13 @@ void UICheatSearch::listResults()
             switch(searchType & 0x3)
             {
             case SEARCHBYTE:
-               s.sprintf("%d", MappedMemoryReadByte(NULL, search[j].results[i].addr));
+               s.sprintf("%d", DMAMappedMemoryReadByte(search[j].results[i].addr));
                break;
             case SEARCHWORD:
-               s.sprintf("%d", MappedMemoryReadWord(NULL, search[j].results[i].addr));
+               s.sprintf("%d", DMAMappedMemoryReadWord(search[j].results[i].addr));
                break;
             case SEARCHLONG:
-               s.sprintf("%d", MappedMemoryReadLong(NULL, search[j].results[i].addr));
+               s.sprintf("%d", DMAMappedMemoryReadLong(search[j].results[i].addr));
                break;
             default: break;
             }
@@ -188,8 +188,8 @@ void UICheatSearch::adjustSearchValueQValidator()
 }
 
 void UICheatSearch::on_twSearchResults_itemSelectionChanged()
-{ 
-   pbAddCheat->setEnabled( twSearchResults->selectedItems().count() ); 
+{
+   pbAddCheat->setEnabled( twSearchResults->selectedItems().count() );
 }
 
 void UICheatSearch::on_rbUnsigned_toggled(bool checked)
@@ -228,10 +228,10 @@ void UICheatSearch::on_leSearchValue_textChanged( const QString & text )
 }
 
 void UICheatSearch::on_pbRestart_clicked()
-{   
+{
    cheatsearch_struct searchTmp;
 
-   // If there were search result, clear them, otherwise adjust GUI   
+   // If there were search result, clear them, otherwise adjust GUI
    if (search.isEmpty())
    {
       pbRestart->setText(QtYabause::translate("Restart"));
@@ -270,7 +270,7 @@ void UICheatSearch::on_pbSearch_clicked()
 
 		for (int i = 0; i < search.count(); i++)
 		{
-			search[i].results = MappedMemorySearch(NULL, search[i].startAddr, search[i].endAddr, searchType,
+			search[i].results = MappedMemorySearch(search[i].startAddr, search[i].endAddr, searchType,
 				leSearchValue->text().toLatin1(), search[i].results, &search[i].numResults);
 		}
 

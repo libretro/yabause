@@ -627,7 +627,7 @@ static u16 block_decrypt(uint32_t game_key, uint16_t sequence_key, uint16_t coun
 
 static u16 m_read(uint32_t addr)
 {
-	u16 dat= MappedMemoryReadWord(NULL, 0x02000000+2*addr);
+	u16 dat= DMAMappedMemoryReadWord(0x02000000+2*addr);
 	return ((dat&0xff00)>>8)|((dat&0x00ff)<<8);
 }
 

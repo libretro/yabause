@@ -244,7 +244,7 @@ void CheatDoPatches(SH2_struct *sh)
             if (cheatlist[i].enable == 0)
                continue;
             LOG("CheatDoPatches %08X", cheatlist[i].addr);
-            if (MappedMemoryReadWord(sh, cheatlist[i].addr) != cheatlist[i].val)
+            if (SH2MappedMemoryReadWord(sh, cheatlist[i].addr) != cheatlist[i].val)
                return;
             break;
          case CHEATTYPE_BYTEWRITE:
