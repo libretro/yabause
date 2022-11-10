@@ -878,49 +878,7 @@ LOG("Unhandled SH2 Long R %x %d\n", addr,(addr >> 29));
 
 void FASTCALL DMAMappedMemoryWriteByte(u32 addr, u8 val)
 {
-   MappedMemoryWriteByte(NULL, addr, val);
-}
-
-//////////////////////////////////////////////////////////////////////////////
-void FASTCALL MappedMemoryWriteByte(SH2_struct *context, u32 addr, u8 val)
-{
-   int id = addr >> 29;
-   if (context == NULL) id =1;
-   if ((context != NULL) && (context->cacheOn == 0)) SH2WriteNotify(context, addr, 1);
-   switch (id)
-   {
-      case 0x0:
-      case 0x1:
-      {
-        WriteByteList[(addr >> 16) & 0xFFF](context, *(MemoryBuffer[(addr >> 16) & 0xFFF]), addr, val);
-        return;
-      }
-      case 0x7:
-      {
-         if (addr >= 0xFFFFFE00)
-         {
-            // Onchip modules
-            addr &= 0x1FF;
-            OnchipWriteByte(context, addr, val);
-            return;
-         }
-         else if (addr >= 0xFFFF8000 && addr < 0xFFFFC000)
-         {
-            // SDRAM
-         }
-         else
-         {
-            // Garbage data
-         }
-         return;
-      }
-      default:
-      {
-LOG("Unhandled Byte W %x\n", addr);
-         UnhandledMemoryWriteByte(context, *(MemoryBuffer[(addr >> 16) & 0xFFF]), addr, val);
-         return;
-      }
-   }
+    WriteByteList[(addr >> 16) & 0xFFF](NULL, *(MemoryBuffer[(addr >> 16) & 0xFFF]), addr, val);
 }
 
 void FASTCALL SH2MappedMemoryWriteByte(SH2_struct *context, u32 addr, u8 val)
@@ -984,49 +942,7 @@ LOG("Unhandled Byte W %x\n", addr);
 
 void FASTCALL DMAMappedMemoryWriteWord(u32 addr, u16 val)
 {
-   MappedMemoryWriteWord(NULL, addr, val & 0x0FFFFFFF);
-}
-
-//////////////////////////////////////////////////////////////////////////////
-void FASTCALL MappedMemoryWriteWord(SH2_struct *context, u32 addr, u16 val)
-{
-   int id = addr >> 29;
-   if (context == NULL) id =1;
-   if ((context != NULL) && (context->cacheOn == 0)) SH2WriteNotify(context, addr, 2);
-   switch (id)
-   {
-      case 0x0:
-      case 0x1:
-      {
-        WriteWordList[(addr >> 16) & 0xFFF](context, *(MemoryBuffer[(addr >> 16) & 0xFFF]), addr, val);
-        return;
-      }
-      case 0x7:
-      {
-         if ((addr >= 0xFFFFFE00) && (context != NULL))
-         {
-            // Onchip modules
-            addr &= 0x1FF;
-            OnchipWriteWord(context, addr, val);
-            return;
-         }
-         else if (addr >= 0xFFFF8000 && addr < 0xFFFFC000)
-         {
-            // SDRAM setup
-         }
-         else
-         {
-            // Garbage data
-         }
-         return;
-      }
-      default:
-      {
-LOG("Unhandled Word W %x\n", addr);
-         UnhandledMemoryWriteWord(context, *(MemoryBuffer[(addr >> 16) & 0xFFF]), addr, val);
-         return;
-      }
-   }
+  WriteWordList[(addr >> 16) & 0xFFF](NULL, *(MemoryBuffer[(addr >> 16) & 0xFFF]), addr, val);
 }
 
 void FASTCALL SH2MappedMemoryWriteWord(SH2_struct *context, u32 addr, u16 val)
@@ -1092,49 +1008,7 @@ LOG("Unhandled Word W %x\n", addr);
 
 void FASTCALL DMAMappedMemoryWriteLong(u32 addr, u32 val)
 {
-   MappedMemoryWriteLong(NULL, addr, val);
-}
-
-//////////////////////////////////////////////////////////////////////////////
-void FASTCALL MappedMemoryWriteLong(SH2_struct *context, u32 addr, u32 val)
-{
-   int id = addr >> 29;
-   if (context == NULL) id =1;
-   if ((context != NULL) && (context->cacheOn == 0)) SH2WriteNotify(context, addr, 4);
-   switch (id)
-   {
-      case 0x0:
-      case 0x1:
-      {
-        WriteLongList[(addr >> 16) & 0xFFF](context, *(MemoryBuffer[(addr >> 16) & 0xFFF]), addr, val);
-        return;
-      }
-      case 0x7:
-      {
-         if (addr >= 0xFFFFFE00)
-         {
-            // Onchip modules
-            addr &= 0x1FF;
-            OnchipWriteLong(context, addr, val);
-            return;
-         }
-         else if (addr >= 0xFFFF8000 && addr < 0xFFFFC000)
-         {
-            // SDRAM
-         }
-         else
-         {
-            // Garbage data
-         }
-         return;
-      }
-      default:
-      {
-LOG("Unhandled Long W %x\n", addr);
-         UnhandledMemoryWriteLong(context, *(MemoryBuffer[(addr >> 16) & 0xFFF]), addr, val);
-         return;
-      }
-   }
+  WriteLongList[(addr >> 16) & 0xFFF](NULL, *(MemoryBuffer[(addr >> 16) & 0xFFF]), addr, val);
 }
 
 void FASTCALL SH2MappedMemoryWriteLong(SH2_struct *context, u32 addr, u32 val)
@@ -1241,7 +1115,7 @@ int MappedMemoryLoad(SH2_struct *sh, const char *filename, u32 addr)
    fclose(fp);
 
    for (i = 0; i < filesize; i++)
-      MappedMemoryWriteByte(sh, addr+i, buffer[i]);
+      SH2MappedMemoryWriteByte(sh, addr+i, buffer[i]);
 
    free(buffer);
 
