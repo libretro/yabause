@@ -404,6 +404,7 @@ typedef struct SH2_struct_s
 {
    sh2regs_struct regs;
    Onchip_struct onchip;
+   u8 isAccessingCPUBUS;
 
    struct
    {
@@ -541,6 +542,7 @@ void SH2WriteNotify(SH2_struct *context, u32 start, u32 length);
 void SH2Disasm(u32 v_addr, u16 op, int mode, sh2regs_struct *r, char *string);
 void SH2DumpHistory(SH2_struct *context);
 
+void SH2SetCPUConcurrency(u8 on);
 
 int BackupHandled(SH2_struct * sh, u32 addr);
 int isBackupHandled(u32 addr);

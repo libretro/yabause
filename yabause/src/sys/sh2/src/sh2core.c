@@ -49,18 +49,48 @@ void InvalidateCache(SH2_struct *ctx);
 void DMATransferCycles(SH2_struct *context, Dmac * dmac, int cycles);
 int DMAProc(SH2_struct *context, int cycles );
 
+void (*SH2InterruptibleExec)(SH2_struct *context, u32 cycles);
+
 //////////////////////////////////////////////////////////////////////////////
+
+
+static void SH2StandardExec(SH2_struct *context, u32 cycles) {
+  SH2Core->Exec(context, cycles);
+}
+
+static sh2regs_struct oldRegs;
+static void SH2BlockableExec(SH2_struct *context, u32 cycles) {
+  if (context->isAccessingCPUBUS == 0) {
+    memcpy(&oldRegs, &context->regs, sizeof(sh2regs_struct));
+    SH2Core->Exec(context, cycles);
+    if(context->isAccessingCPUBUS != 0) memcpy(& context->regs, &oldRegs, sizeof(sh2regs_struct));
+  }
+}
+
+void SH2SetCPUConcurrency(u8 on) {
+  if ((on!=0) && (SH2InterruptibleExec != SH2BlockableExec)) {
+    MSH2->isAccessingCPUBUS = 0;
+    SSH2->isAccessingCPUBUS = 0;
+    SH2InterruptibleExec = SH2BlockableExec;
+  }
+  if ((on==0) && (SH2InterruptibleExec != SH2StandardExec)) {
+    MSH2->isAccessingCPUBUS = 0;
+    SSH2->isAccessingCPUBUS = 0;
+    SH2InterruptibleExec = SH2StandardExec;
+  }
+}
 
 int SH2Init(int coreid)
 {
    int i;
-
+   SH2InterruptibleExec = SH2StandardExec;
    // MSH2
    if ((MSH2 = (SH2_struct *)calloc(1, sizeof(SH2_struct))) == NULL)
       return -1;
 
    MSH2->onchip.BCR1 = 0x0000;
    MSH2->isslave = 0;
+   MSH2->isAccessingCPUBUS = 0;
 MSH2->trace = 0;
 
     MSH2->dma_ch0.CHCR = &MSH2->onchip.CHCR0;
@@ -83,6 +113,7 @@ MSH2->trace = 0;
     SSH2->trace = 0;
     SSH2->onchip.BCR1 = 0x8000;
     SSH2->isslave = 1;
+    SSH2->isAccessingCPUBUS = 0;
 
     SSH2->dma_ch0.CHCR = &SSH2->onchip.CHCR0;
     SSH2->dma_ch0.CHCRM = &SSH2->onchip.CHCR0M;
@@ -161,6 +192,7 @@ void SH2Reset(SH2_struct *context)
 {
    int i;
 CACHE_LOG("%s reset\n", (context==SSH2)?"SSH2":"MSH2" );
+   SH2InterruptibleExec = SH2StandardExec;
    SH2Core->Reset(context);
 
    // Reset general registers
@@ -222,7 +254,7 @@ void FASTCALL SH2TestExec(SH2_struct *context, u32 cycles)
 
 void FASTCALL SH2Exec(SH2_struct *context, u32 cycles)
 {
-   SH2Core->Exec(context, cycles);
+   SH2InterruptibleExec(context, cycles);
    FRTExec(context);
    WDTExec(context);
    DMAProc(context, cycles);

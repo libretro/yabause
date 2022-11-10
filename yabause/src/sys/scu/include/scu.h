@@ -54,6 +54,7 @@ typedef struct
     u32 ReadAdd;
     u32 WriteAdd;
     u32 InDirectAdress;
+    u32 id;
   } scudmainfo_struct;
 
 typedef struct
@@ -284,6 +285,7 @@ int ScuInit(void);
 void ScuDeInit(void);
 void ScuReset(void);
 void ScuExec(u32 timing);
+extern u8 ScuCPUBAccess();
 
 u8 FASTCALL	ScuReadByte(SH2_struct *sh,u8*, u32);
 u16 FASTCALL	ScuReadWord(SH2_struct *sh,u8*, u32);

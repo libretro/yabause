@@ -37,6 +37,8 @@ scubp_struct * ScuBP;
 static int incFlg[4] = { 0 };
 static void ScuTestInterruptMask(void);
 
+static u8 accessCPUBus;
+
 void step_dsp_dma(scudspregs_struct *sc);
 
 //#define DSPLOG
@@ -55,6 +57,11 @@ int ScuInit(void) {
    memset(&ScuRegs->dma0, 0, sizeof(ScuRegs->dma0));
    memset(&ScuRegs->dma1, 0, sizeof(ScuRegs->dma1));
    memset(&ScuRegs->dma2, 0, sizeof(ScuRegs->dma2));
+   ScuRegs->dma0.id = 1;
+   ScuRegs->dma1.id = 2;
+   ScuRegs->dma2.id = 3;
+
+   accessCPUBus = 0;
 
    if ((ScuDsp = (scudspregs_struct *) calloc(1, sizeof(scudspregs_struct))) == NULL)
       return -1;
@@ -130,6 +137,10 @@ void ScuReset(void) {
    memset(&ScuRegs->dma0, 0, sizeof(ScuRegs->dma0));
    memset(&ScuRegs->dma1, 0, sizeof(ScuRegs->dma1));
    memset(&ScuRegs->dma2, 0, sizeof(ScuRegs->dma2));
+
+   ScuRegs->dma0.id = 1;
+   ScuRegs->dma1.id = 2;
+   ScuRegs->dma2.id = 3;
 
 }
 
@@ -1080,8 +1091,22 @@ void SucDmaCheck(scudmainfo_struct * dma, int time) {
 }
 
 
-void ScuDmaProc(scudmainfo_struct * dma, int time) {
-  SucDmaCheck(dma, time);
+static void ScuDmaProc(scudmainfo_struct * dma, int time) {
+  u8 oldaccessCPUBus = accessCPUBus;
+  ScuDmaCheck(dma, time);
+  accessCPUBus &= ~(1<<dma->id);
+  if (dma->TransferNumber > 0) {
+    if (((((dma->WriteAddress & 0x1FFFFFFF) >= 0x6000000)
+     && ((dma->WriteAddress & 0x1FFFFFFF) < 0x8000000)))
+     ||
+     ((((dma->ReadAddress & 0x1FFFFFFF) >= 0x6000000)
+      && ((dma->ReadAddress & 0x1FFFFFFF) < 0x8000000)))) {
+       accessCPUBus |= (1<<dma->id);
+     }
+  }
+  if (accessCPUBus != oldaccessCPUBus) {
+    SH2SetCPUConcurrency(accessCPUBus != 0);
+  }
 }
 
 static void ScuDspExec(u32 timing) {
@@ -3115,7 +3140,7 @@ int ScuSaveState(void ** stream)
 {
    int offset;
 
-   offset = MemStateWriteHeader(stream, "SCU ", 4);
+   offset = MemStateWriteHeader(stream, "SCU ", 5);
 
    // Write registers and internal variables
    MemStateWrite((void *)ScuRegs, sizeof(Scu), 1, stream);
@@ -3134,6 +3159,18 @@ int ScuSaveState(void ** stream)
 int ScuLoadState(const void * stream, UNUSED int version, int size)
 {
    // Read registers and internal variables
+   ScuRegs->dma0.id = 1;
+   ScuRegs->dma1.id = 2;
+   ScuRegs->dma2.id = 3;
+   if (version == 4) {
+      MemStateRead((void *)ScuRegs, sizeof(Scu)-sizeof(scudmainfo_struct)*3, 1, stream);
+      MemStateRead((void *)(&ScuRegs->dma0), sizeof(scudmainfo_struct)-sizeof(u32), 1, stream);
+      MemStateRead((void *)(&ScuRegs->dma1), sizeof(scudmainfo_struct)-sizeof(u32), 1, stream);
+      MemStateRead((void *)(&ScuRegs->dma2), sizeof(scudmainfo_struct)-sizeof(u32), 1, stream);
+      MemStateRead((void *)ScuDsp, sizeof(scudspregs_struct), 1, stream);
+      MemStateRead(incFlg, sizeof(int), 4, stream);
+      return size;
+   }
    if (version < 3) {
      MemStateRead((void *)ScuRegs, sizeof(Scu)-sizeof(scudmainfo_struct)*3, 1, stream);
      ScuRegs->dma0.TransferNumber = 0;
