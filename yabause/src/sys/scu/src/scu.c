@@ -1091,17 +1091,19 @@ void ScuDmaCheck(scudmainfo_struct * dma, int time) {
   return;
 }
 
+static int isOnCPUBUS(u32 addr) {
+  addr &= 0x1FFFFFFF;
+  if ((addr >= 0x6000000) && (addr < 0x8000000)) return 1; //HWRAM
+  if ((addr >= 0x0200000) && (addr < 0x0300000)) return 1; //LWRAM
+  return 0;
+}
 
 static void ScuDmaProc(scudmainfo_struct * dma, int time) {
   u8 oldaccessCPUBus = accessCPUBus;
   ScuDmaCheck(dma, time);
   accessCPUBus &= ~(1<<dma->id);
   if (dma->TransferNumber > 0) {
-    if (((((dma->WriteAddress & 0x1FFFFFFF) >= 0x6000000)
-     && ((dma->WriteAddress & 0x1FFFFFFF) < 0x8000000)))
-     ||
-     ((((dma->ReadAddress & 0x1FFFFFFF) >= 0x6000000)
-      && ((dma->ReadAddress & 0x1FFFFFFF) < 0x8000000)))) {
+    if (isOnCPUBUS(dma->WriteAddress) || isOnCPUBUS(dma->ReadAddress)) {
        accessCPUBus |= (1<<dma->id);
      }
   }

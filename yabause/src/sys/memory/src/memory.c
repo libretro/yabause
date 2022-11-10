@@ -366,6 +366,7 @@ static void FASTCALL HighWramMemoryWriteLong(SH2_struct *context, u8* mem, u32 a
 
 static u8 FASTCALL LowWramMemoryReadByte(SH2_struct *context, UNUSED u8* memory, u32 addr)
 {
+  if (context != NULL) context->isAccessingCPUBUS = 1; //When cpu access CPU-BUs at the same time as SCU, there might be a penalty
    return T2ReadByte(memory, addr & 0xFFFFF);
 }
 
@@ -373,6 +374,7 @@ static u8 FASTCALL LowWramMemoryReadByte(SH2_struct *context, UNUSED u8* memory,
 
 static u16 FASTCALL LowWramMemoryReadWord(SH2_struct *context, UNUSED u8* memory, u32 addr)
 {
+  if (context != NULL) context->isAccessingCPUBUS = 1; //When cpu access CPU-BUs at the same time as SCU, there might be a penalty
    return T2ReadWord(memory, addr & 0xFFFFF);
 }
 
@@ -380,6 +382,7 @@ static u16 FASTCALL LowWramMemoryReadWord(SH2_struct *context, UNUSED u8* memory
 
 static u32 FASTCALL LowWramMemoryReadLong(SH2_struct *context, UNUSED u8* memory, u32 addr)
 {
+  if (context != NULL) context->isAccessingCPUBUS = 1; //When cpu access CPU-BUs at the same time as SCU, there might be a penalty
    return T2ReadLong(memory, addr & 0xFFFFF);
 }
 
@@ -387,6 +390,7 @@ static u32 FASTCALL LowWramMemoryReadLong(SH2_struct *context, UNUSED u8* memory
 
 static void FASTCALL LowWramMemoryWriteByte(SH2_struct *context, UNUSED u8* memory, u32 addr, u8 val)
 {
+  if (context != NULL) context->isAccessingCPUBUS = 1; //When cpu access CPU-BUs at the same time as SCU, there might be a penalty
    T2WriteByte(memory, addr & 0xFFFFF, val);
 }
 
@@ -394,6 +398,7 @@ static void FASTCALL LowWramMemoryWriteByte(SH2_struct *context, UNUSED u8* memo
 
 static void FASTCALL LowWramMemoryWriteWord(SH2_struct *context, UNUSED u8* memory, u32 addr, u16 val)
 {
+  if (context != NULL) context->isAccessingCPUBUS = 1; //When cpu access CPU-BUs at the same time as SCU, there might be a penalty
    T2WriteWord(memory, addr & 0xFFFFF, val);
 }
 
@@ -401,6 +406,7 @@ static void FASTCALL LowWramMemoryWriteWord(SH2_struct *context, UNUSED u8* memo
 
 static void FASTCALL LowWramMemoryWriteLong(SH2_struct *context, UNUSED u8* memory, u32 addr, u32 val)
 {
+  if (context != NULL) context->isAccessingCPUBUS = 1; //When cpu access CPU-BUs at the same time as SCU, there might be a penalty
    T2WriteLong(memory, addr & 0xFFFFF, val);
 }
 
