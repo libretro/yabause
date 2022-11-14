@@ -1283,6 +1283,7 @@ static u8 getLRU(SH2_struct *context, u32 tag, u8 line) {
 }
 
 static inline void CacheWriteThrough(SH2_struct *context, u8* mem, u32 addr, u32 val, u8 size) {
+  context->isAccessingCPUBUS = 1; //When cpu access CPU-BUs at the same time as SCU, there might be a penalty
   switch(size) {
   case 1:
     WriteByteList[(addr >> 16) & 0xFFF](context, mem, addr, val);
@@ -1426,6 +1427,7 @@ void disableCache(SH2_struct *context) {
 void CacheFetch(SH2_struct *context, u8* memory, u32 addr, u8 way) {
   u8 line = (addr>>4)&0x3F;
   u32 tag = (addr>>10)&0x7FFFF;
+  context->isAccessingCPUBUS = 1; //When cpu access CPU-BUs at the same time as SCU, there might be a penalty
   UpdateLRU(context, line, way);
   context->tagWay[line][tag] = way;
   context->cacheTagArray[line][way] = tag;
