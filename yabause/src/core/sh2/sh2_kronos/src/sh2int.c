@@ -290,7 +290,9 @@ FASTCALL void SH2KronosInterpreterExecLoopSave(SH2_struct *context, u32 cycles, 
    while (context->cycles < target_cycle)
    {
      memcpy(oldRegs, &context->regs, sizeof(sh2regs_struct));
-     cacheCode[context->isslave][cacheId[(context->regs.PC >> 20) & 0xFFF]][(context->regs.PC >> 1) & 0x7FFFF](context);
+     int id = (context->regs.PC >> 20) & 0xFFF;
+     u16 opcode = krfetchlist[id](context, context->regs.PC);
+     if(context->isAccessingCPUBUS == 0) opcodeTable[opcode](context);
      if(context->isAccessingCPUBUS != 0) {
       context->cycles = target_cycle;
       memcpy(& context->regs, oldRegs, sizeof(sh2regs_struct));
