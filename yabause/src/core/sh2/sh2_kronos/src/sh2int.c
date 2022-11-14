@@ -284,12 +284,36 @@ FASTCALL void SH2KronosInterpreterExecLoop(SH2_struct *context, u32 cycles)
    }
 }
 
+FASTCALL void SH2KronosInterpreterExecLoopSave(SH2_struct *context, u32 cycles, SH2_struct *oldContext)
+{
+  u32 target_cycle = context->cycles + cycles;
+   while (context->cycles < target_cycle)
+   {
+     memcpy(&oldContext->regs, &context->regs, sizeof(sh2regs_struct));
+     cacheCode[context->isslave][cacheId[(context->regs.PC >> 20) & 0xFFF]][(context->regs.PC >> 1) & 0x7FFFF](context);
+     if(context->isAccessingCPUBUS != 0) {
+      context->cycles = target_cycle;
+      memcpy(& context->regs, &oldContext->regs, sizeof(sh2regs_struct));
+      return;
+     }
+   }
+}
+
 FASTCALL void SH2KronosInterpreterExec(SH2_struct *context, u32 cycles)
 {
   u32 target_cycle = context->cycles + cycles;
   while (context->cycles < target_cycle){
     SH2HandleInterrupts(context);
     SH2KronosInterpreterExecLoop(context, target_cycle-context->cycles);
+  }
+}
+
+FASTCALL void SH2KronosInterpreterExecSave(SH2_struct *context, u32 cycles, SH2_struct *oldContext)
+{
+  u32 target_cycle = context->cycles + cycles;
+  while (context->cycles < target_cycle){
+    SH2HandleInterrupts(context);
+    SH2KronosInterpreterExecLoopSave(context, target_cycle-context->cycles, oldContext);
   }
 }
 
@@ -576,6 +600,7 @@ SH2Interface_struct SH2KronosInterpreter = {
    SH2KronosInterpreterDeInit,
    SH2KronosInterpreterReset,
    SH2KronosInterpreterExec,
+   SH2KronosInterpreterExecSave,
 //SH2KronosDebugInterpreterExec,
    SH2KronosInterpreterTestExec,
 

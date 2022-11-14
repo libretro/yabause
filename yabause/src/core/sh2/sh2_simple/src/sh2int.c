@@ -51,6 +51,7 @@ SH2Interface_struct SH2Interpreter = {
    SH2InterpreterDeInit,
    SH2InterpreterReset,
    SH2InterpreterExec,
+   SH2InterpreterExecSave,
    SH2InterpreterTestExec,
 
    SH2InterpreterGetRegisters,
@@ -2939,6 +2940,26 @@ FASTCALL void SH2InterpreterExec(SH2_struct *context, u32 cycles)
 
       // Execute it
       opcodes[context->instruction](context);
+   }
+}
+
+FASTCALL void SH2InterpreterExecSave(SH2_struct *context, u32 cycles, SH2_struct *oldContext)
+{
+  u32 target_cycle = context->cycles + cycles;
+  SH2HandleInterrupts(context);
+   while (context->cycles < target_cycle)
+   {
+      // Fetch Instruction
+      memcpy(&oldContext->regs, &context->regs, sizeof(sh2regs_struct));
+      context->instruction = fetchlist[(context->regs.PC >> 20) & 0xFFF](context, context->regs.PC);
+
+      // Execute it
+      opcodes[context->instruction](context);
+      if(context->isAccessingCPUBUS != 0) {
+        context->cycles = target_cycle;
+        memcpy(& context->regs, &oldContext->regs, sizeof(sh2regs_struct));
+        return;
+      }
    }
 }
 

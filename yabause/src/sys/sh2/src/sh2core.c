@@ -61,9 +61,9 @@ static void SH2StandardExec(SH2_struct *context, u32 cycles) {
 static sh2regs_struct oldRegs;
 static void SH2BlockableExec(SH2_struct *context, u32 cycles) {
   if (context->isAccessingCPUBUS == 0) {
-    memcpy(&oldRegs, &context->regs, sizeof(sh2regs_struct));
-    SH2Core->Exec(context, cycles);
-    if(context->isAccessingCPUBUS != 0) memcpy(& context->regs, &oldRegs, sizeof(sh2regs_struct));
+    SH2Core->ExecSave(context, cycles, &oldRegs);
+  } else {
+    context->cycles += cycles;
   }
 }
 
