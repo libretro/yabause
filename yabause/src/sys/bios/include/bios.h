@@ -54,7 +54,7 @@ typedef struct
 
 typedef struct
 {
- u32 totalsize;	
+ u32 totalsize;
  u32 totalblock;
  u32 blocksize;
  u32 freesize;
@@ -66,9 +66,9 @@ void BiosInit(SH2_struct *context);
 int FASTCALL BiosHandleFunc(SH2_struct * sh);
 
 deviceinfo_struct *BupGetDeviceList(int *numdevices);
-int BupGetStats(SH2_struct *context,u32 device, u32 *freespace, u32 *maxspace);
-saveinfo_struct *BupGetSaveList(SH2_struct *context,u32 device, int *numsaves);
-int BupDeleteSave(SH2_struct *context,u32 device, const char *savename);
+int BupGetStats(u32 device, u32 *freespace, u32 *maxspace);
+saveinfo_struct *BupGetSaveList(u32 device, int *numsaves);
+int BupDeleteSave(u32 device, const char *savename);
 void BupFormat(u32 device);
 int BupCopySave(u32 srcdevice, u32 dstdevice, const char *savename);
 int BupImportSave(u32 device, const char *filename);
@@ -76,8 +76,8 @@ int BupExportSave(u32 device, const char *savename, const char *filename);
 
 void FASTCALL BiosBUPInit(SH2_struct * sh);
 
-int BiosBUPImport(SH2_struct *context,u32 device, saveinfo_struct * saveinfo, const char * buf, int bufsize );
-int BiosBUPExport(SH2_struct *context,u32 device, const char *savename, char ** buf, int * bufsize );
+int BiosBUPImport(u32 device, saveinfo_struct * saveinfo, const char * buf, int bufsize );
+int BiosBUPExport(u32 device, const char *savename, char ** buf, int * bufsize );
 int BiosBUPStatusMem(SH2_struct *context,int device, devicestatus_struct * status );
 
 #ifdef __cplusplus

@@ -37,14 +37,14 @@ UIBackupRam::UIBackupRam( QWidget* p )
 	// get available devices
 	if ( ( devices = BupGetDeviceList( &numbupdevices ) ) == NULL )
 		return;
-	
+
 	// add to combobox
 	for ( int i = 0; i < numbupdevices; i++ )
 		cbDeviceList->addItem( devices[i].name, devices[i].id );
-	
+
 	// get save list for current devices
 	refreshSaveList();
-	
+
 	// retranslate widgets
 	QtYabause::retranslateWidget( this );
 }
@@ -59,19 +59,19 @@ void UIBackupRam::refreshSaveList()
 	lwSaveList->clear();
 
 	// get save list
-	saves = BupGetSaveList( NULL, id, &numsaves);
+	saves = BupGetSaveList(id, &numsaves);
 
 	// add item to listwidget
 	for ( int i = 0; i < numsaves; i++ )
 		lwSaveList->addItem( saves[i].filename );
-	
+
 	// set infos about blocks
-	BupGetStats( NULL, id, &fs, &ms );
+	BupGetStats(id, &fs, &ms );
 	lBlocks->setText( QtYabause::translate( "%1/%2 blocks free" ).arg( fs ).arg( ms ) );
-	
+
 	// enable/disable button delete according to available item
 	pbDelete->setEnabled( lwSaveList->count() );
-	
+
 	// select first item in the item list
 	if ( lwSaveList->count() )
 		lwSaveList->setCurrentRow( 0 );
@@ -136,7 +136,7 @@ void UIBackupRam::on_pbDelete_clicked()
 		u32 id = cbDeviceList->itemData( cbDeviceList->currentIndex() ).toInt();
 		if ( CommonDialogs::question( QtYabause::translate( "Are you sure you want to delete '%1' ?" ).arg( it->text() ) ) )
 		{
-			BupDeleteSave( NULL, id, it->text().toLatin1().constData() );
+			BupDeleteSave(id, it->text().toLatin1().constData() );
 			refreshSaveList();
 		}
 	}

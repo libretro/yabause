@@ -465,7 +465,7 @@ static int CheckHeader(UNUSED u32 device)
 
 //////////////////////////////////////////////////////////////////////////////
 
-static int CalcSaveSize(SH2_struct *context, u32 tableaddr, int blocksize)
+static int CalcSaveSize(u32 tableaddr, int blocksize)
 {
    int numblocks=0;
 
@@ -477,7 +477,7 @@ static int CalcSaveSize(SH2_struct *context, u32 tableaddr, int blocksize)
        if (((tableaddr - 1) & ((blocksize << 1) - 1)) == 0) {
          tableaddr += 8;
        }
-       block = (SH2MappedMemoryReadByte(context, tableaddr) << 8) | SH2MappedMemoryReadByte(context, tableaddr + 2);
+       block = (DMAMappedMemoryReadByte(tableaddr) << 8) | DMAMappedMemoryReadByte(tableaddr + 2);
 //       LOG("CalcSaveSize: %08X,%d,%04X numblocks", tableaddr, numblocks, block);
        if (block == 0)
          break;
@@ -490,7 +490,7 @@ static int CalcSaveSize(SH2_struct *context, u32 tableaddr, int blocksize)
 
 //////////////////////////////////////////////////////////////////////////////
 
-static u32 GetFreeSpace(SH2_struct *context, UNUSED u32 device, u32 size, u32 addr, u32 blocksize)
+static u32 GetFreeSpace(UNUSED u32 device, u32 size, u32 addr, u32 blocksize)
 {
    u32 i;
    u32 usedblocks=0;
@@ -498,10 +498,10 @@ static u32 GetFreeSpace(SH2_struct *context, UNUSED u32 device, u32 size, u32 ad
    for (i = ((2 * blocksize) << 1); i < (size << 1); i += (blocksize << 1))
    {
       // Find a block with the start of a save
-      if (((s8)SH2MappedMemoryReadByte(context, addr + i + 1)) < 0)
+      if (((s8)DMAMappedMemoryReadByte(addr + i + 1)) < 0)
       {
          // Now figure out how many blocks this save is
-         usedblocks += (CalcSaveSize(context, addr+i+0x45, blocksize) + 1);
+         usedblocks += (CalcSaveSize(addr+i+0x45, blocksize) + 1);
       }
    }
 
@@ -552,14 +552,14 @@ static u32 FindSave(SH2_struct *context, UNUSED u32 device, u32 stringaddr, u32 
 
 //////////////////////////////////////////////////////////////////////////////
 
-static u32 FindSave2(SH2_struct *context, UNUSED u32 device, const char *string, u32 blockoffset, u32 size, u32 addr, u32 blocksize)
+static u32 FindSave2(UNUSED u32 device, const char *string, u32 blockoffset, u32 size, u32 addr, u32 blocksize)
 {
    u32 i;
 
    for (i = ((blockoffset * blocksize) << 1); i < (size << 1); i += (blocksize << 1))
    {
       // Find a block with the start of a save
-      if (((s8)SH2MappedMemoryReadByte(context, addr + i + 1)) < 0)
+      if (((s8)DMAMappedMemoryReadByte(addr + i + 1)) < 0)
       {
          int i3;
 
@@ -567,7 +567,7 @@ static u32 FindSave2(SH2_struct *context, UNUSED u32 device, const char *string,
          // the data over
          for (i3 = 0; i3 < 11; i3++)
          {
-            if (SH2MappedMemoryReadByte(context, addr+i+0x9+(i3*2)) != string[i3])
+            if (DMAMappedMemoryReadByte(addr+i+0x9+(i3*2)) != string[i3])
             {
                if (string[i3] == 0)
                   // There's no string to match
@@ -591,14 +591,14 @@ static u32 FindSave2(SH2_struct *context, UNUSED u32 device, const char *string,
 
 //////////////////////////////////////////////////////////////////////////////
 
-static void DeleteSave(SH2_struct *context, u32 addr, u32 blockoffset, u32 blocksize)
+static void DeleteSave(u32 addr, u32 blockoffset, u32 blocksize)
 {
-    SH2MappedMemoryWriteByte(context, addr + (blockoffset * blocksize * 2) + 0x1, 0x00);
+    DMAMappedMemoryWriteByte(addr + (blockoffset * blocksize * 2) + 0x1, 0x00);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-static u16 *GetFreeBlocks(SH2_struct *context, u32 addr, u32 blocksize, u32 numblocks, u32 size)
+static u16 *GetFreeBlocks(u32 addr, u32 blocksize, u32 numblocks, u32 size)
 {
    u8 *blocktbl;
    u16 *freetbl;
@@ -615,7 +615,7 @@ static u16 *GetFreeBlocks(SH2_struct *context, u32 addr, u32 blocksize, u32 numb
    for (i = ((2 * blocksize) << 1); i < (size << 1); i += (blocksize << 1))
    {
       // Find a block with the start of a save
-      if (((s8)SH2MappedMemoryReadByte(context, addr + i + 1)) < 0)
+      if (((s8)DMAMappedMemoryReadByte(addr + i + 1)) < 0)
       {
          tableaddr = addr+i+0x45;
          blocktbl[i / (blocksize << 1)] = 1;
@@ -626,7 +626,7 @@ static u16 *GetFreeBlocks(SH2_struct *context, u32 addr, u32 blocksize, u32 numb
             u16 block;
             if (((tableaddr-1) & ((blocksize << 1) - 1)) == 0)
                tableaddr += 8;
-            block = (SH2MappedMemoryReadByte(context, tableaddr) << 8) | SH2MappedMemoryReadByte(context, tableaddr + 2);
+            block = (DMAMappedMemoryReadByte(tableaddr) << 8) | DMAMappedMemoryReadByte(tableaddr + 2);
             if (block == 0)
                break;
             tableaddr += 4;
@@ -663,7 +663,7 @@ static u16 *GetFreeBlocks(SH2_struct *context, u32 addr, u32 blocksize, u32 numb
 
 //////////////////////////////////////////////////////////////////////////////
 
-static u16 *ReadBlockTable(SH2_struct *context, u32 addr, u32 *tableaddr, int block, int blocksize, int *numblocks, int *blocksread)
+static u16 *ReadBlockTable(u32 addr, u32 *tableaddr, int block, int blocksize, int *numblocks, int *blocksread)
 {
    u16 *blocktbl = NULL;
    int i=0;
@@ -681,7 +681,7 @@ static u16 *ReadBlockTable(SH2_struct *context, u32 addr, u32 *tableaddr, int bl
    for(;;)
    {
        u16 block;
-       block = (SH2MappedMemoryReadByte(context, tableaddr[0]) << 8) | SH2MappedMemoryReadByte(context, tableaddr[0] + 2);
+       block = (DMAMappedMemoryReadByte(tableaddr[0]) << 8) | DMAMappedMemoryReadByte(tableaddr[0] + 2);
        if (block == 0) {
          break;
        }
@@ -834,7 +834,7 @@ static void FASTCALL BiosBUPStatus(SH2_struct * sh)
       return;
    }
 
-   freeblocks = GetFreeSpace(sh, sh->regs.R[4], size, addr, blocksize);
+   freeblocks = GetFreeSpace(sh->regs.R[4], size, addr, blocksize);
 
    needsize = sh->regs.R[5];
    aftersize = (((blocksize - 6) * freeblocks) - 30) - needsize;
@@ -902,7 +902,7 @@ static void FASTCALL BiosBUPWrite(SH2_struct * sh)
       }
 
       // Delete old save
-      DeleteSave(sh, addr, block, blocksize);
+      DeleteSave(addr, block, blocksize);
    }
 
    // Let's figure out how many blocks will be needed for the save
@@ -926,7 +926,7 @@ static void FASTCALL BiosBUPWrite(SH2_struct * sh)
    savesize = 1 + ((datasize + 0x1D) / (blocksize - 6));
 
    // Will it blend? Err... fit
-   if (savesize > GetFreeSpace(sh, sh->regs.R[4], size, addr, blocksize))
+   if (savesize > GetFreeSpace(sh->regs.R[4], size, addr, blocksize))
    {
       // Nope, time to bail
       sh->regs.R[0] = 4;
@@ -936,7 +936,7 @@ static void FASTCALL BiosBUPWrite(SH2_struct * sh)
    }
 
    // Find free blocks for the save
-   if ((blocktbl = GetFreeBlocks(sh, addr, blocksize, savesize, size)) == NULL)
+   if ((blocktbl = GetFreeBlocks(addr, blocksize, savesize, size)) == NULL)
    {
       // Just return an error that might make sense
       sh->regs.R[0] = 8;
@@ -1088,7 +1088,7 @@ static void FASTCALL BiosBUPDelete(SH2_struct * sh)
       return;
    }
 
-   DeleteSave(sh, addr, block, blocksize);
+   DeleteSave(addr, block, blocksize);
 
    sh->regs.R[0] = 0; // returns 0 if there's no error
    sh->regs.PC = sh->regs.PR;
@@ -1258,7 +1258,7 @@ static void FASTCALL BiosBUPVerify(SH2_struct * sh)
               (SH2MappedMemoryReadByte(sh, tableaddr+4) << 8) | SH2MappedMemoryReadByte(sh, tableaddr + 6);
 
    // Read in Block Table
-   if ((blocktbl = ReadBlockTable(sh, addr, &tableaddr, block, blocksize, &numblocks, &blocksread)) == NULL)
+   if ((blocktbl = ReadBlockTable(addr, &tableaddr, block, blocksize, &numblocks, &blocksread)) == NULL)
    {
       // Just return an error that might make sense
       sh->regs.R[0] = 8; // Broken
@@ -1751,7 +1751,7 @@ deviceinfo_struct *BupGetDeviceList(int *numdevices)
 
 //////////////////////////////////////////////////////////////////////////////
 
-int BupGetStats(SH2_struct *sh, u32 device, u32 *freespace, u32 *maxspace)
+int BupGetStats(u32 device, u32 *freespace, u32 *maxspace)
 {
    u32 ret;
    u32 size;
@@ -1765,14 +1765,14 @@ int BupGetStats(SH2_struct *sh, u32 device, u32 *freespace, u32 *maxspace)
       return 0;
 
    *maxspace = size / blocksize;
-   *freespace = GetFreeSpace(sh, device, size, addr, blocksize);
+   *freespace = GetFreeSpace(device, size, addr, blocksize);
 
    return 1;
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-saveinfo_struct *BupGetSaveList(SH2_struct *sh, u32 device, int *numsaves)
+saveinfo_struct *BupGetSaveList(u32 device, int *numsaves)
 {
    u32 ret;
    u32 size;
@@ -1799,7 +1799,7 @@ saveinfo_struct *BupGetSaveList(SH2_struct *sh, u32 device, int *numsaves)
    for (i = ((2 * blocksize) << 1); i < (size << 1); i += (blocksize << 1))
    {
       // Find a block with the start of a save
-      if (((s8)SH2MappedMemoryReadByte(sh, addr + i + 1)) < 0)
+      if (((s8)DMAMappedMemoryReadByte(addr + i + 1)) < 0)
          savecount++;
    }
 
@@ -1816,28 +1816,28 @@ saveinfo_struct *BupGetSaveList(SH2_struct *sh, u32 device, int *numsaves)
    for (i = ((2 * blocksize) << 1); i < (size << 1); i += (blocksize << 1))
    {
       // Find a block with the start of a save
-      if (((s8)SH2MappedMemoryReadByte(sh, addr + i + 1)) < 0)
+      if (((s8)DMAMappedMemoryReadByte(addr + i + 1)) < 0)
       {
          workaddr = addr + i;
 
          // Copy over filename
          for (j = 0; j < 11; j++)
-            save[savecount].filename[j] = SH2MappedMemoryReadByte(sh, workaddr+0x9+(j * 2));
+            save[savecount].filename[j] = DMAMappedMemoryReadByte(workaddr+0x9+(j * 2));
          save[savecount].filename[11] = '\0';
 
          // Copy over comment
          for (j = 0; j < 10; j++)
-            save[savecount].comment[j] = SH2MappedMemoryReadByte(sh, workaddr+0x21+(j * 2));
+            save[savecount].comment[j] = DMAMappedMemoryReadByte(workaddr+0x21+(j * 2));
          save[savecount].comment[10] = '\0';
 
          // Copy over language
-         save[savecount].language = SH2MappedMemoryReadByte(sh, workaddr+0x1F);
+         save[savecount].language = DMAMappedMemoryReadByte(workaddr+0x1F);
 
          // Copy over Date(fix me)
-         date = (SH2MappedMemoryReadByte(sh, workaddr+0x35) << 24) |
-                    (SH2MappedMemoryReadByte(sh, workaddr+0x37) << 16) |
-                    (SH2MappedMemoryReadByte(sh, workaddr+0x39) << 8) |
-                    SH2MappedMemoryReadByte(sh, workaddr+0x3B);
+         date = (DMAMappedMemoryReadByte(workaddr+0x35) << 24) |
+                    (DMAMappedMemoryReadByte(workaddr+0x37) << 16) |
+                    (DMAMappedMemoryReadByte(workaddr+0x39) << 8) |
+                    DMAMappedMemoryReadByte(workaddr+0x3B);
 
         save[savecount].date = date;
         save[savecount].hour = (u8)((date % 0x5A0) / 0x3C);
@@ -1863,13 +1863,13 @@ saveinfo_struct *BupGetSaveList(SH2_struct *sh, u32 device, int *numsaves)
         save[savecount].year = (u8)(((div / 0x5B5) * 4) + yearoffset);
 
          // Copy over data size
-         save[savecount].datasize = (SH2MappedMemoryReadByte(sh, workaddr+0x3D) << 24) |
-                                    (SH2MappedMemoryReadByte(sh, workaddr+0x3F) << 16) |
-                                    (SH2MappedMemoryReadByte(sh, workaddr+0x41) << 8) |
-                                    SH2MappedMemoryReadByte(sh, workaddr+0x43);
+         save[savecount].datasize = (DMAMappedMemoryReadByte(workaddr+0x3D) << 24) |
+                                    (DMAMappedMemoryReadByte(workaddr+0x3F) << 16) |
+                                    (DMAMappedMemoryReadByte(workaddr+0x41) << 8) |
+                                    DMAMappedMemoryReadByte(workaddr+0x43);
 
          // Calculate size in blocks
-         save[savecount].blocksize = CalcSaveSize(sh, workaddr+0x45, blocksize) + 1;
+         save[savecount].blocksize = CalcSaveSize(workaddr+0x45, blocksize) + 1;
          savecount++;
       }
    }
@@ -1879,7 +1879,7 @@ saveinfo_struct *BupGetSaveList(SH2_struct *sh, u32 device, int *numsaves)
 
 //////////////////////////////////////////////////////////////////////////////
 
-int BupDeleteSave(SH2_struct *sh, u32 device, const char *savename)
+int BupDeleteSave(u32 device, const char *savename)
 {
    u32 ret;
    u32 size;
@@ -1894,10 +1894,10 @@ int BupDeleteSave(SH2_struct *sh, u32 device, const char *savename)
       return -1;
 
    // Let's find and delete the save game
-   if ((block = FindSave2(sh, device, savename, 2, size, addr, blocksize)) != 0)
+   if ((block = FindSave2(device, savename, 2, size, addr, blocksize)) != 0)
    {
       // Delete old save
-      DeleteSave(sh, addr, block, blocksize);
+      DeleteSave(addr, block, blocksize);
       return 0;
    }
 
@@ -1998,7 +1998,7 @@ int BupExportSave(UNUSED u32 device, UNUSED const char *savename, UNUSED const c
    return 0;
 }
 
-int BiosBUPExport(SH2_struct *sh, u32 device, const char *savename, char ** buf, int * bufsize )
+int BiosBUPExport(u32 device, const char *savename, char ** buf, int * bufsize )
 {
   u32 ret;
   u32 size;
@@ -2020,19 +2020,19 @@ int BiosBUPExport(SH2_struct *sh, u32 device, const char *savename, char ** buf,
      return -1;
 
   // Let's find and get the save game
-  if ((block = FindSave2(sh, device, savename, 2, size, addr, blocksize)) == 0) {
+  if ((block = FindSave2(device, savename, 2, size, addr, blocksize)) == 0) {
      LOG("%s is not found on this device(%d)", savename, device);
      return -1;
   }
 
   tableaddr = addr + (block * blocksize * 2) + 0x3D;
-  datasize = (SH2MappedMemoryReadByte(sh, tableaddr) << 24) | (SH2MappedMemoryReadByte(sh, tableaddr + 2) << 16) |
-             (SH2MappedMemoryReadByte(sh, tableaddr+4) << 8) | SH2MappedMemoryReadByte(sh, tableaddr + 6);
+  datasize = (DMAMappedMemoryReadByte(tableaddr) << 24) | (DMAMappedMemoryReadByte(tableaddr + 2) << 16) |
+             (DMAMappedMemoryReadByte(tableaddr+4) << 8) | DMAMappedMemoryReadByte(tableaddr + 6);
 
   LOG("tableaddr=%08X, datasize = %d", tableaddr, datasize );
 
   // Read in Block Table
-  if ((blocktbl = ReadBlockTable(sh, addr, &tableaddr, block, blocksize, &numblocks, &blocksread)) == NULL)
+  if ((blocktbl = ReadBlockTable(addr, &tableaddr, block, blocksize, &numblocks, &blocksread)) == NULL)
   {
     LOG("ReadBlockTable failed", tableaddr, datasize );
     return -1;
@@ -2051,7 +2051,7 @@ int BiosBUPExport(SH2_struct *sh, u32 device, const char *savename, char ** buf,
   i=0;
   while (datasize > 0)
   {
-    (*buf)[i] = SH2MappedMemoryReadByte(sh, tableaddr);
+    (*buf)[i] = DMAMappedMemoryReadByte(tableaddr);
      //fputc( SH2MappedMemoryReadByte(tableaddr),fp );
      datasize--;
      i++;
@@ -2070,7 +2070,7 @@ int BiosBUPExport(SH2_struct *sh, u32 device, const char *savename, char ** buf,
    return 0;
 }
 
-int BiosBUPImport(SH2_struct *sh, u32 device, saveinfo_struct * saveinfo, const char * buf, int bufsize )
+int BiosBUPImport(u32 device, saveinfo_struct * saveinfo, const char * buf, int bufsize )
 {
    u32 size;
    u32 addr;
@@ -2096,10 +2096,10 @@ int BiosBUPImport(SH2_struct *sh, u32 device, saveinfo_struct * saveinfo, const 
    }
 
    // See if save exists already
-   if ((block = FindSave2(sh, device, saveinfo->filename, 2, size, addr, blocksize)) != 0)
+   if ((block = FindSave2(device, saveinfo->filename, 2, size, addr, blocksize)) != 0)
    {
       // Delete old save
-      DeleteSave(sh, addr, block, blocksize);
+      DeleteSave(addr, block, blocksize);
    }
 
    // Let's figure out how many blocks will be needed for the save
@@ -2109,14 +2109,14 @@ int BiosBUPImport(SH2_struct *sh, u32 device, saveinfo_struct * saveinfo, const 
       savesize++;
 
    // Will it blend? Err... fit
-   if (savesize > GetFreeSpace(sh, device, size, addr, blocksize))
+   if (savesize > GetFreeSpace(device, size, addr, blocksize))
    {
       // Nope, time to bail
       return 4;
    }
 
    // Find free blocks for the save
-   if ((blocktbl = GetFreeBlocks(sh, addr, blocksize, savesize, size)) == NULL)
+   if ((blocktbl = GetFreeBlocks(addr, blocksize, savesize, size)) == NULL)
    {
       // Just return an error that might make sense
       return 8;
@@ -2125,13 +2125,13 @@ int BiosBUPImport(SH2_struct *sh, u32 device, saveinfo_struct * saveinfo, const 
    // Create save
    workaddr = addr + (blocktbl[0] * blocksize * 2);
 
-   SH2MappedMemoryWriteByte(sh, workaddr+0x1, 0x80);
+   DMAMappedMemoryWriteByte(workaddr+0x1, 0x80);
 
    // Copy over filename
    rindex = 0;
    for (i = workaddr+0x9; i < ((workaddr+0x9) + (11 * 2)); i+=2)
    {
-      SH2MappedMemoryWriteByte(sh, i, saveinfo->filename[rindex]);
+      DMAMappedMemoryWriteByte(i, saveinfo->filename[rindex]);
       rindex++;
    }
 
@@ -2139,34 +2139,34 @@ int BiosBUPImport(SH2_struct *sh, u32 device, saveinfo_struct * saveinfo, const 
    rindex = 0;
    for (i = workaddr+0x21; i < ((workaddr+0x21) + (10 * 2)); i+=2)
    {
-      SH2MappedMemoryWriteByte(sh, i, saveinfo->comment[rindex]);
+      DMAMappedMemoryWriteByte(i, saveinfo->comment[rindex]);
       rindex++;
    }
 
    // Copy over language
-   SH2MappedMemoryWriteByte(sh, workaddr+0x1F, saveinfo->language);
+   DMAMappedMemoryWriteByte(workaddr+0x1F, saveinfo->language);
 
   // Copy over date
-  SH2MappedMemoryWriteByte(sh, workaddr+0x35, (saveinfo->date>>24)&0xFF);
-  SH2MappedMemoryWriteByte(sh, workaddr+0x37, (saveinfo->date>>16)&0xFF);
-  SH2MappedMemoryWriteByte(sh, workaddr+0x39, (saveinfo->date>>8)&0xFF);
-  SH2MappedMemoryWriteByte(sh, workaddr+0x3B, saveinfo->date&0xFF);
+  DMAMappedMemoryWriteByte(workaddr+0x35, (saveinfo->date>>24)&0xFF);
+  DMAMappedMemoryWriteByte(workaddr+0x37, (saveinfo->date>>16)&0xFF);
+  DMAMappedMemoryWriteByte(workaddr+0x39, (saveinfo->date>>8)&0xFF);
+  DMAMappedMemoryWriteByte(workaddr+0x3B, saveinfo->date&0xFF);
 
 
   // Copy over data size
-  SH2MappedMemoryWriteByte(sh, workaddr+0x3D, (saveinfo->datasize>>24)&0xFF);
-  SH2MappedMemoryWriteByte(sh, workaddr+0x3F, (saveinfo->datasize>>16)&0xFF);
-  SH2MappedMemoryWriteByte(sh, workaddr+0x41, (saveinfo->datasize>>8)&0xFF);
-  SH2MappedMemoryWriteByte(sh, workaddr+0x43, saveinfo->datasize&0xFF);
+  DMAMappedMemoryWriteByte(workaddr+0x3D, (saveinfo->datasize>>24)&0xFF);
+  DMAMappedMemoryWriteByte(workaddr+0x3F, (saveinfo->datasize>>16)&0xFF);
+  DMAMappedMemoryWriteByte(workaddr+0x41, (saveinfo->datasize>>8)&0xFF);
+  DMAMappedMemoryWriteByte(workaddr+0x43, saveinfo->datasize&0xFF);
 
    // write the block table
    workaddr += 0x45;
 
    for (i = 1; i < savesize; i++)
    {
-      SH2MappedMemoryWriteByte(sh, workaddr, (u8)(blocktbl[i] >> 8));
+      DMAMappedMemoryWriteByte(workaddr, (u8)(blocktbl[i] >> 8));
       workaddr+=2;
-      SH2MappedMemoryWriteByte(sh, workaddr, (u8)blocktbl[i]);
+      DMAMappedMemoryWriteByte(workaddr, (u8)blocktbl[i]);
       workaddr+=2;
 
       if (((workaddr-1) & ((blocksize << 1) - 1)) == 0)
@@ -2178,7 +2178,7 @@ int BiosBUPImport(SH2_struct *sh, u32 device, saveinfo_struct * saveinfo, const 
    }
 
    // Write 2 blank bytes so we now how large the table size is next time
-   SH2MappedMemoryWriteByte(sh, workaddr, 0);
+   DMAMappedMemoryWriteByte(workaddr, 0);
    workaddr+=2;
    if (((workaddr - 1) & ((blocksize << 1) - 1)) == 0)
    {
@@ -2187,7 +2187,7 @@ int BiosBUPImport(SH2_struct *sh, u32 device, saveinfo_struct * saveinfo, const 
      workaddr = addr + (blocktbl[blockswritten] * blocksize * 2) + 9;
    }
 
-   SH2MappedMemoryWriteByte(sh, workaddr, 0);
+   DMAMappedMemoryWriteByte(workaddr, 0);
    workaddr+=2;
    if (((workaddr - 1) & ((blocksize << 1) - 1)) == 0)
    {
@@ -2203,7 +2203,7 @@ int BiosBUPImport(SH2_struct *sh, u32 device, saveinfo_struct * saveinfo, const 
    rindex=0;
    while (datasize > 0)
    {
-      SH2MappedMemoryWriteByte(sh, workaddr, buf[rindex]);
+      DMAMappedMemoryWriteByte(workaddr, buf[rindex]);
       //fputc(SH2MappedMemoryReadByte(sh->regs.R[6]),fp);
 
       //LOG("write block=%d, baddr = %08X, %08X, %02X", blockswritten, blocktbl[blockswritten], workaddr, SH2MappedMemoryReadByte(sh->regs.R[6]));
@@ -2278,7 +2278,7 @@ static void FASTCALL BiosBUPRead(SH2_struct * sh)
               (SH2MappedMemoryReadByte(sh, tableaddr+4) << 8) | SH2MappedMemoryReadByte(sh, tableaddr + 6);
 
    // Read in Block Table
-   if ((blocktbl = ReadBlockTable(sh, addr, &tableaddr, block, blocksize, &numblocks, &blocksread)) == NULL)
+   if ((blocktbl = ReadBlockTable(addr, &tableaddr, block, blocksize, &numblocks, &blocksread)) == NULL)
    {
       // Just return an error that might make sense
       sh->regs.R[0] = 8;
@@ -2337,7 +2337,7 @@ int BiosBUPStatusMem(SH2_struct *sh, int device, devicestatus_struct * status )
       return -1;
    }
 
-   freeblocks = GetFreeSpace(sh, device, size, addr, blocksize);
+   freeblocks = GetFreeSpace(device, size, addr, blocksize);
 
    needsize = 0;
    aftersize = (((blocksize - 6) * freeblocks) - 30) - needsize;
