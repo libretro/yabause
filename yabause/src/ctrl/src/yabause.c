@@ -837,7 +837,7 @@ int YabauseEmulate(void) {
 
       yabsys.UsecFrac += usecinc;
       PROFILE_START("SMPC");
-      SmpcExec(yabsys.UsecFrac);
+      SmpcExec(yabsys.UsecFrac >> YABSYS_TIMING_BITS);
       PROFILE_STOP("SMPC");
       PROFILE_START("CDB");
       Cs2Exec(yabsys.UsecFrac >> YABSYS_TIMING_BITS);
