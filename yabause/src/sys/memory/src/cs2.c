@@ -82,8 +82,7 @@ enum CDB_DATATRANSTYPE
 
 #define ToBCD(val) ((val % 10 ) + ((val / 10 ) << 4))
 
-#define SEEK_TIME (60000*5)
-#define SEEK_TIME_MIN (60000)
+#define SEEK_TIME (300000 * 3) //Max seek time is 300 ms (multuiplys by 3 for precision handling)
 
 Cs2 * Cs2Area = NULL;
 ip_struct *cdip = NULL;
@@ -261,6 +260,7 @@ u16 FASTCALL Cs2ReadWord(SH2_struct *context, UNUSED u8* memory, u32 addr) {
                              break;
                      case 5:
                               // Read sector data
+                              CDLOG("Read data\n");
                               if (Cs2Area->datatranstype != CDB_DATATRANSTYPE_INVALID)
                               {
                                  // get sector
@@ -419,6 +419,7 @@ u32 FASTCALL Cs2ReadLong(SH2_struct *context, UNUSED u8* memory, u32 addr) {
                   // transfer data
                   if (Cs2Area->datatranstype != CDB_DATATRANSTYPE_INVALID)
                   {
+                    CDLOG("Get long data\n");
                      // get sector
 
                      // Make sure we still have sectors to transfer
@@ -432,7 +433,7 @@ u32 FASTCALL Cs2ReadLong(SH2_struct *context, UNUSED u8* memory, u32 addr) {
                         }
 
                         val = T1ReadLong(ptr, 0);
-                        //LOG("[CS2] get addr = %d,val = %08X", Cs2Area->datatransoffset, val);
+                        CDLOG("[CS2] get addr = %d,val = %08X\n", Cs2Area->datatransoffset, val);
 
                         // increment datatransoffset/cdwnum
                         Cs2Area->cdwnum += 4;
@@ -872,10 +873,8 @@ void Cs2Exec(u32 timing) {
    if (Cs2Area->_periodiccycles >= Cs2Area->_periodictiming)
    {
       Cs2Area->_periodiccycles -= Cs2Area->_periodictiming;
-	  if (Cs2Area->_periodictiming == SEEK_TIME){
-		  Cs2SetTiming(1);
-	  }
 
+      Cs2Area->_periodictiming = 0;
       // Get Drive's current status and compare with old status
       switch (Cs2Area->status & 0xF) {
          case CDB_STAT_PAUSE:
@@ -885,6 +884,7 @@ void Cs2Exec(u32 timing) {
          case CDB_STAT_PLAY:
          {
             partition_struct * playpartition;
+            CDLOG("Effective Read %x \n", Cs2Area->FAD);
             int ret = Cs2ReadFilteredSector(Cs2Area->FAD, &playpartition);
 
             switch (ret)
@@ -894,14 +894,15 @@ void Cs2Exec(u32 timing) {
                   Cs2Area->FAD++;
                   Cs2Area->track = Cs2FADToTrack(Cs2Area->FAD);
                   Cs2Area->cdi->ReadAheadFAD(Cs2Area->FAD);
+                  Cs2SetTiming(1); //As we read one disc sector, we need to wait a while to simulate disc speed
 
                   if (playpartition != NULL)
                   {
                      // We can use this sector
-                     CDLOG("partition number = %d blocks = %d blockfreespace = %d fad = %x playpartition->size = %x isbufferfull = %x\n",
+                     CDLOG("partition number = %d blocks = %d blockfreespace = %d fad = %x playpartition->size = %x isbufferfull = %x IRQMAsk %x\n",
                        (playpartition - Cs2Area->partition),
                        playpartition->numblocks,
-                       Cs2Area->blockfreespace, Cs2Area->FAD, playpartition->size, Cs2Area->isbufferfull);
+                       Cs2Area->blockfreespace, Cs2Area->FAD, playpartition->size, Cs2Area->isbufferfull, Cs2Area->reg.HIRQMASK);
 
                      Cs2SetIRQ(CDB_HIRQ_CSCT);
                      Cs2Area->isonesectorstored = 1;
@@ -917,8 +918,8 @@ void Cs2Exec(u32 timing) {
                         if (Cs2Area->repcnt >= Cs2Area->maxrepeat) {
                            // we're done
                            Cs2Area->status = CDB_STAT_PAUSE;
-						   Cs2Area->options = 0x8;
-                           Cs2SetTiming(0);
+						               Cs2Area->options = 0x8;
+                           // Cs2SetTiming(0);
                            Cs2SetIRQ(CDB_HIRQ_PEND);
 
                            if (Cs2Area->playtype == CDB_PLAYTYPE_FILE){
@@ -948,7 +949,7 @@ void Cs2Exec(u32 timing) {
                         if (Cs2Area->repcnt >= Cs2Area->maxrepeat) {
                            // we're done
                            Cs2Area->status = CDB_STAT_PAUSE;
-                           Cs2SetTiming(0);
+                           // Cs2SetTiming(0);
                            Cs2SetIRQ(CDB_HIRQ_PEND);
 
                            if (Cs2Area->playtype == CDB_PLAYTYPE_FILE)
@@ -978,13 +979,13 @@ void Cs2Exec(u32 timing) {
             break;
          }
          case CDB_STAT_SEEK:
-		 {
-			 if (!Cs2Area->isbufferfull){
-				 Cs2Area->status = CDB_STAT_PLAY;
-				 Cs2Area->options = 0x8;
-			 }
-			 break;
-		 }
+    		 {
+    			 if (!Cs2Area->isbufferfull){
+    				 Cs2Area->status = CDB_STAT_PLAY;
+    				 Cs2Area->options = 0x8;
+    			 }
+    			 break;
+    		 }
          case CDB_STAT_SCAN:
             break;
          case CDB_STAT_RETRY:
@@ -1618,21 +1619,22 @@ void Cs2PlayDisc(void) {
   pdepos = ((Cs2Area->reg.CR3 & 0xFF) << 16) | Cs2Area->reg.CR4;
   pdpmode = Cs2Area->reg.CR3 >> 8;
 
-  CDLOG("[CDB] Command: Play; Start = 0x%06x, End = 0x%06x, Mode = 0x%02x", pdspos, pdepos, pdpmode);
+  CDLOG("[CDB] Command: Play; Start = 0x%06x, End = 0x%06x, Mode = 0x%02x\n", pdspos, pdepos, pdpmode);
   u32 current_fad = Cs2Area->FAD;
+  CDLOG("Current FAD is %x\n", current_fad);
 
   // Convert Start Position to playFAD
   if (pdspos == 0xFFFFFF || pdpmode == 0xFF) // This still isn't right
   {
      // No Change
-	 CDLOG("[CDB] pos = current");
+	 CDLOG("[CDB] pos = current\n");
   }
   else if (pdspos & 0x800000)
   {
      // FAD Mode
      Cs2Area->playFAD = (pdspos & 0xFFFFF);
-	 
-	 CDLOG("[CDB] pos = FAD:%02X", Cs2Area->playFAD);
+
+	 CDLOG("[CDB] pos = FAD:%02X\n", Cs2Area->playFAD);
 
      Cs2SetupDefaultPlayStats(Cs2FADToTrack(Cs2Area->playFAD), 0);
 
@@ -1654,15 +1656,15 @@ void Cs2PlayDisc(void) {
         Cs2Area->playFAD = Cs2Area->FAD;
         Cs2Area->track = (u8)(pdspos >> 8);
         Cs2Area->index = (u8)pdspos;
-		
-		CDLOG("[CDB] pos = TRACK:%02X FAD:%02X upd", (u8)(pdspos >> 8), Cs2Area->FAD );
+
+		CDLOG("[CDB] pos = TRACK:%02X FAD:%02X upd\n", (u8)(pdspos >> 8), Cs2Area->FAD );
      }
      else
      {
         // Preserve Pickup Position
         Cs2SetupDefaultPlayStats((u8)(pdspos >> 8), 0);
-		
-		CDLOG("[CDB] pos = TRACK:%02X FAD:%02X noupd", (u8)(pdspos >> 8), Cs2Area->FAD );
+
+		CDLOG("[CDB] pos = TRACK:%02X FAD:%02X noupd\n", (u8)(pdspos >> 8), Cs2Area->FAD );
      }
   }
 
@@ -1698,16 +1700,16 @@ void Cs2PlayDisc(void) {
      CDLOG("cs2\t: playDisc: Unsupported play mode = %02X\n", pdpmode);
 #endif
 
-  Cs2SetTiming(1);
+  // Cs2SetTiming(1);
 
   Cs2Area->_periodiccycles = 0;
   // Calculate Seek time
   int length = abs((int)Cs2Area->playendFAD - (int)Cs2Area->FAD);
-  CDLOG("cs2\t:Seek length = %d", length);
+  CDLOG("cs2\t:Seek length = %d (FAD %x StartFad %x EndFad %x)\n", length, Cs2Area->FAD, Cs2Area->playFAD, Cs2Area->playendFAD);
   // A CD is 74 min = 74*4500 = 333000 FAD Max
   // Max SEEK_TIME = 300000 us
-  // Assume min seek time is then constant at 60000 ms
-  Cs2Area->_periodictiming = SEEK_TIME_MIN + (SEEK_TIME-SEEK_TIME_MIN)*((double)length / 333000.0); // seektime 2856 is the minimum for athlete king
+  Cs2Area->_periodictiming = (abs(Cs2Area->FAD-(current_fad-1))*SEEK_TIME)/333000; //Let's assume a lienar seek and maximum 300ms seek for full disc
+  CDLOG("SeekTime required %d\n", Cs2Area->_periodictiming);
   if (Cs2Area->_periodictiming > SEEK_TIME) {
     Cs2Area->_periodictiming = SEEK_TIME;
   }
@@ -1715,10 +1717,9 @@ void Cs2PlayDisc(void) {
   Cs2Area->options = 0;
   Cs2Area->playtype = CDB_PLAYTYPE_SECTOR;
   Cs2Area->cdi->ReadAheadFAD(Cs2Area->FAD);
-
+  Cs2SetIRQ(CDB_HIRQ_CMOK);
 
   doCDReport(Cs2Area->status);
-  Cs2SetIRQ(CDB_HIRQ_CMOK);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1735,7 +1736,7 @@ void Cs2SeekDisc(void) {
 		Cs2Area->track = 0xFF;
 		Cs2Area->index = 0xFF;
 		Cs2Area->FAD = 0xFFFFFFFF;
-		
+
 		CDLOG("[CDB] Seek pos = CDB_STAT_STANDBY" );
 	}
 	// Pause
@@ -1751,7 +1752,7 @@ void Cs2SeekDisc(void) {
 
      sdFAD = ((Cs2Area->reg.CR1 & 0xFF) << 16) | Cs2Area->reg.CR2;
      sdFAD = (sdFAD & 0xFFFFF);
-	 
+
     Cs2Area->status = CDB_STAT_PAUSE;
     for (i = 0; i < 99; i++){
        u32 tfad = Cs2Area->TOC[i] & 0x00FFFFFF;
@@ -1772,7 +1773,7 @@ void Cs2SeekDisc(void) {
         Cs2Area->status = CDB_STAT_PAUSE;
         Cs2SetupDefaultPlayStats((Cs2Area->reg.CR2 >> 8), 1);
         Cs2Area->index = Cs2Area->reg.CR2 & 0xFF;
-		
+
 		CDLOG("[CDB] Seek pos = TRACK:%02X FAD:%02X", Cs2Area->track, Cs2Area->FAD );
 	 }
      else
@@ -1785,12 +1786,12 @@ void Cs2SeekDisc(void) {
         Cs2Area->track = 0xFF;
         Cs2Area->index = 0xFF;
         Cs2Area->FAD = 0xFFFFFFFF;
-		
+
 		CDLOG("[CDB] Seek pos = CDB_STAT_STANDBY" );
      }
   }
 
-  Cs2SetTiming(0);
+  // Cs2SetTiming(0);
 
   doCDReport(Cs2Area->status);
   Cs2SetIRQ(CDB_HIRQ_CMOK);
@@ -2739,7 +2740,7 @@ void Cs2ReadFile(void) {
 
   Cs2Area->options = 0x8;
 
-  Cs2SetTiming(1);
+  // Cs2SetTiming(1);
 
   Cs2Area->outconcddev = Cs2Area->filter + rffilternum;
 
@@ -3235,6 +3236,7 @@ block_struct * Cs2AllocateBlock(u8 * blocknum, s32 sectsize) {
 void Cs2FreeBlock(block_struct * blk) {
   if (blk == NULL) return;
   blk->size = -1;
+  CDLOG("Free Block\n");
   Cs2Area->blockfreespace++;
   Cs2Area->isbufferfull = 0;
 }
@@ -3814,7 +3816,6 @@ int Cs2ReadFilteredSector(u32 rfsFAD, partition_struct **partition) {
   unsigned char syncheader[12] = { 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
                           0xFF, 0xFF, 0xFF, 0x00};
   int isaudio = 0;
-
   if (Cs2Area->outconcddev != NULL && !Cs2Area->isbufferfull)
   {
      // read a sector using cd interface function to workblock.data
@@ -3831,7 +3832,7 @@ int Cs2ReadFilteredSector(u32 rfsFAD, partition_struct **partition) {
 
      // force 1x speed if reading from an audio track
      Cs2Area->isaudio = isaudio;
-     Cs2SetTiming(1);
+     // Cs2SetTiming(1);
 
      // if mode 2 track, setup the subheader values
      if (isaudio)
@@ -3873,7 +3874,7 @@ int Cs2ReadFilteredSector(u32 rfsFAD, partition_struct **partition) {
 
     // force 1x speed if reading from an audio track
     Cs2Area->isaudio = isaudio;
-    Cs2SetTiming(1);
+    // Cs2SetTiming(1);
 
     // if mode 2 track, setup the subheader values
     if (isaudio)
