@@ -275,47 +275,29 @@ static void showCPUState(SH2_struct *context)
 
 u8 execInterrupt = 0;
 
-FASTCALL void SH2KronosInterpreterExecLoop(SH2_struct *context, u32 cycles)
-{
-  u32 target_cycle = context->cycles + cycles;
-   while (context->cycles < target_cycle)
-   {
-     cacheCode[context->isslave][cacheId[(context->regs.PC >> 20) & 0xFFF]][(context->regs.PC >> 1) & 0x7FFFF](context);
-   }
-}
-
-FASTCALL void SH2KronosInterpreterExecLoopSave(SH2_struct *context, u32 cycles, sh2regs_struct *oldRegs)
-{
-  u32 target_cycle = context->cycles + cycles;
-   while (context->cycles < target_cycle)
-   {
-     memcpy(oldRegs, &context->regs, sizeof(sh2regs_struct));
-     int id = (context->regs.PC >> 20) & 0xFFF;
-     u16 opcode = krfetchlist[id](context, context->regs.PC);
-     if(context->isAccessingCPUBUS == 0) opcodeTable[opcode](context);
-     if(context->isAccessingCPUBUS != 0) {
-      context->cycles = target_cycle;
-      memcpy(& context->regs, oldRegs, sizeof(sh2regs_struct));
-      return;
-     }
-   }
-}
-
 FASTCALL void SH2KronosInterpreterExec(SH2_struct *context, u32 cycles)
 {
   u32 target_cycle = context->cycles + cycles;
+  SH2HandleInterrupts(context);
   while (context->cycles < target_cycle){
-    SH2HandleInterrupts(context);
-    SH2KronosInterpreterExecLoop(context, target_cycle-context->cycles);
+    cacheCode[context->isslave][cacheId[(context->regs.PC >> 20) & 0xFFF]][(context->regs.PC >> 1) & 0x7FFFF](context);
   }
 }
 
 FASTCALL void SH2KronosInterpreterExecSave(SH2_struct *context, u32 cycles, sh2regs_struct *oldRegs)
 {
   u32 target_cycle = context->cycles + cycles;
+  SH2HandleInterrupts(context);
   while (context->cycles < target_cycle){
-    SH2HandleInterrupts(context);
-    SH2KronosInterpreterExecLoopSave(context, target_cycle-context->cycles, oldRegs);
+    memcpy(oldRegs, &context->regs, sizeof(sh2regs_struct));
+    int id = (context->regs.PC >> 20) & 0xFFF;
+    u16 opcode = krfetchlist[id](context, context->regs.PC);
+    if(context->isAccessingCPUBUS == 0) opcodeTable[opcode](context);
+    if(context->isAccessingCPUBUS != 0) {
+      context->cycles = target_cycle;
+      memcpy(&context->regs, oldRegs, sizeof(sh2regs_struct));
+      return;
+    }
   }
 }
 
