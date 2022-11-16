@@ -129,14 +129,6 @@
 # define FLUSH_SCSP()  /*nothing*/
 #endif
 
-#if defined(ARCH_IS_LINUX)
-#include "sys/resource.h"
-#include <errno.h>
-#include <pthread.h>
-pthread_cond_t  sync_cnd = PTHREAD_COND_INITIALIZER;
-pthread_mutex_t sync_mutex = PTHREAD_MUTEX_INITIALIZER;
-#endif
-
 int new_scsp_outbuf_pos = 0;
 s32 new_scsp_outbuf_l[900] = { 0 };
 s32 new_scsp_outbuf_r[900] = { 0 };
@@ -4831,32 +4823,15 @@ SoundRamWriteByte (SH2_struct *context, u8* mem, u32 addr, u8 val)
 //////////////////////////////////////////////////////////////////////////////
 
 // From CPU
-int sh2_read_req = 0;
 static int mem_access_counter = 0;
 void SyncSh2And68k(SH2_struct *context){
   if (IsM68KRunning) {
-    /*
-    #if defined(ARCH_IS_LINUX)
-    pthread_mutex_lock(&sync_mutex);
-    pthread_cond_signal(&sync_cnd);
-    pthread_mutex_unlock(&sync_mutex);
-    #else
-    sh2_read_req++;
-    #endif
-    */
     // Memory Access cycle = 128 times per 44.1Khz
     // 28437500 / 4410 / 128 = 50
     SH2Core->AddCycle(context, 50);
 
     if (mem_access_counter++ >= 128) {
-#if defined(ARCH_IS_LINUX)
-      pthread_mutex_lock(&sync_mutex);
-      pthread_cond_signal(&sync_cnd);
-      pthread_mutex_unlock(&sync_mutex);
-#else
-      sh2_read_req++;
       YabThreadYield();
-#endif
       mem_access_counter = 0;
     }
   }
@@ -5350,10 +5325,6 @@ u64 newCycles = 0;
 
 void* ScspAsynMainCpu( void * p ){
 
-
-#if defined(ARCH_IS_LINUX)
-  setpriority( PRIO_PROCESS, 0, -20);
-#endif
   YabThreadSetCurrentThreadAffinityMask( 0x03 );
 
   const int samplecnt = 256; // 11289600/44100
@@ -5412,85 +5383,6 @@ void* ScspAsynMainCpu( void * p ){
   }
   YabThreadWake(YAB_THREAD_SCSP);
   return NULL;
-}
-
-void ScspAsynMainRT( void * p ){
-
-  u64 before;
-  u64 now;
-  u32 difftime;
-  const int samplecnt = 256; // 11289600/44100
-  const int step = 256;
-  const int frame_div = 1;
-  int framecnt; // 11289600/60
-  int frame = 0;
-  int frame_count = 0;
-  int i;
-
-  const u32 base_clock = (u32)((644.8412698 / ((double)samplecnt / (double)step)) * (1 << CLOCK_SYNC_SHIFT));
-
-
-  YabThreadSetCurrentThreadAffinityMask( 0x03 );
-  before = YabauseGetTicks() * 1000000 / yabsys.tickfreq;
-  u32 wait_clock = 0;
-  while (thread_running){
-
-    framecnt = (11289600/fps) / frame_div;
-
-    while (g_scsp_lock){ YabThreadUSleep(1);  }
-
-    // Run 1 sample(44100Hz)
-    for (i = 0; i < samplecnt; i += step){
-      MM68KExec(step);
-      m68kcycle += base_clock;
-    }
-
-    wait_clock = 0;
-
-    new_scsp_exec((samplecnt << 1));
-
-    // Sync 1/4 Frame(60Hz)
-    frame += samplecnt;
-    if (frame >= framecnt){
-      frame = frame - framecnt;
-      frame_count++;
-      if (frame_count >= frame_div){
-        ScspInternalVars->scsptiming2 = 0;
-        ScspInternalVars->scsptiming1 = scsplines;
-        ScspExecAsync();
-        frame_count = 0;
-      }
-      int sleeptime = 0;
-      u64 checktime = 0;
-      m68kcycle = 0;
-      sh2_read_req = 0;
-      do {
-        now = YabauseGetTicks() * 1000000 / yabsys.tickfreq;
-        if (now > before){
-          difftime = now - before;
-        }
-        else{
-          difftime = now + (ULLONG_MAX - before);
-        }
-        sleeptime = ((1000000/fps) - difftime);
-        if ((sleeptime > 0) && (isAutoFrameSkip()==0)) YabThreadUSleep(sleeptime);
-
-        if(sh2_read_req != 0) {
-          for (i = 0; i < samplecnt; i += step) {
-            MM68KExec(step);
-            m68kcycle += base_clock;
-          }
-          frame += samplecnt;
-          new_scsp_exec((samplecnt << 1));
-          sh2_read_req = 0;
-        }
-      } while ((sleeptime > 0) && (isAutoFrameSkip()==0));
-      checktime = YabauseGetTicks() * 1000000 / yabsys.tickfreq;
-      //yprintf("vsynctime = %d(%d)\n", (s32)(checktime - before), (s32)(operation_time - before));
-      before = checktime;
-    }
-  }
-  YabThreadWake(YAB_THREAD_SCSP);
 }
 
 void ScspAddCycles(u64 cycles)

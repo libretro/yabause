@@ -109,9 +109,6 @@ u64 tickfreq;
 //todo this ought to be in scspdsp.c
 ScspDsp scsp_dsp = { 0 };
 
-u32 saved_scsp_cycles = 0;//fixed point
-volatile u64 saved_m68k_cycles = 0;//fixed point
-
 //////////////////////////////////////////////////////////////////////////////
 
 #ifndef NO_CLI
@@ -667,11 +664,6 @@ int YabauseExec(void) {
 //////////////////////////////////////////////////////////////////////////////
 int saved_centicycles;
 
-u32 get_cycles_per_line_division(u32 clock, int frames, int lines, int divisions_per_line)
-{
-   return ((u64)(clock / frames) << SCSP_FRACTIONAL_BITS) / (lines * divisions_per_line);
-}
-
 u32 YabauseGetCpuTime(){
 
   return MSH2->cycles;
@@ -736,24 +728,16 @@ int YabauseEmulate(void) {
    unsigned int m68kcycles;       // Integral M68k cycles per call
    unsigned int m68kcenticycles;  // 1/100 M68k cycles per call
 
-   u64 m68k_cycles_per_deciline = 0;
-   u64 scsp_cycles_per_deciline = 0;
-
-   int lines = 0;
    int frames = 0;
 
    if (yabsys.IsPal)
    {
-     lines = 313;
      frames = 50;
    }
    else
    {
-     lines = 263;
      frames = 60;
    }
-   scsp_cycles_per_deciline = get_cycles_per_line_division(44100 * 512, frames, lines, DECILINE_STEP);
-   m68k_cycles_per_deciline = get_cycles_per_line_division(44100 * 256, frames, lines, DECILINE_STEP);
 
    DoMovie();
 
@@ -803,7 +787,6 @@ int YabauseEmulate(void) {
          PROFILE_START("hblankout");
          Vdp2HBlankOUT();
          Vdp1HBlankOUT();
-        // SyncScsp();
          PROFILE_STOP("hblankout");
          yabsys.DecilineCount = 0;
          yabsys.LineCount++;
@@ -844,8 +827,6 @@ int YabauseEmulate(void) {
       PROFILE_STOP("CDB");
       yabsys.UsecFrac &= YABSYS_TIMING_MASK;
 
-      saved_m68k_cycles  += m68k_cycles_per_deciline;
-      // ScspAddCycles(m68k_cycles_per_deciline);
       PROFILE_STOP("Total Emulation");
    }
 
@@ -888,7 +869,6 @@ void SyncCPUtoSCSP() {
     YabSemWait(g_scsp_ready);
     YabThreadWake(YAB_THREAD_SCSP);
     YabSemPost(g_cpu_ready);
-    saved_m68k_cycles = 0;
   //LOG("[SH2] START SCSP");
 }
 
