@@ -5134,15 +5134,13 @@ static s32 FASTCALL M68KExecBP (s32 cycles);
 
 void MM68KExec(s32 cycles)
 {
-  s32 newcycles = savedcycles - cycles;
   if (LIKELY(IsM68KRunning))
     {
-      if (LIKELY(newcycles < 0))
+      savedcycles += cycles;
+      if (LIKELY((savedcycles) > 0))
         {
-          s32 cyclestoexec = -newcycles;
-          newcycles += (*m68kexecptr)(cyclestoexec);
+          savedcycles = savedcycles - (*m68kexecptr)(savedcycles);
         }
-      savedcycles = newcycles;
     }
 }
 
