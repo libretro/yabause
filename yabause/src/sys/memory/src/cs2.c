@@ -82,8 +82,6 @@ enum CDB_DATATRANSTYPE
 
 #define ToBCD(val) ((val % 10 ) + ((val / 10 ) << 4))
 
-#define SEEK_TIME (300000 * 3) //Max seek time is 300 ms (multuiplys by 3 for precision handling)
-
 Cs2 * Cs2Area = NULL;
 ip_struct *cdip = NULL;
 
@@ -982,6 +980,7 @@ void Cs2Exec(u32 timing) {
     		 {
     			 if (!Cs2Area->isbufferfull){
     				 Cs2Area->status = CDB_STAT_PLAY;
+             Cs2Area->_periodiccycles = 0;
     				 Cs2Area->options = 0x8;
     			 }
     			 break;
@@ -1703,16 +1702,7 @@ void Cs2PlayDisc(void) {
   // Cs2SetTiming(1);
 
   Cs2Area->_periodiccycles = 0;
-  // Calculate Seek time
-  int length = abs((int)Cs2Area->playendFAD - (int)Cs2Area->FAD);
-  CDLOG("cs2\t:Seek length = %d (FAD %x StartFad %x EndFad %x)\n", length, Cs2Area->FAD, Cs2Area->playFAD, Cs2Area->playendFAD);
-  // A CD is 74 min = 74*4500 = 333000 FAD Max
-  // Max SEEK_TIME = 300000 us
-  Cs2Area->_periodictiming = (abs(Cs2Area->FAD-(current_fad-1))*SEEK_TIME)/333000; //Let's assume a lienar seek and maximum 300ms seek for full disc
-  CDLOG("SeekTime required %d\n", Cs2Area->_periodictiming);
-  if (Cs2Area->_periodictiming > SEEK_TIME) {
-    Cs2Area->_periodictiming = SEEK_TIME;
-  }
+  Cs2Area->_periodictiming = 0;
   Cs2Area->status = CDB_STAT_SEEK;      // need to be seek
   Cs2Area->options = 0;
   Cs2Area->playtype = CDB_PLAYTYPE_SECTOR;
@@ -2745,6 +2735,7 @@ void Cs2ReadFile(void) {
   Cs2Area->outconcddev = Cs2Area->filter + rffilternum;
 
   Cs2Area->status = CDB_STAT_PLAY;
+  Cs2Area->_periodiccycles = 0;
   Cs2Area->playtype = CDB_PLAYTYPE_FILE;
   Cs2Area->cdi->ReadAheadFAD(Cs2Area->FAD);
 
