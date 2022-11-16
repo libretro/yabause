@@ -753,6 +753,7 @@ int YabauseEmulate(void) {
 
    TRACE_EMULATOR("YabauseEmulate");
 
+   ScspStartFrame();
    while (!oneframeexec)
    {
       PROFILE_START("Total Emulation");
@@ -792,13 +793,11 @@ int YabauseEmulate(void) {
          yabsys.LineCount++;
          if (yabsys.LineCount == yabsys.VBlankLineCount)
          {
-            ScspAddCycles((u64)(44100 * 256 / frames)<< SCSP_FRACTIONAL_BITS);
             PROFILE_START("vblankin");
             // VBlankIN
             SmpcINTBACKEnd();
             Vdp1VBlankIN();
             Vdp2VBlankIN();
-            SyncCPUtoSCSP();
             PROFILE_STOP("vblankin");
             CheatDoPatches(MSH2);
          }
@@ -808,6 +807,7 @@ int YabauseEmulate(void) {
             PROFILE_START("VDP1/VDP2");
             Vdp1VBlankOUT();
             Vdp2VBlankOUT();
+            SyncCPUtoSCSP();
             yabsys.LineCount = 0;
             oneframeexec = 1;
             PROFILE_STOP("VDP1/VDP2");
@@ -830,7 +830,7 @@ int YabauseEmulate(void) {
       PROFILE_STOP("Total Emulation");
    }
 
-   syncVideoMode();
+   // syncVideoMode();
    FPSDisplay();
 
 #ifdef YAB_STATICS
@@ -865,11 +865,11 @@ int YabauseEmulate(void) {
 
 
 void SyncCPUtoSCSP() {
-  //LOG("[SH2] WAIT SCSP");
+  // LOG("[SH2] WAIT SCSP\n");
     YabSemWait(g_scsp_ready);
-    YabThreadWake(YAB_THREAD_SCSP);
+    // YabThreadWake(YAB_THREAD_SCSP);
     YabSemPost(g_cpu_ready);
-  //LOG("[SH2] START SCSP");
+  // LOG("[SH2] START SCSP\n");
 }
 
 //////////////////////////////////////////////////////////////////////////////
