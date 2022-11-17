@@ -135,8 +135,9 @@ s32 new_scsp_outbuf_r[900] = { 0 };
 int new_scsp_cycles = 0;
 int g_scsp_lock = 0;
 
-static volatile int fps = 60;
+static int nbLine = 1;
 
+static volatile int fps = 60;
 
 #include "sh2core.h"
 
@@ -5351,24 +5352,25 @@ void* ScspAsynMainCpu( void * p ){
     loop = 1;
     ScspCheckVideoFormat();
     start = YabauseGetTicks();
-    next = start + (10000*loop) / 441;
+    next = start + (loop*yabsys.tickfreq) / (44100);
 
     m68k_inc += (cycleRequest);
-    int nbLine = 1;
+    nbLine = 1;
     while (m68k_inc >= samplecnt)
     {
+#ifdef SLEEP_ON_SCSP_LINE
       now = YabauseGetTicks();
       unsigned long delay = 0;
-      if (next > now) {
-        if (doNotWait == 0) {
-          YabThreadUSleep(next - now);
+      if (now < next) {
+        if ((doNotWait == 0) && ( yabsys.tickfreq != 0)) {
+          YabThreadUSleep((u32)((next - now) * 1000000 / yabsys.tickfreq));
         }
       }
       else
         delay = now - next;
-
-      next = start + (10000*(++loop)) / 441; - delay;
-
+      loop++;
+      next = start - delay + (loop*yabsys.tickfreq) / (44100);
+#endif
       m68k_inc = m68k_inc - samplecnt;
       MM68KExec(samplecnt);
       new_scsp_exec((samplecnt << 1));
@@ -5393,6 +5395,7 @@ void* ScspAsynMainCpu( void * p ){
       }
     }
     while (scsp_mute_flags && thread_running) {
+      //Pas bon sous windows
       if (doNotWait == 0) YabThreadUSleep((1000000 / (fps*scsplines)));
       SyncSCSPtoCPU(nbLine);
     }
