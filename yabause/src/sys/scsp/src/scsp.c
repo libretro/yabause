@@ -5044,8 +5044,6 @@ ScspDeInit (void)
   YabThreadCondSignal(g_scsp_set_cyc_cond);
   YabSemPost(g_cpu_ready);
   YabSemPost(g_scsp_ready);
-  YabThreadWake(YAB_THREAD_SCSP);
-  YabThreadWait(YAB_THREAD_SCSP);
 
   if (scspchannel[0].data32)
     free(scspchannel[0].data32);
@@ -5054,13 +5052,11 @@ ScspDeInit (void)
   if (scspchannel[1].data32)
     free(scspchannel[1].data32);
   scspchannel[1].data32 = NULL;
-
   if (SNDCore)
     SNDCore->DeInit();
   SNDCore = NULL;
 
   scsp_shutdown();
-
   if (SoundRam)
     T2MemoryDeInit (SoundRam);
   SoundRam = NULL;
@@ -5107,21 +5103,27 @@ ScspReset (void)
 }
 
 //////////////////////////////////////////////////////////////////////////////
-
-int
-ScspChangeVideoFormat (int type)
+static int requestedVideoFormatChange = 0;
+int ScspChangeVideoFormat ()
 {
-  fps = type ? 50.0 : 60.0;
-  scspsoundlen = 44100 / (type ? 50 : 60);
-  scsplines = type ? 313 : 263;
+  requestedVideoFormatChange = 1;
+  return 0;
+}
+
+static void ScspCheckVideoFormat() {
+  if (requestedVideoFormatChange == 0) return;
+  requestedVideoFormatChange = 0;
+  fps = yabsys.IsPal ? 50.0 : 60.0;
+  scspsoundlen = 44100 / (yabsys.IsPal ? 50 : 60);
+  scsplines = yabsys.IsPal ? 313 : 263;
   scspsoundbufsize = scspsoundlen * scspsoundbufs;
 
   if (scsp_alloc_bufs () < 0)
-    return -1;
+  return;
 
-  SNDCore->ChangeVideoFormat (type ? 50 : 60);
+  SNDCore->ChangeVideoFormat (yabsys.IsPal ? 50 : 60);
 
-  return 0;
+  return;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -5322,9 +5324,13 @@ void ScspUnLockThread() {
 
 u64 newCycles = 0;
 
-void* ScspAsynMainCpu( void * p ){
+static void SyncSCSPtoCPU(int nbLine) {
+  YabSemPost(g_scsp_ready);
+  YabSemWait(g_cpu_ready);
+  SCSPLOG("[SCSP] START %d (%d)\n", nbLine, yabsys.LineCount);
+}
 
-  YabThreadSetCurrentThreadAffinityMask( 0x03 );
+void* ScspAsynMainCpu( void * p ){
 
   const int samplecnt = 256; // 11289600/44100
   int frame = 0;
@@ -5341,22 +5347,14 @@ void* ScspAsynMainCpu( void * p ){
 	    YabThreadUSleep(1000);
     }
 
-    YabThreadLock(g_scsp_set_cyc_mtx);
-    cycleRequest = newCycles;
-    newCycles = 0;
-    YabThreadUnLock(g_scsp_set_cyc_mtx);
-    if (cycleRequest == 0){
-      YabThreadCondWait(g_scsp_set_cyc_cond, g_scsp_set_cond_mtx);
-      YabThreadLock(g_scsp_set_cyc_mtx);
-      cycleRequest = newCycles;
-      newCycles = 0;
-      YabThreadUnLock(g_scsp_set_cyc_mtx);
-    }
+    cycleRequest = (u64)(44100 * 256 / fps);
     loop = 1;
+    ScspCheckVideoFormat();
     start = YabauseGetTicks();
     next = start + (10000*loop) / 441;
 
     m68k_inc += (cycleRequest);
+    int nbLine = 1;
     while (m68k_inc >= samplecnt)
     {
       now = YabauseGetTicks();
@@ -5375,6 +5373,12 @@ void* ScspAsynMainCpu( void * p ){
       MM68KExec(samplecnt);
       new_scsp_exec((samplecnt << 1));
       frame += samplecnt;
+      if (frame >= (nbLine*framecnt)/scsplines) {
+#ifdef SCSP_SYNC_PER_LINE
+        SyncSCSPtoCPU(nbLine); //Sync per line
+#endif
+        nbLine++;
+      }
       if (frame >= framecnt)
       {
         // printf("Frame done\n");
@@ -5382,28 +5386,19 @@ void* ScspAsynMainCpu( void * p ){
         ScspInternalVars->scsptiming2 = 0;
         ScspInternalVars->scsptiming1 = scsplines;
         ScspExecAsync();
-        YabSemPost(g_scsp_ready);
-        YabSemWait(g_cpu_ready);
+#ifndef SCSP_SYNC_PER_LINE
+        SyncSCSPtoCPU(nbLine); //Sync per frame
+#endif
         break;
       }
     }
     while (scsp_mute_flags && thread_running) {
-      if (doNotWait == 0) YabThreadUSleep((1000000 / (fps)));
-      YabSemPost(g_scsp_ready);
-      YabSemWait(g_cpu_ready);
+      if (doNotWait == 0) YabThreadUSleep((1000000 / (fps*scsplines)));
+      SyncSCSPtoCPU(nbLine);
     }
   }
   YabThreadWake(YAB_THREAD_SCSP);
   return NULL;
-}
-
-void ScspStartFrame()
-{
-    YabThreadLock(g_scsp_set_cyc_mtx);
-    // printf("Cpu add %d\n", cycles);
-    newCycles += (u64)(44100 * 256 / fps);
-    YabThreadUnLock(g_scsp_set_cyc_mtx);
-    YabThreadCondSignal(g_scsp_set_cyc_cond);
 }
 
 void ScspExecAsync() {
