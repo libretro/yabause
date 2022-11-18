@@ -136,9 +136,6 @@ void print_usage(const char *program_name) {
 static unsigned long nextFrameTime = 0;
 static int autoframeskipenab=0;
 
-static int requestedFreqCalc = 0;
-static void YabauseCheckVideoFormat();
-
 #ifdef TIMING_SWAP
 void YuiTimedSwapBuffers(){
   unsigned long now = YabauseGetTicks();
@@ -172,19 +169,11 @@ void resetSyncVideo(void) {
 }
 
 void YabauseChangeTiming(int freqtype) {
-  if (yabsys.CurSH2FreqType == freqtype) return;
-  else {
-    yabsys.CurSH2FreqType = freqtype;
-    requestedFreqCalc = 1;
-  }
-}
-
-static void YabauseInstantChangeTiming() {
-  // A faire a la fin d'une frame
    // Setup all the variables related to timing
+
    const double freq_base = yabsys.IsPal ? 28437500.0
       : (39375000.0 / 11.0) * 8.0;  // i.e. 8 * 3.579545... = 28.636363... MHz
-   const double freq_mult = (yabsys.CurSH2FreqType == CLKTYPE_26MHZ) ? 15.0/16.0 : 1.0;
+   const double freq_mult = (freqtype == CLKTYPE_26MHZ) ? 15.0/16.0 : 1.0;
    const double freq_shifted = (freq_base * freq_mult) * (1 << YABSYS_TIMING_BITS);
    const double usec_shifted = 1.0e6 * (1 << YABSYS_TIMING_BITS);
    const double line_time = yabsys.IsPal ? 1.0 /  50        / 313
@@ -194,6 +183,7 @@ static void YabauseInstantChangeTiming() {
 
    yabsys.DecilineCount = 0;
    yabsys.LineCount = 0;
+   yabsys.CurSH2FreqType = freqtype;
 
    for (int i = 0; i < DECILINE_STEP; i++) {
      yabsys.LineCycle[i] = (u32) (line_clk_cnt * (float)i/(float)(DECILINE_STEP - 1));
@@ -227,7 +217,6 @@ int YabauseSh2Init(yabauseinit_struct *init)
    yabsys.vsyncon = init->vsyncon;
    yabsys.wireframe_mode = init->wireframe_mode;
    yabsys.isRotated = 0;
-   yabsys.CurSH2FreqType = -1;
    nextFrameTime = 0;
 
    // Initialize both cpu's
@@ -337,7 +326,6 @@ TRACE_EMULATOR("YabauseInit");
    yabsys.wireframe_mode = init->wireframe_mode;
    yabsys.skipframe = init->skipframe;
    yabsys.isRotated = 0;
-   yabsys.CurSH2FreqType = -1;
    nextFrameTime = 0;
 
    // Initialize both cpu's
@@ -553,7 +541,7 @@ void YabFlushBackups(void)
 //////////////////////////////////////////////////////////////////////////////
 
 void YabauseDeInit(void) {
-   ScspDeInit();
+
    STVDeInit();
    Vdp2DeInit();
    Vdp1DeInit();
@@ -577,6 +565,7 @@ void YabauseDeInit(void) {
    CartDeInit();
    Cs2DeInit();
    ScuDeInit();
+   ScspDeInit();
    SmpcDeInit();
    PerDeInit();
    VideoDeInit();
@@ -739,6 +728,17 @@ int YabauseEmulate(void) {
    unsigned int m68kcycles;       // Integral M68k cycles per call
    unsigned int m68kcenticycles;  // 1/100 M68k cycles per call
 
+   int frames = 0;
+
+   if (yabsys.IsPal)
+   {
+     frames = 50;
+   }
+   else
+   {
+     frames = 60;
+   }
+
    DoMovie();
 
    MSH2->cycles = 0;
@@ -752,7 +752,8 @@ int YabauseEmulate(void) {
    u64 cpu_emutime = 0;
 
    TRACE_EMULATOR("YabauseEmulate");
-   YabauseCheckVideoFormat();
+
+   ScspStartFrame();
    while (!oneframeexec)
    {
       PROFILE_START("Total Emulation");
@@ -790,9 +791,6 @@ int YabauseEmulate(void) {
          PROFILE_STOP("hblankout");
          yabsys.DecilineCount = 0;
          yabsys.LineCount++;
-#ifdef SCSP_SYNC_PER_LINE
-         SyncCPUtoSCSP(); Sync per line
-#endif
          if (yabsys.LineCount == yabsys.VBlankLineCount)
          {
             PROFILE_START("vblankin");
@@ -809,11 +807,9 @@ int YabauseEmulate(void) {
             PROFILE_START("VDP1/VDP2");
             Vdp1VBlankOUT();
             Vdp2VBlankOUT();
+            SyncCPUtoSCSP();
             yabsys.LineCount = 0;
             oneframeexec = 1;
-#ifndef SCSP_SYNC_PER_LINE
-            SyncCPUtoSCSP(); //Sync per frame
-#endif
             PROFILE_STOP("VDP1/VDP2");
          }
       }
@@ -869,9 +865,11 @@ int YabauseEmulate(void) {
 
 
 void SyncCPUtoSCSP() {
-  YabSemWait(g_scsp_ready);
-  YabSemPost(g_cpu_ready);
-  // YuiMsg("[SH2] START SCSP %d\n", yabsys.LineCount);
+  // LOG("[SH2] WAIT SCSP\n");
+    YabSemWait(g_scsp_ready);
+    // YabThreadWake(YAB_THREAD_SCSP);
+    YabSemPost(g_cpu_ready);
+  // LOG("[SH2] START SCSP\n");
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -954,40 +952,31 @@ u64 YabauseGetTicks(void) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-void YabauseSetVideoFormat(int type) {
-  if (yabsys.IsPal != (type == VIDEOFORMATTYPE_PAL)) {
-    yabsys.IsPal = (type == VIDEOFORMATTYPE_PAL);
-    requestedFreqCalc = 1;
-  }
-}
 
-static void YabauseCheckVideoFormat() {
+void YabauseSetVideoFormat(int type) {
    if (Vdp2Regs == NULL) return;
-   if (requestedFreqCalc != 0) {
-     printf("Format change at Line %d\n", yabsys.LineCount);
-     yabsys.MaxLineCount = yabsys.IsPal ? 313 : 263;
-     #ifdef WIN32
-     QueryPerformanceFrequency((LARGE_INTEGER *)&yabsys.tickfreq);
-     #elif defined(_arch_dreamcast)
-     yabsys.tickfreq = 1000;
-     #elif defined(GEKKO)
-     yabsys.tickfreq = secs_to_ticks(1);
-     #elif defined(PSP)
-     yabsys.tickfreq = 1000000;
-     #elif defined(ANDROID)
-     yabsys.tickfreq = 1000000;
-     #elif defined(HAVE_GETTIMEOFDAY)
-     yabsys.tickfreq = 1000000;
-     #elif defined(HAVE_LIBSDL)
-     yabsys.tickfreq = 1000;
-     #endif
-     yabsys.OneFrameTime =
-     yabsys.IsPal ? (yabsys.tickfreq / 50) : (yabsys.tickfreq * 1001 / 60000);
-     Vdp2Regs->TVSTAT = Vdp2Regs->TVSTAT | (yabsys.IsPal?0x1:0x0);
-     ScspChangeVideoFormat();
-     YabauseInstantChangeTiming(yabsys.CurSH2FreqType);
-     requestedFreqCalc = 0;
-   }
+   yabsys.IsPal = (type == VIDEOFORMATTYPE_PAL);
+   yabsys.MaxLineCount = type ? 313 : 263;
+#ifdef WIN32
+   QueryPerformanceFrequency((LARGE_INTEGER *)&yabsys.tickfreq);
+#elif defined(_arch_dreamcast)
+   yabsys.tickfreq = 1000;
+#elif defined(GEKKO)
+   yabsys.tickfreq = secs_to_ticks(1);
+#elif defined(PSP)
+   yabsys.tickfreq = 1000000;
+#elif defined(ANDROID)
+   yabsys.tickfreq = 1000000;
+#elif defined(HAVE_GETTIMEOFDAY)
+   yabsys.tickfreq = 1000000;
+#elif defined(HAVE_LIBSDL)
+   yabsys.tickfreq = 1000;
+#endif
+   yabsys.OneFrameTime =
+      type ? (yabsys.tickfreq / 50) : (yabsys.tickfreq * 1001 / 60000);
+   Vdp2Regs->TVSTAT = Vdp2Regs->TVSTAT | (type & 0x1);
+   ScspChangeVideoFormat(type);
+   YabauseChangeTiming(yabsys.CurSH2FreqType);
 }
 
 //////////////////////////////////////////////////////////////////////////////
