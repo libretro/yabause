@@ -5374,7 +5374,6 @@ void* ScspAsynMainCpu( void * p ){
       }
     }
     while (scsp_mute_flags && thread_running) {
-      YabThreadUSleep((1000000 / fps));
       YabSemPost(g_scsp_ready);
       YabSemWait(g_cpu_ready);
     }

@@ -132,8 +132,13 @@ void YabThreadSleep(void)
 
 u32 YabThreadUSleep( unsigned int stime )
 {
-	if (usleep(stime) == 0) return 0;
-  return stime;
+#ifdef MIMIC_WINDOWS
+	if (usleep(stime/1000 * 1000) != 0) return 0;
+  return stime%1000;
+#else
+  usleep(stime);
+  return 0;
+#endif
 }
 
 
