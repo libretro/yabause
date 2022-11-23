@@ -152,7 +152,7 @@ YabBarrier * YabThreadCreateBarrier(int nbWorkers);
 void YabThreadSetCurrentThreadAffinityMask(int mask);
 int YabThreadGetCurrentThreadAffinityMask();
 
-void YabThreadUSleep( unsigned int stime );
+u32 YabThreadUSleep( unsigned int stime );
 
 ///////////////////////////////////////////////////////////////////////////
 

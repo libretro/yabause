@@ -130,9 +130,10 @@ void YabThreadSleep(void)
    pause();
 }
 
-void YabThreadUSleep( unsigned int stime )
+u32 YabThreadUSleep( unsigned int stime )
 {
-	usleep(stime);
+	if (usleep(stime) == 0) return 0;
+  return stime;
 }
 
 
