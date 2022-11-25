@@ -116,7 +116,7 @@ void OSDPushMessageDirect(char * msg) {
 int VIDOGLInit(void);
 void VIDOGLDeInit(void);
 void VIDOGLResize(int, int, unsigned int, unsigned int, int);
-void VIDOGLGetScale(float *, float *);
+void VIDOGLGetScale(float *, float *, int *, int *);
 int VIDOGLIsFullscreen(void);
 int VIDOGLVdp1Reset(void);
 void VIDOGLVdp1Draw();
@@ -3381,9 +3381,10 @@ void VIDOGLResize(int originx, int originy, unsigned int w, unsigned int h, int 
 
 }
 
-void VIDOGLGetScale(float *xRatio, float *yRatio) {
+void VIDOGLGetScale(float *xRatio, float *yRatio, int *xUp, int *yUp) {
   double w = 0;
   double h = 0;
+  int x,y = 0;
   double dar = (double)GlWidth/(double)GlHeight;
   double par = 4.0/3.0;
 
@@ -3408,14 +3409,20 @@ void VIDOGLGetScale(float *xRatio, float *yRatio) {
     case 0:
       w = (dar>par)?(double)GlHeight*par:GlWidth;
       h = (dar>par)?(double)GlHeight:(double)GlWidth/par;
+      x = (GlWidth-w)/2;
+      y = (GlHeight-h)/2;
       break;
     case 1:
       w = GlWidth;
       h = GlHeight;
+      x = 0;
+      y = 0;
       break;
     case 2:
       w = Int * _Ygl->width;
       h = Int * _Ygl->height;
+      x = (GlWidth-w)/2;
+      y = (GlHeight-h)/2;
       break;
     default:
        break;
@@ -3423,6 +3430,8 @@ void VIDOGLGetScale(float *xRatio, float *yRatio) {
 
   *xRatio = w / _Ygl->rwidth;
   *yRatio = h / _Ygl->rheight;
+  *xUp = x;
+  *yUp = y;
 }
 //////////////////////////////////////////////////////////////////////////////
 

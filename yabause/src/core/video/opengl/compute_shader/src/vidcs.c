@@ -90,7 +90,7 @@ FILE *ppfp = NULL;
 extern int VIDOGLInit(void);
 extern void VIDOGLDeInit(void);
 extern void VIDOGLResize(int, int, unsigned int, unsigned int, int);
-extern void VIDOGLGetScale(float *, float *);
+extern void VIDOGLGetScale(float *, float *, int *, int *);
 extern int VIDOGLIsFullscreen(void);
 extern int VIDOGLVdp1Reset(void);
 extern void VIDOGLVdp1Draw();

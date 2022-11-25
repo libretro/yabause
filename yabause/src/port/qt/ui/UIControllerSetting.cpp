@@ -33,7 +33,7 @@ UIControllerSetting::UIControllerSetting( PerInterface_struct* core, uint port, 
 	: QDialog( parent )
 {
 	Q_ASSERT( core );
-	
+
 	mCore = core;
 	mPort = port;
 	mPad = pad;
@@ -145,7 +145,7 @@ void UIControllerSetting::setPadKey( u32 key )
 		.arg( mPad )
 		.arg( mPerType )
 		.arg( mPadKey );
-	
+
 	QtYabause::settings()->setValue( settingsKey, (quint32)key );
 	mButtons.key( mPadKey )->setIcon( QIcon( ":/actions/icons/actions/button_ok.png" ) );
 	mButtons.key( mPadKey )->setChecked( false );
@@ -158,7 +158,7 @@ void UIControllerSetting::setPadKey( u32 key )
 void UIControllerSetting::loadPadSettings()
 {
 	Settings* settings = QtYabause::settings();
-	
+
 	foreach ( const u8& name, mNames.keys() )
 	{
 		mPadKey = name;
@@ -167,7 +167,7 @@ void UIControllerSetting::loadPadSettings()
 			.arg( mPad )
 			.arg( mPerType )
 			.arg( mPadKey );
-		
+
 		if ( settings->contains( settingsKey ) )
 		{
 			setPadKey( settings->value( settingsKey ).toUInt() );
@@ -180,40 +180,40 @@ bool UIControllerSetting::eventFilter( QObject* object, QEvent* event )
 	if ( event->type() == QEvent::Paint )
 	{
 		QToolButton* tb = qobject_cast<QToolButton*>( object );
-		
+
 		if ( tb )
 		{
 			if ( tb->isChecked() )
 			{
 				QStylePainter sp( tb );
 				QStyleOptionToolButton options;
-				
+
 				options.initFrom( tb );
 				options.arrowType = Qt::NoArrow;
 				options.features = QStyleOptionToolButton::None;
 				options.icon = tb->icon();
 				options.iconSize = tb->iconSize();
 				options.state = QStyle::State_Enabled | QStyle::State_HasFocus | QStyle::State_On | QStyle::State_AutoRaise;
-				
+
 				sp.drawComplexControl( QStyle::CC_ToolButton, options );
-				
+
 				return true;
 			}
 		}
 	}
-	
+
 	return false;
 }
 
 void UIControllerSetting::tbButton_clicked()
 {
 	QToolButton* tb = qobject_cast<QToolButton*>( sender() );
-	
+
 	if ( !mTimer->isActive() )
 	{
 		tb->setChecked( true );
 		mPadKey = mButtons[ tb ];
-	
+
 		QString text1 = QtYabause::translate(QString("Awaiting input for"));
 		QString text2 = QtYabause::translate(mNames[ mPadKey ]);
 		QString text3 = QtYabause::translate(QString("Press Esc key to cancel"));
@@ -235,7 +235,7 @@ void UIControllerSetting::timer_timeout()
 {
 	u32 key = 0;
 	key = mCore->Scan(scanFlags);
-	
+
 	if ( key != 0 )
 	{
 		setPadKey( key );

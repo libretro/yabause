@@ -131,7 +131,7 @@ void YabauseThread::reloadControllers()
 
 	Settings* settings = QtYabause::settings();
 
-	emit toggleEmulateMouse( false );
+	emit toggleEmulateMouse( false, true );
 
 	for ( uint port = 1; port < 3; port++ )
 	{
@@ -258,6 +258,7 @@ void YabauseThread::reloadControllers()
 
 						PerSetKey( key.toUInt(), gunKey.toUInt(), gunbits );
 					}
+					emit toggleEmulateMouse( true, true );
 					break;
 				}
 				case PERKEYBOARD:
@@ -279,7 +280,7 @@ void YabauseThread::reloadControllers()
 						PerSetKey( key.toUInt(), mouseKey.toUInt(), mousebits );
 					}
 
-					emit toggleEmulateMouse( true );
+					emit toggleEmulateMouse( true, false );
 					break;
 				}
 				case 0:

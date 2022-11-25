@@ -41,7 +41,7 @@ public:
 
 	void updateView( const QSize& size = QSize() );
 	void swapBuffers();
-	void getScale(float *xRatio, float *yRatio);
+	void getScale(float *xRatio, float *yRatio, int *xUp, int *yUp);
 #ifndef HAVE_LIBGL
         QImage grabFrameBuffer();
 	virtual void paintEvent( QPaintEvent * event );

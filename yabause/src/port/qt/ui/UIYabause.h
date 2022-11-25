@@ -85,8 +85,10 @@ protected:
 	int searchType;
 	int oldMouseX, oldMouseY;
 	bool mouseCaptured;
+	bool cursorShown;
 
 	float mouseXRatio, mouseYRatio;
+	int mouseXUp, mouseYUp;
 	int mouseSensitivity;
 	bool emulateMouse;
 	int showMenuBarHeight;
@@ -111,7 +113,7 @@ public slots:
 	void reset();
 	void hideMouse();
 	void cursorRestore();
-	void toggleEmulateMouse( bool enable );
+	void toggleEmulateMouse( bool enable, bool show );
 
 	void breakpointHandlerMSH2(bool displayMessage);
 	void breakpointHandlerSSH2(bool displayMessage);

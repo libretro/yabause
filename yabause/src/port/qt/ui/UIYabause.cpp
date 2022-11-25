@@ -106,6 +106,7 @@ UIYabause::UIYabause( QWidget* parent )
 	setCentralWidget( container );
 	oldMouseX = oldMouseY = 0;
 	mouseCaptured = false;
+	cursorShown = true;
 
 	// create emulator thread
 	mYabauseThread = new YabauseThread( this );
@@ -122,7 +123,7 @@ UIYabause::UIYabause( QWidget* parent )
 	connect( mYabauseThread, SIGNAL( reset() ), this, SLOT( reset() ) );
 	connect( hideMouseTimer, SIGNAL( timeout() ), this, SLOT( hideMouse() ));
 	connect( mouseCursorTimer, SIGNAL( timeout() ), this, SLOT( cursorRestore() ));
-	connect( mYabauseThread, SIGNAL( toggleEmulateMouse( bool ) ), this, SLOT( toggleEmulateMouse( bool ) ) );
+	connect( mYabauseThread, SIGNAL( toggleEmulateMouse( bool, bool ) ), this, SLOT( toggleEmulateMouse( bool, bool ) ) );
 
 	// Load shortcuts
 	VolatileSettings* vs = QtYabause::volatileSettings();
@@ -150,6 +151,7 @@ UIYabause::UIYabause( QWidget* parent )
 	container->setMouseTracking(true);
 	setMouseTracking(true);
 	mouseXRatio = mouseYRatio = 1.0;
+	mouseXUp = mouseYUp = 0;
 	emulateMouse = false;
 	mouseSensitivity = vs->value( "Input/GunMouseSensitivity", 100 ).toInt();
 	showMenuBarHeight = menubar->height();
@@ -214,11 +216,13 @@ void UIYabause::leaveEvent( QEvent* e )
 	if (emulateMouse && mouseCaptured)
 	{
 		// lock cursor to center
-		int midX = (centralWidget()->size().width()/2); // widget global x
-		int midY = centralWidget()->size().height()/2; // widget global y
+		if (!cursorShown) {
+			int midX = (centralWidget()->size().width()/2); // widget global x
+			int midY = centralWidget()->size().height()/2; // widget global y
 
-		QPoint newPos(geometry().x() + centralWidget()->geometry().x() + midX, geometry().y() + centralWidget()->geometry().y() + midY);
-		this->cursor().setPos(newPos);
+			QPoint newPos(geometry().x() + centralWidget()->geometry().x() + midX, geometry().y() + centralWidget()->geometry().y() + midY);
+			this->cursor().setPos(newPos);
+		}
 	}
 }
 
@@ -226,9 +230,9 @@ void UIYabause::mousePressEvent( QMouseEvent* e )
 {
 	if (emulateMouse && !mouseCaptured)
 	{
-		this->setCursor(Qt::BlankCursor);
+		if (!cursorShown) this->setCursor(Qt::BlankCursor);
+		else this->setCursor(Qt::CrossCursor);
 		mouseCaptured = true;
-		mYabauseGL->getScale(&mouseXRatio, &mouseYRatio);
 	}
 	else
 		PerKeyDown( (1 << 31) | e->button() );
@@ -241,7 +245,8 @@ void UIYabause::mouseReleaseEvent( QMouseEvent* e )
 
 void UIYabause::hideMouse()
 {
-	this->setCursor(Qt::BlankCursor);
+	if (!cursorShown) this->setCursor(Qt::BlankCursor);
+	else this->setCursor(Qt::CrossCursor);
 	hideMouseTimer->stop();
 }
 
@@ -256,17 +261,23 @@ void UIYabause::mouseMoveEvent( QMouseEvent* e )
 	int midX = (centralWidget()->size().width()/2); // widget global x
 	int midY = centralWidget()->size().height()/2; // widget global y
 
-	int x = (e->x()-midX);
-	int y = (midY-e->y());
 
 	if (mouseCaptured) {
-		//use mouseSensitivity and scale ratio
-		x *= (float)mouseSensitivity/100.0;
-		y *= (float)mouseSensitivity/100.0;
-		x /= mouseXRatio;
-		y /= mouseYRatio;
-
-		PerAxisMove((1 << 30), x, y);
+		mYabauseGL->getScale(&mouseXRatio, &mouseYRatio, &mouseXUp, &mouseYUp);
+		if (!cursorShown) {
+			int x = (e->x()-midX);
+			int y = (midY-e->y());
+			//use mouseSensitivity and scale ratio
+			x *= (float)mouseSensitivity/100.0;
+			y *= (float)mouseSensitivity/100.0;
+			x /= mouseXRatio;
+			y /= mouseYRatio;
+			PerAxisMove((1 << 30), x, y);
+		} else {
+			int x = (e->x()-mouseXUp)/mouseXRatio;
+			int y = (e->y()-mouseYUp)/mouseYRatio;
+			PerAxisMove((1 << 30), x, y);
+		}
 	}
 
 	VolatileSettings* vs = QtYabause::volatileSettings();
@@ -275,10 +286,14 @@ void UIYabause::mouseMoveEvent( QMouseEvent* e )
 	{
 		if (emulateMouse && mouseCaptured)
 		{
-			// lock cursor to center
-			QPoint newPos(geometry().x() + centralWidget()->geometry().x() + midX, geometry().y() + centralWidget()->geometry().y() + midY);
-			this->cursor().setPos(newPos);
-			this->setCursor(Qt::BlankCursor);
+			if (!cursorShown) {
+				// lock cursor to center
+				QPoint newPos(geometry().x() + centralWidget()->geometry().x() + midX, geometry().y() + centralWidget()->geometry().y() + midY);
+				this->cursor().setPos(newPos);
+				this->setCursor(Qt::BlankCursor);
+			} else {
+				this->setCursor(Qt::CrossCursor);
+			}
 			return;
 		}
 		else
@@ -288,9 +303,11 @@ void UIYabause::mouseMoveEvent( QMouseEvent* e )
 	{
 		if (emulateMouse && mouseCaptured)
 		{
-			QPoint newPos(geometry().x() + centralWidget()->geometry().x() + midX, geometry().y() + centralWidget()->geometry().y() + midY);
-			this->cursor().setPos(newPos);
-			this->setCursor(Qt::BlankCursor);
+			if (!cursorShown) {
+				QPoint newPos(geometry().x() + centralWidget()->geometry().x() + midX, geometry().y() + centralWidget()->geometry().y() + midY);
+				this->cursor().setPos(newPos);
+				this->setCursor(Qt::BlankCursor);
+			} else this->setCursor(Qt::CrossCursor);
 			return;
 		}
 		else if (vs->value( "View/Menubar" ).toInt() == BD_SHOWONFSHOVER)
@@ -1036,10 +1053,12 @@ void UIYabause::reset()
 	mYabauseGL->updateView();
 }
 
-void UIYabause::toggleEmulateMouse( bool enable )
+void UIYabause::toggleEmulateMouse( bool enable, bool show )
 {
 	emulateMouse = enable;
+	cursorShown = show;
 }
+
 
 int UIYabause::loadGameFromFile(QString const& fileName)
 {
