@@ -20,6 +20,7 @@
 
 #ifndef THREADS_H
 #define THREADS_H
+#include "core.h"
 
 #ifdef __cplusplus
 extern "C" {
