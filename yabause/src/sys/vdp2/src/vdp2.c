@@ -888,8 +888,9 @@ void FASTCALL Vdp2WriteWord(SH2_struct *context, u8* mem, u32 addr, u16 val) {
            //A EXTRAIRE
 #if defined(HAVE_LIBGL) || defined(__ANDROID__) || defined(IOS)
            for (int i = 0; i < 0x1000; i ++) {
-             addrToUpdate[nbAddrToUpdate++] = i;
+             addrToUpdate[i] = 1;
            }
+           nbAddrToUpdate = 1;
 #endif
          }
          return;
