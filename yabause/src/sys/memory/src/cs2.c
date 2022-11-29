@@ -1707,9 +1707,9 @@ void Cs2PlayDisc(void) {
   Cs2Area->options = 0;
   Cs2Area->playtype = CDB_PLAYTYPE_SECTOR;
   Cs2Area->cdi->ReadAheadFAD(Cs2Area->FAD);
-  Cs2SetIRQ(CDB_HIRQ_CMOK);
 
   doCDReport(Cs2Area->status);
+  Cs2SetIRQ(CDB_HIRQ_CMOK);
 }
 
 //////////////////////////////////////////////////////////////////////////////
