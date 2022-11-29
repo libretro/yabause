@@ -244,6 +244,8 @@ typedef struct {
   u16 mpegvideostatus;
   u16 vcounter;
 
+  u8 _seekToStop;
+
 } Cs2;
 
 typedef struct {

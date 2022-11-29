@@ -89,6 +89,10 @@ extern CDInterface *CDCoreList[];
 
 //////////////////////////////////////////////////////////////////////////////
 
+static INLINE void setStatus(u8 status) {
+  Cs2Area->status = status;
+}
+
 static INLINE void doCDReport(u8 status)
 {
    Cs2Area->reg.CR1 = (status << 8) | ((Cs2Area->options & 0xF) << 4) | (Cs2Area->repcnt & 0xF);
@@ -417,7 +421,7 @@ u32 FASTCALL Cs2ReadLong(SH2_struct *context, UNUSED u8* memory, u32 addr) {
                   // transfer data
                   if (Cs2Area->datatranstype != CDB_DATATRANSTYPE_INVALID)
                   {
-                    CDLOG("Get long data\n");
+                    // CDLOG("Get long data\n");
                      // get sector
 
                      // Make sure we still have sectors to transfer
@@ -431,7 +435,7 @@ u32 FASTCALL Cs2ReadLong(SH2_struct *context, UNUSED u8* memory, u32 addr) {
                         }
 
                         val = T1ReadLong(ptr, 0);
-                        CDLOG("[CS2] get addr = %d,val = %08X\n", Cs2Area->datatransoffset, val);
+                        // CDLOG("[CS2] get addr = %d,val = %08X\n", Cs2Area->datatransoffset, val);
 
                         // increment datatransoffset/cdwnum
                         Cs2Area->cdwnum += 4;
@@ -616,7 +620,7 @@ int Cs2ChangeCDCore(int coreid, const char *cdpath)
    }
 
    Cs2Area->isdiskchanged = 1;
-   Cs2Area->status = CDB_STAT_PAUSE;
+   setStatus(CDB_STAT_PAUSE);
    SmpcRecheckRegion();
 
    if (Cs2GetRegionID() >= 0xA) YabauseSetVideoFormat(VIDEOFORMATTYPE_PAL);
@@ -661,7 +665,7 @@ void Cs2Reset(void) {
   {
      case 0:
      case 1:
-             Cs2Area->status = CDB_STAT_PAUSE;
+             setStatus(CDB_STAT_PAUSE);
              Cs2Area->FAD = 150;
              Cs2Area->options = 0;
              Cs2Area->repcnt = 0;
@@ -670,7 +674,7 @@ void Cs2Reset(void) {
              Cs2Area->index = 1;
              break;
      case 2:
-             Cs2Area->status = CDB_STAT_NODISC;
+             setStatus(CDB_STAT_NODISC);
 
              Cs2Area->FAD = 0xFFFFFFFF;
              Cs2Area->options = 0xFF;
@@ -680,7 +684,7 @@ void Cs2Reset(void) {
              Cs2Area->index = 0xFF;
              break;
      case 3:
-             Cs2Area->status = CDB_STAT_OPEN;
+             setStatus(CDB_STAT_OPEN);
 
              Cs2Area->FAD = 0xFFFFFFFF;
              Cs2Area->options = 0xFF;
@@ -772,6 +776,8 @@ void Cs2Reset(void) {
   Cs2Area->_statuscycles = 0;
   Cs2Area->_statustiming = 1000000;
   Cs2Area->_periodiccycles = 0;
+  Cs2Area->_periodictiming = 0;
+  Cs2Area->_seekToStop = 0;
   Cs2Area->_commandtiming = 0;
   Cs2SetTiming(0);
 
@@ -850,19 +856,19 @@ void Cs2Exec(u32 timing) {
             if ((Cs2Area->status & 0xF) == CDB_STAT_NODISC ||
                 (Cs2Area->status & 0xF) == CDB_STAT_OPEN)
             {
-               Cs2Area->status = CDB_STAT_PAUSE;
+               setStatus(CDB_STAT_PAUSE);
                Cs2Area->isdiskchanged = 1;
             }
             break;
          case 2:
             // may need to change this
             if ((Cs2Area->status & 0xF) != CDB_STAT_NODISC)
-               Cs2Area->status = CDB_STAT_NODISC;
+               setStatus(CDB_STAT_NODISC);
             break;
          case 3:
             // may need to change this
             if ((Cs2Area->status & 0xF) != CDB_STAT_OPEN)
-               Cs2Area->status = CDB_STAT_OPEN;
+               setStatus(CDB_STAT_OPEN);
             break;
          default: break;
       }
@@ -884,7 +890,6 @@ void Cs2Exec(u32 timing) {
             partition_struct * playpartition;
             CDLOG("Effective Read %x \n", Cs2Area->FAD);
             int ret = Cs2ReadFilteredSector(Cs2Area->FAD, &playpartition);
-
             switch (ret)
             {
                case 0:
@@ -907,7 +912,7 @@ void Cs2Exec(u32 timing) {
 
 					 if (Cs2Area->isbufferfull) {
 						 CDLOG("BUFFER IS FULL\n");
-						 Cs2Area->status = CDB_STAT_SEEK;
+						 setStatus(CDB_STAT_SEEK);
 						 Cs2Area->options = 0x00;
 					 }
 
@@ -915,7 +920,7 @@ void Cs2Exec(u32 timing) {
                         // Make sure we don't have to do a repeat
                         if (Cs2Area->repcnt >= Cs2Area->maxrepeat) {
                            // we're done
-                           Cs2Area->status = CDB_STAT_PAUSE;
+                           setStatus(CDB_STAT_PAUSE);
 						               Cs2Area->options = 0x8;
                            // Cs2SetTiming(0);
                            Cs2SetIRQ(CDB_HIRQ_PEND);
@@ -946,7 +951,7 @@ void Cs2Exec(u32 timing) {
                         // Make sure we don't have to do a repeat
                         if (Cs2Area->repcnt >= Cs2Area->maxrepeat) {
                            // we're done
-                           Cs2Area->status = CDB_STAT_PAUSE;
+                           setStatus(CDB_STAT_PAUSE);
                            // Cs2SetTiming(0);
                            Cs2SetIRQ(CDB_HIRQ_PEND);
 
@@ -979,8 +984,9 @@ void Cs2Exec(u32 timing) {
          case CDB_STAT_SEEK:
     		 {
     			 if (!Cs2Area->isbufferfull){
-    				 Cs2Area->status = CDB_STAT_PLAY;
+    				 setStatus(CDB_STAT_PLAY);
              Cs2Area->_periodiccycles = 0;
+                // Cs2Area->_periodictiming = 100000;
     				 Cs2Area->options = 0x8;
     			 }
     			 break;
@@ -1036,10 +1042,12 @@ void Cs2Command(void) {
 
 void Cs2SetTiming(int playing) {
   if (playing) {
-     if (Cs2Area->isaudio || Cs2Area->speed1x == 1)
-        Cs2Area->_periodictiming = 40000;  // 13333.333... * 3
-     else
-        Cs2Area->_periodictiming = 20000;  // 6666.666... * 3
+     if (Cs2Area->isaudio || Cs2Area->speed1x == 1) {
+       Cs2Area->_periodictiming = 40000;  // 13333.333... * 3
+     }
+     else {
+       Cs2Area->_periodictiming = 20000;  // 6666.666... * 3
+     }
   }
   else {
      Cs2Area->_periodictiming = 50000;  // 16666.666... * 3
@@ -1396,7 +1404,7 @@ void Cs2GetToc(void) {
   Cs2Area->reg.CR3 = 0x0;
   Cs2Area->reg.CR4 = 0x0;
   Cs2SetIRQ(CDB_HIRQ_CMOK | CDB_HIRQ_DRDY);
-  Cs2Area->status = CDB_STAT_PAUSE;
+  setStatus(CDB_STAT_PAUSE);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1417,8 +1425,7 @@ void Cs2GetSessionInfo(void) {
             Cs2Area->reg.CR4 = 0xFFFF;
             break;
   }
-
-  Cs2Area->status = CDB_STAT_PAUSE;
+  setStatus(CDB_STAT_PAUSE);
   Cs2Area->reg.CR1 = Cs2Area->status << 8;
   Cs2Area->reg.CR2 = 0;
 
@@ -1433,7 +1440,7 @@ void Cs2InitializeCDSystem(void) {
 
   if ((Cs2Area->status & 0xF) != CDB_STAT_OPEN && (Cs2Area->status & 0xF) != CDB_STAT_NODISC)
   {
-     Cs2Area->status = CDB_STAT_PAUSE;
+     setStatus(CDB_STAT_PAUSE);
      Cs2Area->FAD = 150;
   }
 
@@ -1539,7 +1546,7 @@ void Cs2OpenTray(void)
 {
    u16 val = 0;
 
-   Cs2Area->status = CDB_STAT_OPEN;
+   setStatus(CDB_STAT_OPEN);
    doCDReport(Cs2Area->status);
    Cs2SetIRQ(val | CDB_HIRQ_CMOK | CDB_HIRQ_DCHG);
 }
@@ -1703,7 +1710,13 @@ void Cs2PlayDisc(void) {
 
   Cs2Area->_periodiccycles = 0;
   Cs2Area->_periodictiming = 0;
-  Cs2Area->status = CDB_STAT_SEEK;      // need to be seek
+  if (Cs2Area->_seekToStop == 1) {
+    // The seek command as previously generated a stop.
+    // Simulate a wait time - need for batman forever texture loading
+    Cs2SetTiming(0); //Need a big delay to restart
+    Cs2Area->_seekToStop = 0;
+  }
+  setStatus(CDB_STAT_SEEK);      // need to be seek
   Cs2Area->options = 0;
   Cs2Area->playtype = CDB_PLAYTYPE_SECTOR;
   Cs2Area->cdi->ReadAheadFAD(Cs2Area->FAD);
@@ -1719,7 +1732,7 @@ void Cs2SeekDisc(void) {
 	// Stop
 	if ((Cs2Area->reg.CR1 & 0xFF) == 0x00 && Cs2Area->reg.CR2 == 0x0000){
 
-		Cs2Area->status = CDB_STAT_STANDBY;
+		setStatus(CDB_STAT_STANDBY);
 		Cs2Area->options = 0xFF;
 		Cs2Area->repcnt = 0xFF;
 		Cs2Area->ctrladdr = 0xFF;
@@ -1731,8 +1744,8 @@ void Cs2SeekDisc(void) {
 	}
 	// Pause
 	else if ((Cs2Area->reg.CR1 & 0xFF) == 0xFF && Cs2Area->reg.CR2 == 0xFFFF){
-
-		Cs2Area->status = CDB_STAT_PAUSE;
+    Cs2Area->_seekToStop = 1; //The seek command is generating a stop.
+		setStatus(CDB_STAT_PAUSE);
 	}
   else if (Cs2Area->reg.CR1 & 0x80)
   {
@@ -1742,8 +1755,7 @@ void Cs2SeekDisc(void) {
 
      sdFAD = ((Cs2Area->reg.CR1 & 0xFF) << 16) | Cs2Area->reg.CR2;
      sdFAD = (sdFAD & 0xFFFFF);
-
-    Cs2Area->status = CDB_STAT_PAUSE;
+    setStatus(CDB_STAT_PAUSE);
     for (i = 0; i < 99; i++){
        u32 tfad = Cs2Area->TOC[i] & 0x00FFFFFF;
        if (tfad >= sdFAD){
@@ -1760,7 +1772,7 @@ void Cs2SeekDisc(void) {
      if (Cs2Area->reg.CR2 >> 8)
      {
         // Seek by index
-        Cs2Area->status = CDB_STAT_PAUSE;
+        setStatus(CDB_STAT_PAUSE);
         Cs2SetupDefaultPlayStats((Cs2Area->reg.CR2 >> 8), 1);
         Cs2Area->index = Cs2Area->reg.CR2 & 0xFF;
 
@@ -1769,7 +1781,7 @@ void Cs2SeekDisc(void) {
      else
      {
         // Error
-        Cs2Area->status = CDB_STAT_STANDBY;
+        setStatus(CDB_STAT_STANDBY);
         Cs2Area->options = 0xFF;
         Cs2Area->repcnt = 0xFF;
         Cs2Area->ctrladdr = 0xFF;
@@ -1790,7 +1802,7 @@ void Cs2SeekDisc(void) {
 //////////////////////////////////////////////////////////////////////////////
 
 void Cs2ScanDisc(void) {
-   Cs2Area->status = CDB_STAT_SCAN;
+   setStatus(CDB_STAT_SCAN);
 
    // finish me
    Cs2SetIRQ(CDB_HIRQ_CMOK);
@@ -2530,7 +2542,7 @@ void Cs2CopySectorData(void) {
   u32 count = Cs2Area->reg.CR4 & 0xFF;
 
   if (source >= 0x18 || dest >= 0x18) {
-    Cs2Area->status = CDB_STAT_ERROR; // ToDo: check
+    setStatus(CDB_STAT_ERROR); // ToDo: check
     doCDReport(Cs2Area->status);
     Cs2SetIRQ(CDB_HIRQ_CMOK);
     return;
@@ -2570,7 +2582,7 @@ void Cs2MoveSectorData(void) {
   u32 count = Cs2Area->reg.CR4 & 0xFF;
 
   if (source >= 0x18 || dest >= 0x18) {
-    Cs2Area->status = CDB_STAT_ERROR; // ToDo: check
+    setStatus(CDB_STAT_ERROR); // ToDo: check
     doCDReport(Cs2Area->status);
     Cs2SetIRQ(CDB_HIRQ_CMOK);
     return;
@@ -2734,7 +2746,7 @@ void Cs2ReadFile(void) {
 
   Cs2Area->outconcddev = Cs2Area->filter + rffilternum;
 
-  Cs2Area->status = CDB_STAT_PLAY;
+  setStatus(CDB_STAT_PLAY);
   Cs2Area->_periodiccycles = 0;
   Cs2Area->playtype = CDB_PLAYTYPE_FILE;
   Cs2Area->cdi->ReadAheadFAD(Cs2Area->FAD);
@@ -2747,8 +2759,9 @@ void Cs2ReadFile(void) {
 
 void Cs2AbortFile(void) {
   if ((Cs2Area->status & 0xF) != CDB_STAT_OPEN &&
-      (Cs2Area->status & 0xF) != CDB_STAT_NODISC)
-     Cs2Area->status = CDB_STAT_PAUSE;
+      (Cs2Area->status & 0xF) != CDB_STAT_NODISC) {
+        setStatus(CDB_STAT_PAUSE);
+      }
   Cs2Area->isonesectorstored = 0;
   Cs2Area->datatranstype = CDB_DATATRANSTYPE_INVALID;
   Cs2Area->cdwnum = 0;
@@ -3031,7 +3044,7 @@ void Cs2AuthenticateDevice(void) {
       (Cs2Area->status & 0xF) != CDB_STAT_OPEN)
   {
      // Set registers all to invalid values(aside from status)
-     Cs2Area->status = CDB_STAT_BUSY;
+     setStatus(CDB_STAT_BUSY);
 
      Cs2Area->reg.CR1 = (Cs2Area->status << 8) | 0xFF;
      Cs2Area->reg.CR2 = 0xFFFF;
@@ -3052,8 +3065,7 @@ void Cs2AuthenticateDevice(void) {
      }
 
      // Set registers all back to normal values
-
-     Cs2Area->status = CDB_STAT_PAUSE;
+     setStatus(CDB_STAT_PAUSE);
   }
   else
   {
@@ -4027,7 +4039,7 @@ int Cs2SaveState(void ** stream) {
 
    // This is mostly kludge, but it will have to do until I have time to rewrite it all
 
-   offset = MemStateWriteHeader(stream, "CS2 ", 2);
+   offset = MemStateWriteHeader(stream, "CS2 ", 3);
 
    // Write cart type
    MemStateWrite((void *)&Cs2Area->carttype, 4, 1, stream);
@@ -4130,6 +4142,7 @@ int Cs2SaveState(void ** stream) {
 
    MemStateWrite((void *)&Cs2Area->playtype, 4, 1, stream);
 
+   MemStateWrite((void *)&Cs2Area->_seekToStop, 1, 1, stream);
    return MemStateFinishHeader(stream, offset);
 }
 
@@ -4274,6 +4287,9 @@ int Cs2LoadState(const void * stream, int version, int size) {
 
    MemStateRead((void *)&Cs2Area->playtype, 4, 1, stream);
 
+   if (version > 2) {
+     MemStateRead((void *)&Cs2Area->_seekToStop, 1, 1, stream);
+   }
    return size;
 }
 
