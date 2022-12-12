@@ -72,6 +72,8 @@
 
 extern void resetSyncVideo(void);
 
+static int blckNb[46875];
+
 enum CDB_DATATRANSTYPE
 {
    CDB_DATATRANSTYPE_INVALID=-1,
@@ -555,6 +557,12 @@ int Cs2Init(int coreid, const char *cdpath, const char *mpegpath) {
       return ret;
 
    Cs2Reset();
+
+   int last = 0;
+   for (int i=0; i< 46875; i++) {
+     blckNb[i] = last + ((45 + i * 0.0016)*3.14) / 107;
+     last = blckNb[i];
+   }
 
 #if 0
    // This stuff need to go elsewhere
@@ -1716,6 +1724,35 @@ void Cs2PlayDisc(void) {
     Cs2SetTiming(0); //Need a big delay to restart
     Cs2Area->_seekToStop = 0;
   }
+    // Calculate Seek time
+    // A CD is 74 min = 74*4500 = 333000 FAD Max
+    // The CD has a track of data every 1.6µm, from 4.5 cm diameter to 12 cm diameter, so 46875 circles of data
+    // We can evaluate
+    // 46875 * 2 *pi *45 + 2 *pi * (46875 * 46874) *0.0016 = 35324529 mm to cover 330000 block
+    // => 1 block every 107 mm
+    // A medium seek time is around 400 ms, we assume 400 ms is then from the middle of the disc to one of the limit
+    // It means 2x Mean time to move from lowest to highest track
+    int nbFAD = 46875;
+    int nbplayendFAD = 46875;
+    for (int i = 0; i< 46875; i++) {
+      if (blckNb[i]>Cs2Area->FAD) {
+        nbFAD = i;
+        CDLOG("Fad on %d tracks\n", i);
+        break;
+      }
+    }
+    for (int i = 0; i< 46875; i++) {
+      if (blckNb[i]>Cs2Area->playendFAD) {
+        nbplayendFAD = i;
+        CDLOG("Fad on %d tracks\n", i);
+        break;
+      }
+    }
+
+    CDLOG("FAD and playendFad are separated from %f µm\n", abs(nbFAD-nbplayendFAD) * 1.6);
+    Cs2Area->_periodictiming = (int)(800.0 / 37500.0 *  abs(nbFAD-nbplayendFAD) * 1.6 * 3);
+    CDLOG("Wait %d ms\n", Cs2Area->_periodictiming);
+
   setStatus(CDB_STAT_SEEK);      // need to be seek
   Cs2Area->options = 0;
   Cs2Area->playtype = CDB_PLAYTYPE_SECTOR;
