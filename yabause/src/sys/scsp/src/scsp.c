@@ -4331,7 +4331,7 @@ scsp_r_b (SH2_struct *context, UNUSED u8* m, u32 a)
     }
   else if (a >= 0xEC0 && a <= 0xEDF){
     u16 val = scsp_dsp.efreg[ (a>>1) & 0x1F];
-    if( a&0x01 == 0){
+    if( (a&0x01) == 0){
       return val >> 8;
     }else{
       return val & 0xFF;
@@ -5659,7 +5659,9 @@ M68KClearCodeBreakpoints ()
 int SoundSaveState(void ** stream)
 {
   int i;
+#ifndef IMPROVED_SAVESTATES
   u32 temp;
+#endif
   int offset;
   u8 nextphase;
 

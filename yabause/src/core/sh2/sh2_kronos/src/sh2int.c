@@ -127,7 +127,7 @@ void biosDecode(SH2_struct *context) {
 }
 
 
-int SH2KronosInterpreterInit()
+int SH2KronosInterpreterInit(void)
 {
 
    int i,j;
@@ -209,7 +209,7 @@ int SH2KronosInterpreterInit()
 
 //////////////////////////////////////////////////////////////////////////////
 
-void SH2KronosInterpreterDeInit()
+void SH2KronosInterpreterDeInit(void)
 {
    // DeInitialize any internal variables here
 }

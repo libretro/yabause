@@ -441,7 +441,7 @@ static FILE* fopenInPath(char* filename, char* path){
 }
 #else
 static FILE* fopenInPath(char* filename, char* path){
-  int l = strlen(filename)+2;
+  size_t l = strlen(filename)+2;
   int k;
   char* filepath = (char*)malloc((l + charToEscape(filename) + charToEscape(path)+strlen(path))*sizeof(char));
   char* tmp;
@@ -669,7 +669,7 @@ static int LoadBinCue(const char *cuefilename, FILE *iso_file)
 
 
 int infoFile(JZFile *zip, int idx, JZFileHeader *header, char *filename, void *user_data) {
-    long offset;
+    size_t offset;
     char name[1024];
     ZipEntry *entry;
     offset = zip->tell(zip); // store current position
@@ -715,7 +715,7 @@ int infoFile(JZFile *zip, int idx, JZFileHeader *header, char *filename, void *u
 }
 
 int deflateFile(JZFile *zip, int idx, JZFileHeader *header, char *filename, void *user_data) {
-    long offset;
+    size_t offset;
     char name[1024];
     offset = zip->tell(zip); // store current position
     ZipEntry *entry = (ZipEntry*)user_data;
