@@ -91,6 +91,10 @@ extern CDInterface *CDCoreList[];
 
 //////////////////////////////////////////////////////////////////////////////
 
+static INLINE void setBusyStatus(u8 status) {
+  Cs2Area->status = CDB_STAT_BUSY;
+  Cs2Area->nextStatus = status;
+}
 static INLINE void setStatus(u8 status) {
   Cs2Area->status = status;
 }
@@ -550,6 +554,7 @@ int Cs2Init(int coreid, const char *cdpath, const char *mpegpath) {
       return -1;
    memset(Cs2Area, 0, sizeof(*Cs2Area));
 
+   Cs2Area->nextStatus = 0xFF;
    Cs2Area->mpegpath = mpegpath;
    Cs2Area->cdi=NULL;
 
@@ -787,6 +792,7 @@ void Cs2Reset(void) {
   Cs2Area->_periodictiming = 0;
   Cs2Area->_seekToStop = 0;
   Cs2Area->_commandtiming = 0;
+  Cs2Area->nextStatus = 0xFF;
   Cs2SetTiming(0);
 
   // MPEG specific stuff
@@ -887,6 +893,7 @@ void Cs2Exec(u32 timing) {
       Cs2Area->_periodiccycles -= Cs2Area->_periodictiming;
 
       Cs2Area->_periodictiming = 0;
+      Cs2Area->status |= CDB_STAT_PERI;
       // Get Drive's current status and compare with old status
       switch (Cs2Area->status & 0xF) {
          case CDB_STAT_PAUSE:
@@ -921,6 +928,7 @@ void Cs2Exec(u32 timing) {
 					 if (Cs2Area->isbufferfull) {
 						 CDLOG("BUFFER IS FULL\n");
 						 setStatus(CDB_STAT_SEEK);
+						 Cs2Area->nextStatus = 0xFF;
 						 Cs2Area->options = 0x00;
 					 }
 
@@ -1003,17 +1011,22 @@ void Cs2Exec(u32 timing) {
             break;
          case CDB_STAT_RETRY:
             break;
+         case CDB_STAT_BUSY:
+            setStatus(Cs2Area->nextStatus);
+            Cs2Area->nextStatus = 0xFF;
+            Cs2Area->status &= ~CDB_STAT_PERI;
+            // doCDReport(Cs2Area->status);
+            break;
          default: break;
       }
 
-      if (Cs2Area->_command)
-         return;
-
-      Cs2Area->status |= CDB_STAT_PERI;
+      if (Cs2Area->_command) {
+        Cs2Area->status &= ~CDB_STAT_PERI;
+        return;
+      }
 
       // adjust registers appropriately here(fix me)
       doCDReport(Cs2Area->status);
-
       Cs2SetIRQ(CDB_HIRQ_SCDQ);
    }
 
@@ -1038,12 +1051,6 @@ int Cs2GetTimeToNextSector(void) {
       int time = (Cs2Area->_periodictiming - Cs2Area->_periodiccycles + 2) / 3;
       return time<0 ? 0 : time;
    }
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-void Cs2Command(void) {
-  Cs2Area->_command = 1;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1412,7 +1419,7 @@ void Cs2GetToc(void) {
   Cs2Area->reg.CR3 = 0x0;
   Cs2Area->reg.CR4 = 0x0;
   Cs2SetIRQ(CDB_HIRQ_CMOK | CDB_HIRQ_DRDY);
-  setStatus(CDB_STAT_PAUSE);
+  setBusyStatus(CDB_STAT_PAUSE);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1445,6 +1452,8 @@ void Cs2GetSessionInfo(void) {
 void Cs2InitializeCDSystem(void) {
   u16 val = 0;
   u8 initflag = Cs2Area->reg.CR1 & 0xFF;
+
+  Cs2Area->nextStatus = 0xFF;
 
   if ((Cs2Area->status & 0xF) != CDB_STAT_OPEN && (Cs2Area->status & 0xF) != CDB_STAT_NODISC)
   {
@@ -1723,7 +1732,7 @@ void Cs2PlayDisc(void) {
     // Simulate a wait time - need for batman forever texture loading
     Cs2SetTiming(0); //Need a big delay to restart
     Cs2Area->_seekToStop = 0;
-  }
+  } else {
     // Calculate Seek time
     // A CD is 74 min = 74*4500 = 333000 FAD Max
     // The CD has a track of data every 1.6µm, from 4.5 cm diameter to 12 cm diameter, so 46875 circles of data
@@ -1752,8 +1761,9 @@ void Cs2PlayDisc(void) {
     CDLOG("FAD and playendFad are separated from %f µm\n", abs(nbFAD-nbplayendFAD) * 1.6);
     Cs2Area->_periodictiming = (int)(800.0 / 37500.0 *  abs(nbFAD-nbplayendFAD) * 1.6 * 3);
     CDLOG("Wait %d ms\n", Cs2Area->_periodictiming);
-
+  }
   setStatus(CDB_STAT_SEEK);      // need to be seek
+  Cs2Area->nextStatus = 0xFF;
   Cs2Area->options = 0;
   Cs2Area->playtype = CDB_PLAYTYPE_SECTOR;
   Cs2Area->cdi->ReadAheadFAD(Cs2Area->FAD);
@@ -1782,7 +1792,7 @@ void Cs2SeekDisc(void) {
 	// Pause
 	else if ((Cs2Area->reg.CR1 & 0xFF) == 0xFF && Cs2Area->reg.CR2 == 0xFFFF){
     Cs2Area->_seekToStop = 1; //The seek command is generating a stop.
-		setStatus(CDB_STAT_PAUSE);
+		setBusyStatus(CDB_STAT_PAUSE);
 	}
   else if (Cs2Area->reg.CR1 & 0x80)
   {
@@ -3083,7 +3093,6 @@ void Cs2AuthenticateDevice(void) {
       (Cs2Area->status & 0xF) != CDB_STAT_OPEN)
   {
      // Set registers all to invalid values(aside from status)
-     setStatus(CDB_STAT_BUSY);
 
      Cs2Area->reg.CR1 = (Cs2Area->status << 8) | 0xFF;
      Cs2Area->reg.CR2 = 0xFFFF;
