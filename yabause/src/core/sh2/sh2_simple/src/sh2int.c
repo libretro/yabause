@@ -2814,12 +2814,27 @@ int SH2InterpreterInit()
       }
    }
 
+    SH2ClearCodeBreakpoints(MSH2);
+    SH2ClearCodeBreakpoints(SSH2);
+    SH2ClearMemoryBreakpoints(MSH2);
+    SH2ClearMemoryBreakpoints(SSH2);
+    MSH2->breakpointEnabled = 0;
+    SSH2->breakpointEnabled = 0;
+    MSH2->backtraceEnabled = 0;
+    SSH2->backtraceEnabled = 0;
+    MSH2->stepOverOut.enabled = 0;
+    SSH2->stepOverOut.enabled = 0;
+
    return 0;
 }
 
 int SH2DebugInterpreterInit() {
 
   SH2InterpreterInit();
+  MSH2->breakpointEnabled = 1;
+  SSH2->breakpointEnabled = 1;
+  MSH2->backtraceEnabled = 1;
+  SSH2->backtraceEnabled = 1;
   return 0;
 }
 
@@ -2938,6 +2953,8 @@ FASTCALL void SH2DebugInterpreterExecSave(SH2_struct *context, u32 cycles, sh2re
 #ifdef SH2_UBC
       int ubcinterrupt=0, ubcflag=0;
 #endif
+
+    SH2HandleBreakpoints(context);
 
 #ifdef SH2_UBC
       if (context->onchip.BBRA & (BBR_CPA_CPU | BBR_IDA_INST | BBR_RWA_READ)) // Break on cpu, instruction, read cycles

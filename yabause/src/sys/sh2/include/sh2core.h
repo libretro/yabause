@@ -460,6 +460,8 @@ typedef struct SH2_struct_s
 //DEBUG Stuff
     backtrace_struct bt;
     breakpoint_struct bp;
+    u8 breakpointEnabled;
+    u8 backtraceEnabled;
     struct {
              u8 enabled;
              tilInfo_struct *match;
@@ -521,6 +523,26 @@ typedef struct
    void (*WriteNotify)(SH2_struct *context, u32 start, u32 length);
    void(*AddCycle)(SH2_struct *context, u32 value);
 } SH2Interface_struct;
+
+static INLINE void SH2HandleBreakpoints(SH2_struct *context)
+{
+   int i;
+
+   for (i=0; i < context->bp.numcodebreakpoints; i++) {
+
+      if ((context->regs.PC == context->bp.codebreakpoint[i].addr) && context->bp.inbreakpoint == 0) {
+         context->bp.inbreakpoint = 1;
+         if (context->bp.BreakpointCallBack)
+             context->bp.BreakpointCallBack(context, context->bp.codebreakpoint[i].addr, context->bp.BreakpointUserData);
+         context->bp.inbreakpoint = 0;
+      }
+   }
+
+   if (context->bp.breaknow) {
+      context->bp.breaknow = 0;
+      context->bp.BreakpointCallBack(context, context->regs.PC, context->bp.BreakpointUserData);
+   }
+}
 
 extern SH2_struct *MSH2;
 extern SH2_struct *SSH2;

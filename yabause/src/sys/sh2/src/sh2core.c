@@ -2532,7 +2532,7 @@ int SH2AddMemoryBreakpoint(SH2_struct *context, u32 addr, u32 flags) {
       {
          // Make sure function isn't already being breakpointed by another breakpoint
          if (!CheckForMemoryBreakpointDupes(context, addr, BREAK_BYTEREAD, &which))
-            ReadByteList[(addr >> 16) & 0xFFF] = &SH2MemoryBreakpointReadByte;
+            ReadByteList[(addr >> 16) & 0xFFF] = CacheReadByteList[(addr >> 16) & 0xFFF] = &SH2MemoryBreakpointReadByte;
          else
             // fix old memory access function
             context->bp.memorybreakpoint[context->bp.nummemorybreakpoints].oldreadbyte = context->bp.memorybreakpoint[which].oldreadbyte;
@@ -2542,7 +2542,7 @@ int SH2AddMemoryBreakpoint(SH2_struct *context, u32 addr, u32 flags) {
       {
          // Make sure function isn't already being breakpointed by another breakpoint
          if (!CheckForMemoryBreakpointDupes(context, addr, BREAK_WORDREAD, &which))
-            ReadWordList[(addr >> 16) & 0xFFF] = &SH2MemoryBreakpointReadWord;
+            ReadWordList[(addr >> 16) & 0xFFF] = CacheReadWordList[(addr >> 16) & 0xFFF] = &SH2MemoryBreakpointReadWord;
          else
             // fix old memory access function
             context->bp.memorybreakpoint[context->bp.nummemorybreakpoints].oldreadword = context->bp.memorybreakpoint[which].oldreadword;
@@ -2552,7 +2552,7 @@ int SH2AddMemoryBreakpoint(SH2_struct *context, u32 addr, u32 flags) {
       {
          // Make sure function isn't already being breakpointed by another breakpoint
          if (!CheckForMemoryBreakpointDupes(context, addr, BREAK_LONGREAD, &which))
-            ReadLongList[(addr >> 16) & 0xFFF] = &SH2MemoryBreakpointReadLong;
+            ReadLongList[(addr >> 16) & 0xFFF] = CacheReadLongList[(addr >> 16) & 0xFFF] = &SH2MemoryBreakpointReadLong;
          else
             // fix old memory access function
             context->bp.memorybreakpoint[context->bp.nummemorybreakpoints].oldreadword = context->bp.memorybreakpoint[which].oldreadword;
@@ -2562,7 +2562,7 @@ int SH2AddMemoryBreakpoint(SH2_struct *context, u32 addr, u32 flags) {
       {
          // Make sure function isn't already being breakpointed by another breakpoint
          if (!CheckForMemoryBreakpointDupes(context, addr, BREAK_BYTEWRITE, &which))
-            WriteByteList[(addr >> 16) & 0xFFF] = &SH2MemoryBreakpointWriteByte;
+            WriteByteList[(addr >> 16) & 0xFFF] = CacheWriteByteList[(addr >> 16) & 0xFFF] = &SH2MemoryBreakpointWriteByte;
          else
             // fix old memory access function
             context->bp.memorybreakpoint[context->bp.nummemorybreakpoints].oldwritebyte = context->bp.memorybreakpoint[which].oldwritebyte;
@@ -2572,7 +2572,7 @@ int SH2AddMemoryBreakpoint(SH2_struct *context, u32 addr, u32 flags) {
       {
          // Make sure function isn't already being breakpointed by another breakpoint
          if (!CheckForMemoryBreakpointDupes(context, addr, BREAK_WORDWRITE, &which))
-            WriteWordList[(addr >> 16) & 0xFFF] = &SH2MemoryBreakpointWriteWord;
+            WriteWordList[(addr >> 16) & 0xFFF] = CacheWriteWordList[(addr >> 16) & 0xFFF] = &SH2MemoryBreakpointWriteWord;
          else
             // fix old memory access function
             context->bp.memorybreakpoint[context->bp.nummemorybreakpoints].oldwriteword = context->bp.memorybreakpoint[which].oldwriteword;
@@ -2582,10 +2582,10 @@ int SH2AddMemoryBreakpoint(SH2_struct *context, u32 addr, u32 flags) {
       {
          // Make sure function isn't already being breakpointed by another breakpoint
          if (!CheckForMemoryBreakpointDupes(context, addr, BREAK_LONGWRITE, &which))
-            WriteLongList[(addr >> 16) & 0xFFF] = &SH2MemoryBreakpointWriteLong;
+           WriteLongList[(addr >> 16) & 0xFFF] = CacheWriteLongList[(addr >> 16) & 0xFFF] = &SH2MemoryBreakpointWriteLong;
          else
-            // fix old memory access function
-            context->bp.memorybreakpoint[context->bp.nummemorybreakpoints].oldwritelong = context->bp.memorybreakpoint[which].oldwritelong;
+           // fix old memory access function
+           context->bp.memorybreakpoint[context->bp.nummemorybreakpoints].oldwritelong = context->bp.memorybreakpoint[which].oldwritelong;
       }
 
       context->bp.nummemorybreakpoints++;
@@ -2641,22 +2641,24 @@ int SH2DelMemoryBreakpoint(SH2_struct *context, u32 addr) {
             }
 
             if (context->bp.memorybreakpoint[i].flags & BREAK_BYTEREAD)
-               ReadByteList[(addr >> 16) & 0xFFF] = context->bp.memorybreakpoint[i].oldreadbyte;
+               ReadByteList[(addr >> 16) & 0xFFF] = CacheReadByteList[(addr >> 16) & 0xFFF] = context->bp.memorybreakpoint[i].oldreadbyte;
 
             if (context->bp.memorybreakpoint[i].flags & BREAK_WORDREAD)
-               ReadWordList[(addr >> 16) & 0xFFF] = context->bp.memorybreakpoint[i].oldreadword;
+               ReadWordList[(addr >> 16) & 0xFFF] = CacheReadWordList[(addr >> 16) & 0xFFF] = context->bp.memorybreakpoint[i].oldreadword;
 
             if (context->bp.memorybreakpoint[i].flags & BREAK_LONGREAD)
-               ReadLongList[(addr >> 16) & 0xFFF] = context->bp.memorybreakpoint[i].oldreadlong;
+               ReadLongList[(addr >> 16) & 0xFFF] = CacheReadLongList[(addr >> 16) & 0xFFF] = context->bp.memorybreakpoint[i].oldreadlong;
 
             if (context->bp.memorybreakpoint[i].flags & BREAK_BYTEWRITE)
-               WriteByteList[(addr >> 16) & 0xFFF] = context->bp.memorybreakpoint[i].oldwritebyte;
+               WriteByteList[(addr >> 16) & 0xFFF] = CacheWriteByteList[(addr >> 16) & 0xFFF] = context->bp.memorybreakpoint[i].oldwritebyte;
 
             if (context->bp.memorybreakpoint[i].flags & BREAK_WORDWRITE)
-               WriteWordList[(addr >> 16) & 0xFFF] = context->bp.memorybreakpoint[i].oldwriteword;
+               WriteWordList[(addr >> 16) & 0xFFF] = CacheWriteWordList[(addr >> 16) & 0xFFF] = context->bp.memorybreakpoint[i].oldwriteword;
 
-            if (context->bp.memorybreakpoint[i].flags & BREAK_LONGWRITE)
-               WriteLongList[(addr >> 16) & 0xFFF] = context->bp.memorybreakpoint[i].oldwritelong;
+            if (context->bp.memorybreakpoint[i].flags & BREAK_LONGWRITE) {
+              WriteLongList[(addr >> 16) & 0xFFF] = CacheWriteLongList[(addr >> 16) & 0xFFF] = context->bp.memorybreakpoint[i].oldwritelong;
+
+            }
 
             context->bp.memorybreakpoint[i].addr = 0xFFFFFFFF;
             SH2SortMemoryBreakpoints(context);
