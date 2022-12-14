@@ -4653,7 +4653,7 @@ scsp_init (u8 *scsp_ram, void (*sint_hand)(u32), void (*mint_hand)(void))
     scsp_tl_table[i] = scsp_round(pow(10, ((double)i * -0.3762) / 20) * 1024.0);
 
   scsp_reset();
-  g_scsp_ready = YabThreadCreateSem(1);
+  g_scsp_ready = YabThreadCreateSem(0);
   g_cpu_ready = YabThreadCreateSem(0);
   g_scsp_set_cyc_mtx = YabThreadCreateMutex();
   g_scsp_set_cond_mtx = YabThreadCreateMutex();
@@ -5043,7 +5043,7 @@ ScspDeInit (void)
   YabThreadCondSignal(g_scsp_set_cyc_cond);
   YabSemPost(g_cpu_ready);
   YabSemPost(g_scsp_ready);
-  YabThreadWake(YAB_THREAD_SCSP);
+  // YabThreadWake(YAB_THREAD_SCSP);
   YabThreadWait(YAB_THREAD_SCSP);
 
   if (scspchannel[0].data32)
@@ -5366,8 +5366,8 @@ void* ScspAsynMainCpu( void * p ){
         ScspInternalVars->scsptiming1 = scsplines;
         ScspExecAsync();
         YabSemPost(g_scsp_ready);
-        YabThreadYield();
-        YabThreadSleep();
+        // YabThreadYield();
+        // YabThreadSleep();
         YabSemWait(g_cpu_ready);
         m68k_inc = 0;
         break;
@@ -5378,7 +5378,7 @@ void* ScspAsynMainCpu( void * p ){
       YabSemWait(g_cpu_ready);
     }
   }
-  YabThreadWake(YAB_THREAD_SCSP);
+  // YabThreadWake(YAB_THREAD_SCSP);
   return NULL;
 }
 
