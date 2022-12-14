@@ -869,7 +869,7 @@ int YabauseEmulate(void) {
 void SyncCPUtoSCSP() {
   //LOG("[SH2] WAIT SCSP");
     YabSemWait(g_scsp_ready);
-    YabThreadWake(YAB_THREAD_SCSP);
+    // YabThreadWake(YAB_THREAD_SCSP);
     YabSemPost(g_cpu_ready);
   //LOG("[SH2] START SCSP");
 }
