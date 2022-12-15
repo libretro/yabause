@@ -2645,7 +2645,6 @@ void FASTCALL ScuWriteLong(SH2_struct *sh, u8* mem, u32 addr, u32 val) {
             ScuRegs->dma0.AddValue = ScuRegs->D0AD;
             ScuRegs->dma0.ModeAddressUpdate = ScuRegs->D0MD;
             ScuSetAddValue(&ScuRegs->dma0);
-            ScuDmaProc(&ScuRegs->dma0, 128);
          }
          ScuRegs->D0EN = val;
          break;
@@ -2678,7 +2677,6 @@ void FASTCALL ScuWriteLong(SH2_struct *sh, u8* mem, u32 addr, u32 val) {
             ScuRegs->dma1.AddValue = ScuRegs->D1AD;
             ScuRegs->dma1.ModeAddressUpdate = ScuRegs->D1MD;
             ScuSetAddValue(&ScuRegs->dma1);
-            ScuDmaProc(&ScuRegs->dma1, 128);
 
          }
          ScuRegs->D1EN = val;
@@ -2713,8 +2711,6 @@ void FASTCALL ScuWriteLong(SH2_struct *sh, u8* mem, u32 addr, u32 val) {
             ScuRegs->dma2.AddValue = ScuRegs->D2AD;
             ScuRegs->dma2.ModeAddressUpdate = ScuRegs->D2MD;
             ScuSetAddValue(&ScuRegs->dma2);
-            ScuDmaProc(&ScuRegs->dma2, 128);
-
          }
          ScuRegs->D2EN = val;
          break;
@@ -2883,7 +2879,6 @@ static INLINE void ScuChekIntrruptDMA(int id){
     ScuRegs->dma0.AddValue = ScuRegs->D0AD;
     ScuRegs->dma0.ModeAddressUpdate = ScuRegs->D0MD;
     ScuSetAddValue(&ScuRegs->dma0);
-    ScuDmaProc(&ScuRegs->dma0, 128);
     ScuRegs->D0EN = 0;
   }
   if ((ScuRegs->D1EN & 0x100) && (ScuRegs->D1MD & 0x07) == id){
@@ -2897,7 +2892,6 @@ static INLINE void ScuChekIntrruptDMA(int id){
     ScuRegs->dma1.AddValue = ScuRegs->D1AD;
     ScuRegs->dma1.ModeAddressUpdate = ScuRegs->D1MD;
     ScuSetAddValue(&ScuRegs->dma1);
-    ScuDmaProc(&ScuRegs->dma1, 128);
     ScuRegs->D1EN = 0;
   }
   if ((ScuRegs->D2EN & 0x100) && (ScuRegs->D2MD & 0x07) == id){
@@ -2911,7 +2905,6 @@ static INLINE void ScuChekIntrruptDMA(int id){
     ScuRegs->dma2.AddValue = ScuRegs->D2AD;
     ScuRegs->dma2.ModeAddressUpdate = ScuRegs->D2MD;
     ScuSetAddValue(&ScuRegs->dma2);
-    ScuDmaProc(&ScuRegs->dma2, 128);
     ScuRegs->D2EN = 0;
   }
 }
