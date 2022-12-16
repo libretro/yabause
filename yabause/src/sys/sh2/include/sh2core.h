@@ -365,11 +365,16 @@ codebreakpoint_struct *SH2GetBreakpointList(SH2_struct *context);
 void SH2ClearCodeBreakpoints(SH2_struct *context);
 
 u32 *SH2GetBacktraceList(SH2_struct *context, int *size);
+void SH2HandleBackTrace(SH2_struct *context);
+
+void SH2HandleStepOverOut(SH2_struct *context);
 
 int SH2AddMemoryBreakpoint(SH2_struct *context, u32 addr, u32 flags);
 int SH2DelMemoryBreakpoint(SH2_struct *context, u32 addr);
 memorybreakpoint_struct *SH2GetMemoryBreakpointList(SH2_struct *context);
 void SH2ClearMemoryBreakpoints(SH2_struct *context);
+void SH2HandleTrackInfLoop(SH2_struct *context);
+void SH2HandleBackTrace(SH2_struct *context);
 
 void SH2Step(SH2_struct *context);
 int SH2StepOver(SH2_struct *context, void (*func)(void *, u32, void *));
@@ -561,6 +566,16 @@ void SH2NMI(SH2_struct *context);
 void SH2GetRegisters(SH2_struct *context, sh2regs_struct * r);
 void SH2SetRegisters(SH2_struct *context, sh2regs_struct * r);
 void SH2WriteNotify(SH2_struct *context, u32 start, u32 length);
+
+void SH2Step(SH2_struct *context);
+int SH2StepOver(SH2_struct *context, void (*func)(void *, u32, void *));
+void SH2StepOut(SH2_struct *context, void (*func)(void *, u32, void *));
+
+int SH2TrackInfLoopInit(SH2_struct *context);
+void SH2TrackInfLoopDeInit(SH2_struct *context);
+void SH2TrackInfLoopStart(SH2_struct *context);
+void SH2TrackInfLoopStop(SH2_struct *context);
+void SH2TrackInfLoopClear(SH2_struct *context);
 
 void SH2Disasm(u32 v_addr, u16 op, int mode, sh2regs_struct *r, char *string);
 void SH2DumpHistory(SH2_struct *context);
