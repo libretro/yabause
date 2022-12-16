@@ -2933,6 +2933,10 @@ FASTCALL void SH2DebugInterpreterExec(SH2_struct *context, u32 cycles)
 	  context->regshistory[context->pchistory_index & (MAX_DMPHISTORY - 1)] = context->regs;
 #endif
 
+      SH2HandleBackTrace(context);
+      SH2HandleStepOverOut(context);
+      SH2HandleTrackInfLoop(context);
+
       // Execute it
       opcodes[context->instruction](context);
 
