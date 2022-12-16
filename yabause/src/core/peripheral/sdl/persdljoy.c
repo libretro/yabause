@@ -219,7 +219,6 @@ int PERSDLJoyHandleEvents(void) {
 
 			if ( buttonState == SDL_BUTTON_PRESSED )
 			{
-				YuiMsg("Btn press\n");
 				PerKeyDown( (joyId << 18) | (i +1) );
 			}
 			else if ( buttonState == SDL_BUTTON_RELEASED )
