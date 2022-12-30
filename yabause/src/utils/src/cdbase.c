@@ -523,7 +523,7 @@ static int LoadBinCue(const char *cuefilename, FILE *iso_file)
    int fad = 150;
 
 	memset(trk, 0, sizeof(trk));
-   disc.session = (session_info_struct*)calloc(1, sizeof(session_info_struct) * disc.session_num);
+   disc.session = (session_info_struct*)calloc(1, sizeof(session_info_struct));
    if (disc.session == NULL)
    {
       YabSetError(YAB_ERR_MEMORYALLOC, NULL);
