@@ -144,6 +144,11 @@ void YuiTimedSwapBuffers(){
 }
 #endif
 
+static int fpsframecount = 0;
+static int vdp1fpsframecount = 0;
+static int fps = 0;
+static int vdp1fps = 0;
+
 static void syncVideoMode(void) {
   unsigned long sleep = 0;
   unsigned long now;
@@ -155,14 +160,15 @@ static void syncVideoMode(void) {
     if (isAutoFrameSkip() == 0) {
       sleep = ((nextFrameTime - now)*1000000.0)/yabsys.tickfreq;
       delay = YabThreadUSleep(sleep) * yabsys.tickfreq/1000000.0;
+      nextFrameTime += delay;
     }
-  } else {
-    delay = nextFrameTime - now;
   }
-  if (isAutoFrameSkip() == 0) {
-    now = YabauseGetTicks();
-  }
-  nextFrameTime  = now + yabsys.OneFrameTime + delay;
+  nextFrameTime  += yabsys.OneFrameTime;
+  // if ((isAutoFrameSkip() == 0)||(fpsframecount == 0)) {
+  //   now = YabauseGetTicks();
+  // }
+  if (fpsframecount == 0) nextFrameTime = YabauseGetTicks() + yabsys.OneFrameTime;
+
 }
 
 void resetSyncVideo(void) {
@@ -676,10 +682,6 @@ u32 YabauseGetCpuTime(){
 #define HBLANK_IN_STEP ((DECILINE_STEP * 8)/10)
 
 //////////////////////////////////////////////////////////////////////////////
-static int fpsframecount = 0;
-static int vdp1fpsframecount = 0;
-static int fps = 0;
-static int vdp1fps = 0;
 static void FPSDisplay(void)
 {
   fpsframecount++;
