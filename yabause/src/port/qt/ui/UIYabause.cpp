@@ -230,7 +230,7 @@ void UIYabause::mousePressEvent( QMouseEvent* e )
 {
 	if (emulateMouse && !mouseCaptured)
 	{
-		if (!cursorShown || isFullScreen()) this->setCursor(Qt::BlankCursor);
+		if (!cursorShown) this->setCursor(Qt::BlankCursor);
 		else this->setCursor(Qt::CrossCursor);
 		mouseCaptured = true;
 	}
@@ -245,7 +245,7 @@ void UIYabause::mouseReleaseEvent( QMouseEvent* e )
 
 void UIYabause::hideMouse()
 {
-	if (!cursorShown || isFullScreen()) this->setCursor(Qt::BlankCursor);
+	if (!cursorShown) this->setCursor(Qt::BlankCursor);
 	else this->setCursor(Qt::CrossCursor);
 	hideMouseTimer->stop();
 }
@@ -303,7 +303,7 @@ void UIYabause::mouseMoveEvent( QMouseEvent* e )
 	{
 		if (emulateMouse && mouseCaptured)
 		{
-			if (!cursorShown  || isFullScreen()) {
+			if (!cursorShown) {
 				QPoint newPos(geometry().x() + centralWidget()->geometry().x() + midX, geometry().y() + centralWidget()->geometry().y() + midY);
 				this->cursor().setPos(newPos);
 				this->setCursor(Qt::BlankCursor);
