@@ -131,7 +131,7 @@ void YabauseThread::reloadControllers()
 
 	Settings* settings = QtYabause::settings();
 
-	emit toggleEmulateMouse( false, true );
+	emit toggleEmulateMouse( false, false );
 
 	for ( uint port = 1; port < 3; port++ )
 	{

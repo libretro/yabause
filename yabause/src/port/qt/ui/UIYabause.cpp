@@ -106,7 +106,7 @@ UIYabause::UIYabause( QWidget* parent )
 	setCentralWidget( container );
 	oldMouseX = oldMouseY = 0;
 	mouseCaptured = false;
-	cursorShown = true;
+	cursorShown = false;
 
 	// create emulator thread
 	mYabauseThread = new YabauseThread( this );
