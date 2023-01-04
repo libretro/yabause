@@ -841,7 +841,7 @@ static int LoadBinCueInZip(const char *filename, FILE *fp)
   if (cue == NULL) return -1;
 
    memset(trk, 0, sizeof(trk));
-   disc.session = (session_info_struct*)calloc(1, sizeof(session_info_struct) * disc.session_num);
+   disc.session = (session_info_struct*)calloc(1, sizeof(session_info_struct));
    if (disc.session == NULL)
    {
       disc.session_num = 0;
@@ -1222,7 +1222,7 @@ static int LoadISO(FILE *iso_file)
 {
    track_info_struct *track;
 
-   disc.session = (session_info_struct*)calloc(1, sizeof(session_info_struct) * disc.session_num);
+   disc.session = (session_info_struct*)calloc(1, sizeof(session_info_struct));
    if (disc.session == NULL)
    {
       YabSetError(YAB_ERR_MEMORYALLOC, NULL);
@@ -1455,7 +1455,7 @@ static int LoadCCD(const char *ccd_filename, FILE *iso_file)
 		return -1;
 	}
 
-	disc.session = (session_info_struct*)calloc(1, sizeof(session_info_struct) * disc.session_num);
+	disc.session = (session_info_struct*)calloc(1, sizeof(session_info_struct));
 	if (disc.session == NULL)
 	{
 		fclose(fp);
@@ -1464,6 +1464,7 @@ static int LoadCCD(const char *ccd_filename, FILE *iso_file)
 		YabSetError(YAB_ERR_MEMORYALLOC, NULL);
 		return -1;
 	}
+    disc.session_num = 1;
 
 	if (GetIntCCD(&ccd, "DISC", "DataTracksScrambled"))
 	{
