@@ -67,6 +67,7 @@ PERSDLKeyName
 typedef struct {
 	SDL_Joystick* mJoystick;
 	s16* mScanStatus;
+  s16* mInitValue;
 	Uint8* mHatStatus;
 } PERSDLJoystick;
 
@@ -112,13 +113,15 @@ YuiMsg("µSDL joy init\n");
 
 		SDL_PERCORE_JOYSTICKS[ i ].mJoystick = joy;
 		SDL_PERCORE_JOYSTICKS[ i ].mScanStatus = joy ? (s16*)malloc(sizeof(s16) * SDL_JoystickNumAxes( joy )) : 0;
+    SDL_PERCORE_JOYSTICKS[ i ].mInitValue = joy ? (s16*)malloc(sizeof(s16) * SDL_JoystickNumAxes( joy )) : 0;
 		SDL_PERCORE_JOYSTICKS[ i ].mHatStatus = joy ? (Uint8*)malloc(sizeof(Uint8) * SDL_JoystickNumHats( joy )) : 0;
 
 		if ( joy )
 		{
 			for ( j = 0; j < SDL_JoystickNumAxes( joy ); j++ )
 			{
-				SDL_PERCORE_JOYSTICKS[ i ].mScanStatus[ j ] = SDL_JoystickGetAxis( joy, j );
+        SDL_JoystickGetAxisInitialState(joy, j, &SDL_PERCORE_JOYSTICKS[ i ].mInitValue[ j ]);
+				SDL_PERCORE_JOYSTICKS[ i ].mScanStatus[ j ] = SDL_JoystickGetAxis( joy, j ) - SDL_PERCORE_JOYSTICKS[ i ].mInitValue[ j ];
 			}
 			for ( j = 0; j < SDL_JoystickNumHats( joy ); j++ )
 			{
@@ -150,6 +153,7 @@ void PERSDLJoyDeInit(void) {
             SDL_JoystickClose( SDL_PERCORE_JOYSTICKS[ i ].mJoystick );
 
             free( SDL_PERCORE_JOYSTICKS[ i ].mScanStatus );
+            free( SDL_PERCORE_JOYSTICKS[ i ].mInitValue );
             free( SDL_PERCORE_JOYSTICKS[ i ].mHatStatus );
          }
 		}
@@ -170,7 +174,7 @@ int PERSDLJoyHandleEvents(void) {
 	int i;
 	int j;
 	SDL_Joystick* joy;
-	Sint16 cur;
+	Sint32 cur;
 	Uint8 buttonState;
 	Uint8 newHatState;
 	Uint8 oldHatState;
@@ -192,7 +196,7 @@ int PERSDLJoyHandleEvents(void) {
 		// check axis
 		for ( i = 0; i < SDL_JoystickNumAxes( joy ); i++ )
 		{
-			cur = SDL_JoystickGetAxis( joy, i );
+			cur = SDL_JoystickGetAxis( joy, i ) - SDL_PERCORE_JOYSTICKS[ joyId ].mInitValue[ i ];
 
 			PerAxisValue((joyId << 18) | SDL_PERSF_AXIS_VALUE | i, (u8)(((int)cur+32768) >> 8));
 
@@ -238,7 +242,6 @@ int PERSDLJoyHandleEvents(void) {
 				hatValue = SDL_HAT_VALUES[ j ];
 				if ( oldHatState & hatValue && ~newHatState & hatValue )
 				{
-					YuiMsg("Hat up\n");
 					PerKeyUp( (joyId << 18) | SDL_HAT_VALUE | (hatValue << 4) | i );
 				}
 			}
@@ -247,7 +250,6 @@ int PERSDLJoyHandleEvents(void) {
 				hatValue = SDL_HAT_VALUES[ j ];
 				if ( ~oldHatState & hatValue && newHatState & hatValue )
 				{
-					YuiMsg("Hat down\n");
 					PerKeyDown( (joyId << 18) | SDL_HAT_VALUE | (hatValue << 4) | i);
 				}
 			}
@@ -267,7 +269,7 @@ u32 PERSDLJoyScan( u32 flags ) {
 	int joyId;
 	int i;
 	SDL_Joystick* joy;
-	Sint16 cur;
+	Sint32 cur;
 	Uint8 hatState;
 
 	// update joysticks states
@@ -286,7 +288,7 @@ u32 PERSDLJoyScan( u32 flags ) {
 		// check axis
 		for ( i = 0; i < SDL_JoystickNumAxes( joy ); i++ )
 		{
-			cur = SDL_JoystickGetAxis( joy, i );
+			cur = SDL_JoystickGetAxis( joy, i ) - SDL_PERCORE_JOYSTICKS[ joyId ].mInitValue[ i ];
 
 			if ( cur != SDL_PERCORE_JOYSTICKS[ joyId ].mScanStatus[ i ] )
 			{
