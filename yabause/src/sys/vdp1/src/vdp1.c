@@ -85,6 +85,7 @@ static void RequestVdp1ToDraw() {
 
 static void abortVdp1() {
   if (Vdp1External.status == VDP1_STATUS_RUNNING) {
+    FRAMELOG("Aborting VDP1\n");
     // The vdp1 is still running and a new draw command request has been received
     // Abort the current command list
     Vdp1External.status = VDP1_STATUS_IDLE;
@@ -1238,12 +1239,14 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
 
    Vdp1External.status = VDP1_STATUS_RUNNING;
    if (regs->addr > 0x7FFFF) {
+     FRAMELOG("Address Error\n");
       Vdp1External.status = VDP1_STATUS_IDLE;
       return; // address error
     }
 
    u16 command = Vdp1RamReadWord(NULL, ram, regs->addr);
-   u32 commandCounter = 0;
+
+   FRAMELOG("Command is 0x%x @ 0x%x\n", command, regs->addr);
 
    Vdp1External.updateVdp1Ram = 0;
    vdp1Ram_update_start = 0x80000;
@@ -1385,6 +1388,7 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
 
 	  // Force to quit internal command error( This technic(?) is used by BATSUGUN )
 	  if (regs->EDSR & 0x02){
+      FRAMELOG("Internal Command Error\n");
 		  checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
 		  Vdp1External.status = VDP1_STATUS_IDLE;
 		  regs->COPR = (regs->addr & 0x7FFFF) >> 3;
@@ -1430,14 +1434,15 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
       }
 
       command = Vdp1RamReadWord(NULL,ram, regs->addr);
+      FRAMELOG("Command is 0x%x @ 0x%x\n", command, regs->addr);
       CmdListLimit = MAX((regs->addr & 0x7FFFF), regs->addr);
       //If we change directly CPR to last value, scorcher will not boot.
       //If we do not change it, Noon will not start
       //So store the value and update COPR with last value at VBlank In
       regs->lCOPR = (regs->addr & 0x7FFFF) >> 3;
    }
-   if (command & 0x8000) {
-        LOG("VDP1: Command Finished! count = %d @ %08X", commandCounter, regs->addr);
+   if (command == 0x8000) {
+        FRAMELOG("VDP1: Command Finished! count = %d @ %08X\n", nbCmdToProcess, regs->addr);
         Vdp1External.status = VDP1_STATUS_IDLE;
         regs->COPR = (regs->addr & 0x7FFFF) >> 3;
         regs->lCOPR = (regs->addr & 0x7FFFF) >> 3;
@@ -1541,7 +1546,7 @@ static int Vdp1Draw(void)
      VIDCore->Vdp1Draw();
    }
    if (Vdp1External.status == VDP1_STATUS_IDLE) {
-     FRAMELOG("Vdp1Draw end at %d line\n", yabsys.LineCount);
+     FRAMELOG("Vdp1Draw end at line %d \n", yabsys.LineCount);
      Vdp1Regs->EDSR |= 2;
      ScuSendDrawEnd();
    }
@@ -2552,7 +2557,7 @@ static void startField(void) {
     Vdp1Regs->lCOPR = 0;
     Vdp1Regs->EDSR >>= 1;
 
-    FRAMELOG("[VDP1] Displayed framebuffer changed. EDSR=%02X", Vdp1Regs->EDSR);
+    FRAMELOG("[VDP1] Displayed framebuffer changed. EDSR=%02X\n", Vdp1Regs->EDSR);
 
     Vdp1External.swap_frame_buffer = 0;
 
