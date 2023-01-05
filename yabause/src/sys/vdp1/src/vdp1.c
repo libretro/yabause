@@ -1143,7 +1143,7 @@ int EvaluateCmdListHash(Vdp1 * regs){
 
   command = T1ReadWord(Vdp1Ram, addr);
 
-  while (!(command & 0x8000) && (commandCounter < 2000))
+  while (!(command == 0x8000) && (commandCounter < 2000))
   {
       vdp1cmd_struct cmd;
      // Make sure we're still dealing with a valid command
@@ -1208,7 +1208,7 @@ static int lastHash = -1;
 void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
 {
   int cylesPerLine  = getVdp1CyclesPerLine();
-
+  int shallContinue = 1;
   if (Vdp1External.status == VDP1_STATUS_IDLE) {
     #if 0
     int newHash = EvaluateCmdListHash(regs);
@@ -1256,8 +1256,12 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
    vdp1cmd_struct oldCmd;
 
    yabsys.vdp1cycles = 0;
-   while (!(command & 0x8000) && nbCmdToProcess < CMD_QUEUE_SIZE) { // fix me
+   //Shall continue is used for prohibited usage of ENd bit. In case a command is valid (like polygon drawing) but with a end bit set, the command is executed then stopped.
+   //Not sure it is really stopped in that case, maybe end bit is ignored for other code than 0x8000
+   while ((shallContinue != 0) && (command != 0x8000) && (nbCmdToProcess < CMD_QUEUE_SIZE)) {
      int ret;
+      // For the moment assume it does not stop if value is different from 0x8000
+      // shallContinue = (!(command & 0x8000)) && (nbCmdToProcess < CMD_QUEUE_SIZE);
       regs->COPR = (regs->addr & 0x7FFFF) >> 3;
       // First, process the command
       if (!(command & 0x4000)) { // if (!skip)
@@ -1459,7 +1463,7 @@ void Vdp1FakeDrawCommands(u8 * ram, Vdp1 * regs)
    u32 returnAddr = 0xffffffff;
    vdp1cmd_struct cmd;
 
-   while (!(command & 0x8000) && commandCounter < 2000) { // fix me
+   while (!(command == 0x8000) && commandCounter < 2000) { // fix me
       // First, process the command
       if (!(command & 0x4000)) { // if (!skip)
          switch (command & 0x000F) {
@@ -1673,7 +1677,7 @@ static u32 Vdp1DebugGetCommandNumberAddr(u32 number)
 
    command = T1ReadWord(Vdp1Ram, addr);
 
-   while (!(command & 0x8000) && commandCounter != number)
+   while (!(command == 0x8000) && commandCounter != number)
    {
       // Make sure we're still dealing with a valid command
       if ((command & 0x000C) == 0x000C)
@@ -1725,7 +1729,7 @@ Vdp1CommandType Vdp1DebugGetCommandType(u32 number)
    if ((addr = Vdp1DebugGetCommandNumberAddr(number)) != 0xFFFFFFFF)
    {
       const u16 command = T1ReadWord(Vdp1Ram, addr);
-      if (command & 0x8000)
+      if (command == 0x8000)
         return VDPCT_DRAW_END;
       else if ((command & 0x000F) < VDPCT_INVALID)
         return (Vdp1CommandType) (command & 0x000F);
@@ -1744,7 +1748,7 @@ char *Vdp1DebugGetCommandNumberName(u32 number)
    {
       command = T1ReadWord(Vdp1Ram, addr);
 
-      if (command & 0x8000)
+      if (command == 0x8000)
          return "Draw End";
 
       // Figure out command name
@@ -1795,7 +1799,7 @@ void Vdp1DebugCommand(u32 number, char *outstring)
 
    command = T1ReadWord(Vdp1Ram, addr);
 
-   if (command & 0x8000)
+   if (command == 0x8000)
    {
       // Draw End
       outstring[0] = 0x00;
@@ -2148,7 +2152,7 @@ u32 *Vdp1DebugTexture(u32 number, int *w, int *h)
 
    command = T1ReadWord(Vdp1Ram, addr);
 
-   if (command & 0x8000)
+   if (command == 0x8000)
       // Draw End
       return NULL;
 
@@ -2430,7 +2434,7 @@ u8 *Vdp1DebugRawTexture(u32 cmdNumber, int *width, int *height, int *numBytes)
 
    cmdRaw = T1ReadWord(Vdp1Ram, cmdAddress);
 
-   if (cmdRaw & 0x8000)
+   if (cmdRaw == 0x8000)
       // Draw End
       return NULL;
 
