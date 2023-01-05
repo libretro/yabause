@@ -59,7 +59,6 @@ static int nbCmdToProcess = 0;
 static int CmdListInLoop = 0;
 static int CmdListLimit = 0x80000;
 
-
 static int needVdp1draw = 0;
 static void Vdp1NoDraw(void);
 static int Vdp1Draw(void);
@@ -1274,27 +1273,91 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
       if (!(command & 0x4000)) { // if (!skip)
          vdp1cmdctrl_struct *ctrl = NULL;
          int ret;
+         int cmdError = 0;
          if (vdp1_clock <= 0) {
            //No more clock cycle, wait next line
            return;
          }
-         if (!(command & 0x8000)) {
-           switch (command & 0x000F) {
-             case 0: // normal sprite draw
+         switch (command & 0x000F) {
+           case 0: // normal sprite draw
+           ctrl = &cmdBufferBeingProcessed[nbCmdToProcess];
+           ctrl->dirty = 0;
+           Vdp1ReadCommand(&ctrl->cmd, regs->addr, ram);
+           if (!sameCmd(&ctrl->cmd, &oldCmd)) {
+             oldCmd = ctrl->cmd;
+             checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
+             ctrl->ignitionLine = MIN(yabsys.LineCount + yabsys.vdp1cycles/cylesPerLine,yabsys.MaxLineCount-1);
+             ret = Vdp1NormalSpriteDraw(&ctrl->cmd, ram, regs, back_framebuffer);
+             if (ret == 1) nbCmdToProcess++;
+             else {
+               cmdError = 1;
+               vdp1_clock = 0; //Incorrect command, wait next line to continue
+             }
+             setupSpriteLimit(ctrl);
+           }
+           break;
+           case 1: // scaled sprite draw
+           ctrl = &cmdBufferBeingProcessed[nbCmdToProcess];
+           ctrl->dirty = 0;
+           Vdp1ReadCommand(&ctrl->cmd, regs->addr, ram);
+           if (!sameCmd(&ctrl->cmd, &oldCmd)) {
+             oldCmd = ctrl->cmd;
+             ctrl->ignitionLine = MIN(yabsys.LineCount + yabsys.vdp1cycles/cylesPerLine,yabsys.MaxLineCount-1);
+             checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
+             ret = Vdp1ScaledSpriteDraw(&ctrl->cmd, ram, regs, back_framebuffer);
+             if (ret == 1) nbCmdToProcess++;
+             else {
+               cmdError = 1;
+               vdp1_clock = 0; //Incorrect command, wait next line to continue
+             }
+             setupSpriteLimit(ctrl);
+           }
+           break;
+           case 2: // distorted sprite draw
+           case 3: /* this one should be invalid, but some games
+           (Hardcore 4x4 for instance) use it instead of 2 */
+           ctrl = &cmdBufferBeingProcessed[nbCmdToProcess];
+           ctrl->dirty = 0;
+           Vdp1ReadCommand(&ctrl->cmd, regs->addr, ram);
+           if (!sameCmd(&ctrl->cmd, &oldCmd)) {
+             oldCmd = ctrl->cmd;
+             ctrl->ignitionLine = MIN(yabsys.LineCount + yabsys.vdp1cycles/cylesPerLine,yabsys.MaxLineCount-1);
+             checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
+             ret = Vdp1DistortedSpriteDraw(&ctrl->cmd, ram, regs, back_framebuffer);
+             if (ret == 1) nbCmdToProcess++;
+             else {
+               cmdError = 1;
+               vdp1_clock = 0; //Incorrect command, wait next line to continue
+             }
+             setupSpriteLimit(ctrl);
+           }
+           break;
+           case 4: // polygon draw
+           ctrl = &cmdBufferBeingProcessed[nbCmdToProcess];
+           ctrl->dirty = 0;
+           Vdp1ReadCommand(&ctrl->cmd, regs->addr, ram);
+           // if (!sameCmd(&ctrl->cmd, &oldCmd)) {
+             oldCmd = ctrl->cmd;
+             ctrl->ignitionLine = MIN(yabsys.LineCount + yabsys.vdp1cycles/cylesPerLine,yabsys.MaxLineCount-1);
+             checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
+             nbCmdToProcess += Vdp1PolygonDraw(&ctrl->cmd, ram, regs, back_framebuffer);
+             setupSpriteLimit(ctrl);
+             // }
+             break;
+             case 5: // polyline draw
+             case 7: // undocumented mirror
              ctrl = &cmdBufferBeingProcessed[nbCmdToProcess];
              ctrl->dirty = 0;
              Vdp1ReadCommand(&ctrl->cmd, regs->addr, ram);
              if (!sameCmd(&ctrl->cmd, &oldCmd)) {
                oldCmd = ctrl->cmd;
-               checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
                ctrl->ignitionLine = MIN(yabsys.LineCount + yabsys.vdp1cycles/cylesPerLine,yabsys.MaxLineCount-1);
-               ret = Vdp1NormalSpriteDraw(&ctrl->cmd, ram, regs, back_framebuffer);
-               if (ret == 1) nbCmdToProcess++;
-               else vdp1_clock = 0; //Incorrect command, wait next line to continue
+               checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
+               nbCmdToProcess += Vdp1PolylineDraw(&ctrl->cmd, ram, regs, back_framebuffer);
                setupSpriteLimit(ctrl);
              }
              break;
-             case 1: // scaled sprite draw
+             case 6: // line draw
              ctrl = &cmdBufferBeingProcessed[nbCmdToProcess];
              ctrl->dirty = 0;
              Vdp1ReadCommand(&ctrl->cmd, regs->addr, ram);
@@ -1302,97 +1365,50 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
                oldCmd = ctrl->cmd;
                ctrl->ignitionLine = MIN(yabsys.LineCount + yabsys.vdp1cycles/cylesPerLine,yabsys.MaxLineCount-1);
                checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
-               ret = Vdp1ScaledSpriteDraw(&ctrl->cmd, ram, regs, back_framebuffer);
-               if (ret == 1) nbCmdToProcess++;
-               else vdp1_clock = 0; //Incorrect command, wait next line to continue
+               nbCmdToProcess += Vdp1LineDraw(&ctrl->cmd, ram, regs, back_framebuffer);
                setupSpriteLimit(ctrl);
              }
              break;
-             case 2: // distorted sprite draw
-             case 3: /* this one should be invalid, but some games
-             (Hardcore 4x4 for instance) use it instead of 2 */
-             ctrl = &cmdBufferBeingProcessed[nbCmdToProcess];
-             ctrl->dirty = 0;
-             Vdp1ReadCommand(&ctrl->cmd, regs->addr, ram);
-             if (!sameCmd(&ctrl->cmd, &oldCmd)) {
-               oldCmd = ctrl->cmd;
-               ctrl->ignitionLine = MIN(yabsys.LineCount + yabsys.vdp1cycles/cylesPerLine,yabsys.MaxLineCount-1);
-               checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
-               ret = Vdp1DistortedSpriteDraw(&ctrl->cmd, ram, regs, back_framebuffer);
-               if (ret == 1) nbCmdToProcess++;
-               else vdp1_clock = 0; //Incorrect command, wait next line to continue
-               setupSpriteLimit(ctrl);
-             }
+             case 8: // user clipping coordinates
+             case 11: // undocumented mirror
+             checkClipCmd(&sysClipCmd, NULL, &localCoordCmd, ram, regs);
+             yabsys.vdp1cycles += 16;
+             usrClipCmd = (vdp1cmd_struct *)malloc(sizeof(vdp1cmd_struct));
+             Vdp1ReadCommand(usrClipCmd, regs->addr, ram);
+             oldCmd = *usrClipCmd;
              break;
-             case 4: // polygon draw
-             ctrl = &cmdBufferBeingProcessed[nbCmdToProcess];
-             ctrl->dirty = 0;
-             Vdp1ReadCommand(&ctrl->cmd, regs->addr, ram);
-             // if (!sameCmd(&ctrl->cmd, &oldCmd)) {
-               oldCmd = ctrl->cmd;
-               ctrl->ignitionLine = MIN(yabsys.LineCount + yabsys.vdp1cycles/cylesPerLine,yabsys.MaxLineCount-1);
-               checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
-               nbCmdToProcess += Vdp1PolygonDraw(&ctrl->cmd, ram, regs, back_framebuffer);
-               setupSpriteLimit(ctrl);
-               // }
-               break;
-               case 5: // polyline draw
-               case 7: // undocumented mirror
-               ctrl = &cmdBufferBeingProcessed[nbCmdToProcess];
-               ctrl->dirty = 0;
-               Vdp1ReadCommand(&ctrl->cmd, regs->addr, ram);
-               if (!sameCmd(&ctrl->cmd, &oldCmd)) {
-                 oldCmd = ctrl->cmd;
-                 ctrl->ignitionLine = MIN(yabsys.LineCount + yabsys.vdp1cycles/cylesPerLine,yabsys.MaxLineCount-1);
-                 checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
-                 nbCmdToProcess += Vdp1PolylineDraw(&ctrl->cmd, ram, regs, back_framebuffer);
-                 setupSpriteLimit(ctrl);
-               }
-               break;
-               case 6: // line draw
-               ctrl = &cmdBufferBeingProcessed[nbCmdToProcess];
-               ctrl->dirty = 0;
-               Vdp1ReadCommand(&ctrl->cmd, regs->addr, ram);
-               if (!sameCmd(&ctrl->cmd, &oldCmd)) {
-                 oldCmd = ctrl->cmd;
-                 ctrl->ignitionLine = MIN(yabsys.LineCount + yabsys.vdp1cycles/cylesPerLine,yabsys.MaxLineCount-1);
-                 checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
-                 nbCmdToProcess += Vdp1LineDraw(&ctrl->cmd, ram, regs, back_framebuffer);
-                 setupSpriteLimit(ctrl);
-               }
-               break;
-               case 8: // user clipping coordinates
-               case 11: // undocumented mirror
-               checkClipCmd(&sysClipCmd, NULL, &localCoordCmd, ram, regs);
-               yabsys.vdp1cycles += 16;
-               usrClipCmd = (vdp1cmd_struct *)malloc(sizeof(vdp1cmd_struct));
-               Vdp1ReadCommand(usrClipCmd, regs->addr, ram);
-               oldCmd = *usrClipCmd;
-               break;
-               case 9: // system clipping coordinates
-               checkClipCmd(NULL, &usrClipCmd, &localCoordCmd, ram, regs);
-               yabsys.vdp1cycles += 16;
-               sysClipCmd = (vdp1cmd_struct *)malloc(sizeof(vdp1cmd_struct));
-               Vdp1ReadCommand(sysClipCmd, regs->addr, ram);
-               oldCmd = *sysClipCmd;
-               break;
-               case 10: // local coordinate
-               checkClipCmd(&sysClipCmd, &usrClipCmd, NULL, ram, regs);
-               yabsys.vdp1cycles += 16;
-               localCoordCmd = (vdp1cmd_struct *)malloc(sizeof(vdp1cmd_struct));
-               Vdp1ReadCommand(localCoordCmd, regs->addr, ram);
-               oldCmd = *localCoordCmd;
-               break;
-               default: // Abort
-               VDP1LOG("vdp1\t: Bad command: %x\n", command);
-               checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
-               Vdp1External.status = VDP1_STATUS_IDLE;
-               regs->EDSR |= 2;
-               regs->COPR = (regs->addr & 0x7FFFF) >> 3;
-               CmdListLimit = MAX((regs->addr & 0x7FFFF), regs->addr);
-               return;
-             }
-         }
+             case 9: // system clipping coordinates
+             checkClipCmd(NULL, &usrClipCmd, &localCoordCmd, ram, regs);
+             yabsys.vdp1cycles += 16;
+             sysClipCmd = (vdp1cmd_struct *)malloc(sizeof(vdp1cmd_struct));
+             Vdp1ReadCommand(sysClipCmd, regs->addr, ram);
+             oldCmd = *sysClipCmd;
+             break;
+             case 10: // local coordinate
+             checkClipCmd(&sysClipCmd, &usrClipCmd, NULL, ram, regs);
+             yabsys.vdp1cycles += 16;
+             localCoordCmd = (vdp1cmd_struct *)malloc(sizeof(vdp1cmd_struct));
+             Vdp1ReadCommand(localCoordCmd, regs->addr, ram);
+             oldCmd = *localCoordCmd;
+             break;
+             default: // Abort
+             VDP1LOG("vdp1\t: Bad command: %x\n", command);
+             checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
+             Vdp1External.status = VDP1_STATUS_IDLE;
+             regs->EDSR |= 2;
+             regs->COPR = (regs->addr & 0x7FFFF) >> 3;
+             CmdListLimit = MAX((regs->addr & 0x7FFFF), regs->addr);
+             return;
+           }
+           if ((command & 0x8000) && (cmdError != 0)){
+             VDP1LOG("vdp1\t: Bad command: %x\n", command);
+             checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
+             Vdp1External.status = VDP1_STATUS_IDLE;
+             regs->EDSR |= 2;
+             regs->COPR = (regs->addr & 0x7FFFF) >> 3;
+             CmdListLimit = MAX((regs->addr & 0x7FFFF), regs->addr);
+             return;
+           }
       } else {
         yabsys.vdp1cycles += 16;
       }
