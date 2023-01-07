@@ -582,7 +582,6 @@ static int Vdp1NormalSpriteDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* 
 
   if ((cmd->CMDSIZE & 0x8000)) {
     yabsys.vdp1cycles += 70;
-    regs->EDSR |= 2;
     return -1; // BAD Command
   }
   if (((cmd->CMDPMOD >> 3) & 0x7) > 5) {
@@ -1232,6 +1231,13 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
     sysClipCmd = NULL;
     localCoordCmd = NULL;
     nbCmdToProcess = 0;
+
+     Vdp1Regs->EDSR >>= 1;
+     Vdp1Regs->addr = 0;
+     // BEF <- CEF
+     // CEF <- 0
+     Vdp1Regs->COPR = 0;
+     Vdp1Regs->lCOPR = 0;
   }
   CmdListLimit = 0;
 
@@ -1256,7 +1262,7 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
    yabsys.vdp1cycles = 0;
    //Shall continue is used for prohibited usage of ENd bit. In case a command is valid (like polygon drawing) but with a end bit set, the command is executed then stopped.
    //Not sure it is really stopped in that case, maybe end bit is ignored for other code than 0x8000
-   while ((command != 0x8000) && (nbCmdToProcess < CMD_QUEUE_SIZE)) {
+   while (!(command & 0x8000) && (nbCmdToProcess < CMD_QUEUE_SIZE)) {
      int ret;
       regs->COPR = (regs->addr & 0x7FFFF) >> 3;
       if (command & 0xC0) {
@@ -1264,7 +1270,7 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
         VDP1LOG("vdp1\t: Bad command: %x\n", command);
         checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
         Vdp1External.status = VDP1_STATUS_IDLE;
-        regs->EDSR |= 2;
+        // regs->EDSR |= 2;
         regs->COPR = (regs->addr & 0x7FFFF) >> 3;
         CmdListLimit = MAX((regs->addr & 0x7FFFF), regs->addr);
         return;
@@ -1395,7 +1401,6 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
              VDP1LOG("vdp1\t: Bad command: %x\n", command);
              checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
              Vdp1External.status = VDP1_STATUS_IDLE;
-             regs->EDSR |= 2;
              regs->COPR = (regs->addr & 0x7FFFF) >> 3;
              CmdListLimit = MAX((regs->addr & 0x7FFFF), regs->addr);
              return;
@@ -1470,11 +1475,12 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
       //So store the value and update COPR with last value at VBlank In
       regs->lCOPR = (regs->addr & 0x7FFFF) >> 3;
    }
-   if (command == 0x8000) {
+   if (command & 0x8000) {
         FRAMELOG("VDP1: Command Finished! count = %d @ %08X\n", nbCmdToProcess, regs->addr);
         Vdp1External.status = VDP1_STATUS_IDLE;
         regs->COPR = (regs->addr & 0x7FFFF) >> 3;
         regs->lCOPR = (regs->addr & 0x7FFFF) >> 3;
+        Vdp1Regs->EDSR |= 2;
    }
    CmdListLimit = MAX((regs->addr & 0x7FFFF), regs->addr);
    checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
@@ -1517,7 +1523,7 @@ void Vdp1FakeDrawCommands(u8 * ram, Vdp1 * regs)
             break;
          default: // Abort
             VDP1LOG("vdp1\t: Bad command: %x\n", command);
-            regs->EDSR |= 2;
+            // regs->EDSR |= 2;
             regs->COPR = regs->addr >> 3;
             return;
          }
@@ -1560,23 +1566,10 @@ static int Vdp1Draw(void)
       Vdp1Regs->EDSR >>= 1;
       Vdp1NoDraw();
    } else {
-    if (Vdp1External.status == VDP1_STATUS_IDLE) {
-    Vdp1Regs->EDSR >>= 1;
-     Vdp1Regs->addr = 0;
-
-     // beginning of a frame
-     // BEF <- CEF
-     // CEF <- 0
-     //Vdp1Regs->EDSR >>= 1;
-     /* this should be done after a frame change or a plot trigger */
-     Vdp1Regs->COPR = 0;
-     Vdp1Regs->lCOPR = 0;
-   }
      VIDCore->Vdp1Draw();
    }
    if (Vdp1External.status == VDP1_STATUS_IDLE) {
      FRAMELOG("Vdp1Draw end at line %d \n", yabsys.LineCount);
-     Vdp1Regs->EDSR |= 2;
      ScuSendDrawEnd();
    }
    if (Vdp1External.status == VDP1_STATUS_IDLE) return 0;
@@ -2584,7 +2577,7 @@ static void startField(void) {
     Vdp1Regs->LOPR = Vdp1Regs->COPR;
     Vdp1Regs->COPR = 0;
     Vdp1Regs->lCOPR = 0;
-    Vdp1Regs->EDSR >>= 1;
+    // Vdp1Regs->EDSR >>= 1;
 
     FRAMELOG("[VDP1] Displayed framebuffer changed. EDSR=%02X\n", Vdp1Regs->EDSR);
 
