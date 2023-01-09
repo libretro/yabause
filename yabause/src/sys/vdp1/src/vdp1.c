@@ -2591,8 +2591,10 @@ static void startField(void) {
     if ((Vdp1Regs->PTMR == 0x2)){
       FRAMELOG("[VDP1] PTMR == 0x2 start drawing immidiatly\n");
       abortVdp1();
-      vdp1_clock = 0;
+      FRAMELOG("Reset vdp1_clock %d\n", yabsys.LineCount);
+      vdp1_clock = getVdp1CyclesPerLine();
       RequestVdp1ToDraw();
+      Vdp1TryDraw();
     }
   }
   else {
