@@ -1379,12 +1379,14 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
              }
              break;
              case 8: // user clipping coordinates
-             case 11: // undocumented mirror
              checkClipCmd(&sysClipCmd, NULL, &localCoordCmd, ram, regs);
              yabsys.vdp1cycles += 16;
              usrClipCmd = (vdp1cmd_struct *)malloc(sizeof(vdp1cmd_struct));
              Vdp1ReadCommand(usrClipCmd, regs->addr, ram);
              oldCmd = *usrClipCmd;
+             break;
+             case 11: // undocumented command
+              //Do nothing as we are skipping it.
              break;
              case 9: // system clipping coordinates
              checkClipCmd(NULL, &usrClipCmd, &localCoordCmd, ram, regs);
@@ -1511,9 +1513,9 @@ void Vdp1FakeDrawCommands(u8 * ram, Vdp1 * regs)
          case 5: // polyline draw
          case 6: // line draw
          case 7: // undocumented polyline draw mirror
+         case 11: // undocumented command - do nnothing
             break;
          case 8: // user clipping coordinates
-         case 11: // undocumented mirror
             Vdp1ReadCommand(&cmd, regs->addr, ram);
             VIDCore->Vdp1UserClipping(&cmd, ram, regs);
             break;
@@ -1799,7 +1801,7 @@ char *Vdp1DebugGetCommandNumberName(u32 number)
          case 10:
             return "Local Coordinates";
          case 11:
-            return "User Clipping Coordinates *";
+            return "Command 0xB undocumented";
          default:
              return "Bad command - Abort";
       }
@@ -2223,7 +2225,7 @@ u32 *Vdp1DebugTexture(u32 number, int *w, int *h)
       case 8: // User Clipping
       case 9: // System Clipping
       case 10: // Local Coordinates
-      case 11: // User Clipping *
+      case 11: // undocumented
          return NULL;
       default: // Invalid command
          return NULL;
@@ -2525,7 +2527,7 @@ u8 *Vdp1DebugRawTexture(u32 cmdNumber, int *width, int *height, int *numBytes)
       case 8:  // User Clipping
       case 9:  // System Clipping
       case 10: // Local Coordinates
-      case 11: // User Clipping *
+      case 11: // Undocumented
          return NULL;
       default: // Invalid command
          return NULL;
