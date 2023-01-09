@@ -1282,6 +1282,7 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
          int cmdError = 0;
          if (vdp1_clock <= 0) {
            //No more clock cycle, wait next line
+           Vdp1Regs->EDSR |= 2;
            return;
          }
          switch (command & 0x000F) {
