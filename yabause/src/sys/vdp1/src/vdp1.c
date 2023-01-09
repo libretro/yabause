@@ -2682,11 +2682,11 @@ void Vdp1VBlankIN(void)
 
 void Vdp1VBlankOUT(void)
 {
-  startField();
   //Out of VBlankOut : Break Batman
   if (needVBlankErase()) {
     int id = 0;
     if (_Ygl != NULL) id = _Ygl->readframe;
     Vdp1EraseWrite(id);
   }
+  startField();
 }
