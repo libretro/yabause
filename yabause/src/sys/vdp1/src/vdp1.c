@@ -2640,9 +2640,6 @@ void Vdp1HBlankIN(void)
       Vdp1Regs->COPR = Vdp1Regs->lCOPR;
     }
   }
-  if(yabsys.LineCount == 0) {
-    startField();
-  }
   if (Vdp1Regs->PTMR == 0x1){
     if (Vdp1External.plot_trigger_line == yabsys.LineCount){
       if(Vdp1External.plot_trigger_done == 0) {
@@ -2678,6 +2675,7 @@ void Vdp1VBlankIN(void)
 
 void Vdp1VBlankOUT(void)
 {
+  startField();
   //Out of VBlankOut : Break Batman
   if (needVBlankErase()) {
     int id = 0;
