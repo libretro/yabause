@@ -1426,16 +1426,6 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
       vdp1_clock -= yabsys.vdp1cycles;
       yabsys.vdp1cycles = 0;
 
-	  // Force to quit internal command error( This technic(?) is used by BATSUGUN )
-	  if (regs->EDSR & 0x02){
-      FRAMELOG("Internal Command Error\n");
-		  checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
-		  Vdp1External.status = VDP1_STATUS_IDLE;
-		  regs->COPR = (regs->addr & 0x7FFFF) >> 3;
-      CmdListLimit = MAX((regs->addr & 0x7FFFF), regs->addr);
-		  return;
-	  }
-
       // Next, determine where to go next
       switch ((command & 0x3000) >> 12) {
       case 0: // NEXT, jump to following table
