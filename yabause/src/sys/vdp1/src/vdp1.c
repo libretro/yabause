@@ -84,7 +84,7 @@ static void RequestVdp1ToDraw() {
 
 static void abortVdp1() {
   if (Vdp1External.status == VDP1_STATUS_RUNNING) {
-    FRAMELOG("Aborting VDP1\n");
+    FRAMELOG("Aborting VDP1 %d\n", yabsys.LineCount);
     // The vdp1 is still running and a new draw command request has been received
     // Abort the current command list
     Vdp1External.status = VDP1_STATUS_IDLE;
@@ -1250,7 +1250,7 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
 
    u16 command = Vdp1RamReadWord(NULL, ram, regs->addr);
 
-   FRAMELOG("Command is 0x%x @ 0x%x\n", command, regs->addr);
+   FRAMELOG("Command is 0x%x @ 0x%x available cycles %d\n", command, regs->addr, vdp1_clock);
 
    Vdp1External.updateVdp1Ram = 0;
    vdp1Ram_update_start = 0x80000;
@@ -1297,6 +1297,7 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
              if (ret == 1) nbCmdToProcess++;
              else {
                cmdError = 1;
+               FRAMELOG("Reset vdp1_clock %d\n", yabsys.LineCount);
                vdp1_clock = 0; //Incorrect command, wait next line to continue
              }
              setupSpriteLimit(ctrl);
@@ -1314,6 +1315,7 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
              if (ret == 1) nbCmdToProcess++;
              else {
                cmdError = 1;
+               FRAMELOG("Reset vdp1_clock %d\n", yabsys.LineCount);
                vdp1_clock = 0; //Incorrect command, wait next line to continue
              }
              setupSpriteLimit(ctrl);
@@ -1333,6 +1335,7 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
              if (ret == 1) nbCmdToProcess++;
              else {
                cmdError = 1;
+               FRAMELOG("Reset vdp1_clock %d\n", yabsys.LineCount);
                vdp1_clock = 0; //Incorrect command, wait next line to continue
              }
              setupSpriteLimit(ctrl);
@@ -1443,6 +1446,7 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
             //The next adress is the same as the old adress and the command is skipped => Exit
             //The next adress is the start of the command list. It means the list has an infinte loop => Exit (used by Burning Rangers)
             regs->lCOPR = (regs->addr & 0x7FFFF) >> 3;
+            FRAMELOG("Reset vdp1_clock %d\n", yabsys.LineCount);
             vdp1_clock = 0;
             CmdListInLoop = 1;
             CmdListLimit = MAX((regs->addr & 0x7FFFF), regs->addr);
@@ -1560,7 +1564,7 @@ void Vdp1FakeDrawCommands(u8 * ram, Vdp1 * regs)
 
 static int Vdp1Draw(void)
 {
-  FRAMELOG("Vdp1Draw\n");
+  FRAMELOG("Vdp1Draw %d\n", yabsys.LineCount);
    if (!Vdp1External.disptoggle)
    {
       Vdp1Regs->EDSR >>= 1;
