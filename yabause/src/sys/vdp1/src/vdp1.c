@@ -1265,16 +1265,16 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
    while (!(command & 0x8000) && (nbCmdToProcess < CMD_QUEUE_SIZE)) {
      int ret;
       regs->COPR = (regs->addr & 0x7FFFF) >> 3;
-      if (command & 0xC0) {
-        //Wrong command format. Exit as invalid command
-        VDP1LOG("vdp1\t: Bad command: %x\n", command);
-        checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
-        Vdp1External.status = VDP1_STATUS_IDLE;
-        // regs->EDSR |= 2;
-        regs->COPR = (regs->addr & 0x7FFFF) >> 3;
-        CmdListLimit = MAX((regs->addr & 0x7FFFF), regs->addr);
-        return;
-      }
+      // if (command & 0xC0) {
+      //   //Wrong command format. Exit as invalid command
+      //   VDP1LOG("vdp1\t: Bad command: %x %d\n", command, __LINE__);
+      //   checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
+      //   Vdp1External.status = VDP1_STATUS_IDLE;
+      //   // regs->EDSR |= 2;
+      //   regs->COPR = (regs->addr & 0x7FFFF) >> 3;
+      //   CmdListLimit = MAX((regs->addr & 0x7FFFF), regs->addr);
+      //   return;
+      // }
       // First, process the command
       if (!(command & 0x4000)) { // if (!skip)
          vdp1cmdctrl_struct *ctrl = NULL;
