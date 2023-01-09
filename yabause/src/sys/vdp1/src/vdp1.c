@@ -1500,7 +1500,7 @@ void Vdp1FakeDrawCommands(u8 * ram, Vdp1 * regs)
    u32 returnAddr = 0xffffffff;
    vdp1cmd_struct cmd;
 
-   while (!(command == 0x8000) && commandCounter < 2000) { // fix me
+   while (!(command & 0x8000) && commandCounter < 2000) { // fix me
       // First, process the command
       if (!(command & 0x4000)) { // if (!skip)
          switch (command & 0x000F) {
@@ -1561,6 +1561,9 @@ void Vdp1FakeDrawCommands(u8 * ram, Vdp1 * regs)
 
       command = T1ReadWord(ram, regs->addr);
       commandCounter++;
+   }
+   if (command & 0x8000) {
+     regs->EDSR |= 2;
    }
 }
 
