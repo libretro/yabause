@@ -5373,10 +5373,6 @@ void* ScspAsynMainCpu( void * p ){
         break;
       }
     }
-    while (scsp_mute_flags && thread_running) {
-      YabSemPost(g_scsp_ready);
-      YabSemWait(g_cpu_ready);
-    }
   }
   // YabThreadWake(YAB_THREAD_SCSP);
   return NULL;
@@ -5435,8 +5431,10 @@ void ScspExecAsync() {
      if (audiosize > scspsoundbufsize - outstart)
         audiosize = scspsoundbufsize - outstart;
 
+    if (scsp_mute_flags == 0) {
      SNDCore->UpdateAudio(&scspchannel[0].data32[outstart],
         &scspchannel[1].data32[outstart], audiosize);
+    }
      scspsoundoutleft -= audiosize;
 
 #if 0
@@ -5445,7 +5443,7 @@ void ScspExecAsync() {
         (s16 *)stereodata16, audiosize);
      DRV_AviSoundUpdate(stereodata16, audiosize);
 #endif
-  }
+}
 
 #ifdef USE_SCSPMIDI
   // Process Midi ports
@@ -5523,10 +5521,9 @@ void
 ScspMuteAudio (int flags)
 {
   scsp_mute_flags |= flags;
-  if (SNDCore && scsp_mute_flags)
+  if (SNDCore && scsp_mute_flags) {
     SNDCore->MuteAudio ();
-
-  g_scsp_lock = 1;
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -5535,10 +5532,9 @@ void
 ScspUnMuteAudio (int flags)
 {
   scsp_mute_flags &= ~flags;
-  if (SNDCore && (scsp_mute_flags == 0))
+  if (SNDCore && (scsp_mute_flags == 0)) {
     SNDCore->UnMuteAudio ();
-
-  g_scsp_lock = 0;
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
