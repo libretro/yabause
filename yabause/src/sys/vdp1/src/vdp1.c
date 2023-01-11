@@ -1410,7 +1410,7 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
              CmdListLimit = MAX((regs->addr & 0x7FFFF), regs->addr);
              return;
            }
-           if ((command & 0x8000) && (cmdError != 0)){
+           if (cmdError != 0){
              VDP1LOG("vdp1\t: Bad command: %x\n", command);
              checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
              Vdp1External.status = VDP1_STATUS_IDLE;
