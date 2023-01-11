@@ -215,7 +215,7 @@ CACHE_LOG("%s reset\n", (context==SSH2)?"SSH2":"MSH2" );
    SH2Core->SetPR(context, 0x00000000);
 
    // Internal variables
-   context->delay = 0x00000000;
+   context->target_cycles = 0x00000000;
    context->cycles = 0;
    context->frtcycles = 0;
    context->wdtcycles = 0;
@@ -2297,7 +2297,7 @@ int SH2SaveState(SH2_struct *context, void ** stream)
    MemStateWrite((void *)&context->NumberOfInterrupts, sizeof(u32), 1, stream);
    MemStateWrite((void *)context->AddressArray, sizeof(u32), 0x100, stream);
    MemStateWrite((void *)context->DataArray, sizeof(u8), 0x1000, stream);
-   MemStateWrite((void *)&context->delay, sizeof(u32), 1, stream);
+   MemStateWrite((void *)&context->target_cycles, sizeof(u32), 1, stream);
    MemStateWrite((void *)&context->cycles, sizeof(u32), 1, stream);
    MemStateWrite((void *)&context->isslave, sizeof(u8), 1, stream);
    MemStateWrite((void *)&context->instruction, sizeof(u16), 1, stream);
@@ -2343,7 +2343,7 @@ int SH2LoadState(SH2_struct *context, const void * stream, UNUSED int version, i
    SH2Core->SetInterrupts(context, context->NumberOfInterrupts, context->interrupts);
    MemStateRead((void *)context->AddressArray, sizeof(u32), 0x100, stream);
    MemStateRead((void *)context->DataArray, sizeof(u8), 0x1000, stream);
-   MemStateRead((void *)&context->delay, sizeof(u32), 1, stream);
+   MemStateRead((void *)&context->target_cycles, sizeof(u32), 1, stream);
    MemStateRead((void *)&context->cycles, sizeof(u32), 1, stream);
    MemStateRead((void *)&context->isslave, sizeof(u8), 1, stream);
    MemStateRead((void *)&context->instruction, sizeof(u16), 1, stream);

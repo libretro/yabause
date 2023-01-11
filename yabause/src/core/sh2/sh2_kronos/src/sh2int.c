@@ -277,24 +277,24 @@ u8 execInterrupt = 0;
 
 FASTCALL void SH2KronosInterpreterExec(SH2_struct *context, u32 cycles)
 {
-  u32 target_cycle = context->cycles + cycles;
+  context->target_cycles = context->cycles + cycles;
   SH2HandleInterrupts(context);
-  while (context->cycles < target_cycle){
+  while (context->cycles < context->target_cycles){
     cacheCode[context->isslave][cacheId[(context->regs.PC >> 20) & 0xFFF]][(context->regs.PC >> 1) & 0x7FFFF](context);
   }
 }
 
 FASTCALL void SH2KronosInterpreterExecSave(SH2_struct *context, u32 cycles, sh2regs_struct *oldRegs)
 {
-  u32 target_cycle = context->cycles + cycles;
+  context->target_cycles = context->cycles + cycles;
   SH2HandleInterrupts(context);
-  while (context->cycles < target_cycle){
+  while (context->cycles < context->target_cycles){
     memcpy(oldRegs, &context->regs, sizeof(sh2regs_struct));
     int id = (context->regs.PC >> 20) & 0xFFF;
     u16 opcode = krfetchlist[id](context, context->regs.PC);
     if(context->isAccessingCPUBUS == 0) opcodeTable[opcode](context);
     if(context->isAccessingCPUBUS != 0) {
-      context->cycles = target_cycle;
+      context->cycles = context->target_cycles;
       memcpy(&context->regs, oldRegs, sizeof(sh2regs_struct));
       return;
     }
@@ -467,7 +467,7 @@ FASTCALL void SH2KronosDebugInterpreterExec(SH2_struct *context, u32 cycles)
 
 FASTCALL void SH2KronosInterpreterTestExec(SH2_struct *context, u32 cycles)
 {
-  u32 target_cycle = context->cycles + cycles;
+  context->target_cycles = context->cycles + cycles;
   cacheCode[context->isslave][cacheId[(context->regs.PC >> 20) & 0xFFF]][(context->regs.PC >> 1) & 0x7FFFF](context);
 }
 

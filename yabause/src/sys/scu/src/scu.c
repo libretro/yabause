@@ -1098,9 +1098,8 @@ static int isOnCPUBUS(u32 addr) {
   return 0;
 }
 
-static void ScuDmaProc(scudmainfo_struct * dma, int time) {
+static void setupBusConcurrency(scudmainfo_struct * dma) {
   u8 oldaccessCPUBus = accessCPUBus;
-  ScuDmaCheck(dma, time);
   accessCPUBus &= ~(1<<dma->id);
   if (dma->TransferNumber > 0) {
     if (isOnCPUBUS(dma->WriteAddress) || isOnCPUBUS(dma->ReadAddress)) {
@@ -1110,6 +1109,11 @@ static void ScuDmaProc(scudmainfo_struct * dma, int time) {
   if (accessCPUBus != oldaccessCPUBus) {
     SH2SetCPUConcurrency(accessCPUBus != 0);
   }
+}
+
+static void ScuDmaProc(scudmainfo_struct * dma, int time) {
+  ScuDmaCheck(dma, time);
+  setupBusConcurrency(dma);
 }
 
 static void ScuDspExec(u32 timing) {

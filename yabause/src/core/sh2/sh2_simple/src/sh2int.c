@@ -2875,11 +2875,11 @@ static INLINE void SH2UBCInterrupt(SH2_struct *context, u32 flag)
 
 FASTCALL void SH2DebugInterpreterExec(SH2_struct *context, u32 cycles)
 {
-  u32 target_cycle = context->cycles + cycles;
+  context->target_cycles = context->cycles + cycles;
 
    SH2HandleInterrupts(context);
 
-   while (context->cycles < target_cycle)
+   while (context->cycles < context->target_cycles)
    {
 #ifdef SH2_UBC
       int ubcinterrupt=0, ubcflag=0;
@@ -2951,11 +2951,11 @@ FASTCALL void SH2DebugInterpreterExec(SH2_struct *context, u32 cycles)
 FASTCALL void SH2DebugInterpreterExecSave(SH2_struct *context, u32 cycles, sh2regs_struct *oldRegs)
 //TODO: implement the locking mechanism dus to DMA
 {
-  u32 target_cycle = context->cycles + cycles;
+    context->target_cycles = context->cycles + cycles;
 
    SH2HandleInterrupts(context);
 
-   while (context->cycles < target_cycle)
+   while (context->cycles < context->target_cycles)
    {
 #ifdef SH2_UBC
       int ubcinterrupt=0, ubcflag=0;
@@ -3038,9 +3038,9 @@ FASTCALL void SH2DebugInterpreterExecSave(SH2_struct *context, u32 cycles, sh2re
 
 FASTCALL void SH2InterpreterExec(SH2_struct *context, u32 cycles)
 {
-  u32 target_cycle = context->cycles + cycles;
+  context->target_cycles = context->cycles + cycles;
   SH2HandleInterrupts(context);
-   while (context->cycles < target_cycle)
+   while (context->cycles < context->target_cycles)
    {
 
       // Fetch Instruction
@@ -3053,9 +3053,9 @@ FASTCALL void SH2InterpreterExec(SH2_struct *context, u32 cycles)
 
 FASTCALL void SH2InterpreterExecSave(SH2_struct *context, u32 cycles, sh2regs_struct *oldRegs)
 {
-  u32 target_cycle = context->cycles + cycles;
+  context->target_cycles = context->cycles + cycles;
   SH2HandleInterrupts(context);
-   while (context->cycles < target_cycle)
+   while (context->cycles < context->target_cycles)
    {
       // Fetch Instruction
       memcpy(oldRegs, &context->regs, sizeof(sh2regs_struct));
@@ -3064,7 +3064,7 @@ FASTCALL void SH2InterpreterExecSave(SH2_struct *context, u32 cycles, sh2regs_st
       // Execute it
       opcodes[context->instruction](context);
       if(context->isAccessingCPUBUS != 0) {
-        context->cycles = target_cycle;
+        context->cycles = context->target_cycles;
         memcpy(& context->regs, oldRegs, sizeof(sh2regs_struct));
         return;
       }
@@ -3073,7 +3073,7 @@ FASTCALL void SH2InterpreterExecSave(SH2_struct *context, u32 cycles, sh2regs_st
 
 FASTCALL void SH2InterpreterTestExec(SH2_struct *context, u32 cycles)
 {
-  u32 target_cycle = context->cycles + cycles;
+  context->target_cycles = context->cycles + cycles;
       context->instruction = fetchlist[(context->regs.PC >> 20) & 0xFFF](context, context->regs.PC);
 
       // Execute it

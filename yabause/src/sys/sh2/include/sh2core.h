@@ -429,7 +429,7 @@ typedef struct SH2_struct_s
    u32 NumberOfInterrupts;
    u32 AddressArray[0x100];
    u8 DataArray[0x1000];
-   u32 delay;
+   u32 target_cycles;
    u32 cycles;
    u8 isslave;
    u8 isSleeping;
