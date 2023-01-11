@@ -213,7 +213,12 @@ extern YabSem * g_scsp_ready;
 extern YabSem * g_cpu_ready;
 
 static void sh2ExecuteSync( SH2_struct* sh, int req ) {
-     SH2Exec(sh, req);
+   int unbiasedReq = req + sh->cdiff;
+   if (unbiasedReq > 0) {
+     int sh2start = sh->cycles;
+     SH2Exec(sh, unbiasedReq);
+     sh->cdiff = unbiasedReq - (sh->cycles-sh2start);
+   }
 }
 
 int YabauseSh2Init(yabauseinit_struct *init)
