@@ -375,7 +375,7 @@ FASTCALL void SH2KronosDebugInterpreterExecSave(SH2_struct *context, u32 cycles,
         opcodeTable[context->instruction](context);
       }
       if(context->isAccessingCPUBUS != 0) {
-        context->cycles = target_cycle;
+        context->cycles = context->target_cycles;
         memcpy(&context->regs, oldRegs, sizeof(sh2regs_struct));
         return;
       }
