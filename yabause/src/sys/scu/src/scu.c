@@ -1725,9 +1725,13 @@ static void ScuDspExec(u32 timing) {
 //////////////////////////////////////////////////////////////////////////////
 void ScuExec(u32 timing) {
   // ScuTestInterruptMask();
-  ScuDmaProc(&ScuRegs->dma0, (int)timing);
-  ScuDmaProc(&ScuRegs->dma1, (int)timing);
-  ScuDmaProc(&ScuRegs->dma2, (int)timing);
+  ScuDmaProc(&ScuRegs->dma0, (int)timing - ScuRegs->dma0.consumedCycles);
+  ScuDmaProc(&ScuRegs->dma1, (int)timing - ScuRegs->dma1.consumedCycles);
+  ScuDmaProc(&ScuRegs->dma2, (int)timing - ScuRegs->dma2.consumedCycles);
+
+  ScuRegs->dma0.consumedCycles = 0;
+  ScuRegs->dma1.consumedCycles = 0;
+  ScuRegs->dma2.consumedCycles = 0;
 
    // is dsp executing?
    if (ScuDsp->ProgControlPort.part.EX) {
@@ -2649,6 +2653,8 @@ void FASTCALL ScuWriteLong(SH2_struct *sh, u8* mem, u32 addr, u32 val) {
             ScuRegs->dma0.AddValue = ScuRegs->D0AD;
             ScuRegs->dma0.ModeAddressUpdate = ScuRegs->D0MD;
             ScuSetAddValue(&ScuRegs->dma0);
+            ScuRegs->dma0.consumedCycles = (sh->target_cycles - sh->cycles)/2;
+            ScuDmaProc(&ScuRegs->dma0, ScuRegs->dma0.consumedCycles);
          }
          ScuRegs->D0EN = val;
          break;
@@ -2681,7 +2687,8 @@ void FASTCALL ScuWriteLong(SH2_struct *sh, u8* mem, u32 addr, u32 val) {
             ScuRegs->dma1.AddValue = ScuRegs->D1AD;
             ScuRegs->dma1.ModeAddressUpdate = ScuRegs->D1MD;
             ScuSetAddValue(&ScuRegs->dma1);
-
+            ScuRegs->dma1.consumedCycles = (sh->target_cycles - sh->cycles)/2;
+            ScuDmaProc(&ScuRegs->dma1, ScuRegs->dma1.consumedCycles);
          }
          ScuRegs->D1EN = val;
          break;
@@ -2715,6 +2722,8 @@ void FASTCALL ScuWriteLong(SH2_struct *sh, u8* mem, u32 addr, u32 val) {
             ScuRegs->dma2.AddValue = ScuRegs->D2AD;
             ScuRegs->dma2.ModeAddressUpdate = ScuRegs->D2MD;
             ScuSetAddValue(&ScuRegs->dma2);
+            ScuRegs->dma2.consumedCycles = (sh->target_cycles - sh->cycles)/2;
+            ScuDmaProc(&ScuRegs->dma2, ScuRegs->dma2.consumedCycles);
          }
          ScuRegs->D2EN = val;
          break;

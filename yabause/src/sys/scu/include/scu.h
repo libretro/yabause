@@ -55,6 +55,7 @@ typedef struct
     u32 WriteAdd;
     u32 InDirectAdress;
     u32 id;
+    u32 consumedCycles;
   } scudmainfo_struct;
 
 typedef struct
