@@ -1236,6 +1236,7 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
      Vdp1Regs->addr = 0;
      // BEF <- CEF
      // CEF <- 0
+     regs->EDSR >>= 1;
      Vdp1Regs->COPR = 0;
      Vdp1Regs->lCOPR = 0;
   }
@@ -1269,7 +1270,6 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
       if (!(command & 0x4000)) { // if (!skip)
          vdp1cmdctrl_struct *ctrl = NULL;
          int ret;
-         int cmdError = 0;
          if (vdp1_clock <= 0) {
            //No more clock cycle, wait next line
            return;
@@ -1286,7 +1286,6 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
              ret = Vdp1NormalSpriteDraw(&ctrl->cmd, ram, regs, back_framebuffer);
              if (ret == 1) nbCmdToProcess++;
              else {
-               cmdError = 1;
                FRAMELOG("Reset vdp1_clock %d\n", yabsys.LineCount);
                vdp1_clock = 0; //Incorrect command, wait next line to continue
              }
@@ -1304,7 +1303,6 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
              ret = Vdp1ScaledSpriteDraw(&ctrl->cmd, ram, regs, back_framebuffer);
              if (ret == 1) nbCmdToProcess++;
              else {
-               cmdError = 1;
                FRAMELOG("Reset vdp1_clock %d\n", yabsys.LineCount);
                vdp1_clock = 0; //Incorrect command, wait next line to continue
              }
@@ -1324,7 +1322,6 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
              ret = Vdp1DistortedSpriteDraw(&ctrl->cmd, ram, regs, back_framebuffer);
              if (ret == 1) nbCmdToProcess++;
              else {
-               cmdError = 1;
                FRAMELOG("Reset vdp1_clock %d\n", yabsys.LineCount);
                vdp1_clock = 0; //Incorrect command, wait next line to continue
              }
@@ -1401,14 +1398,6 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
              CmdListLimit = MAX((regs->addr & 0x7FFFF), regs->addr);
              return;
            }
-           if (cmdError != 0){
-             VDP1LOG("vdp1\t: Bad command: %x\n", command);
-             checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
-             Vdp1External.status = VDP1_STATUS_IDLE;
-             regs->COPR = (regs->addr & 0x7FFFF) >> 3;
-             CmdListLimit = MAX((regs->addr & 0x7FFFF), regs->addr);
-             return;
-           }
       } else {
         yabsys.vdp1cycles += 16;
       }
@@ -1466,7 +1455,6 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
         Vdp1External.status = VDP1_STATUS_IDLE;
         regs->COPR = (regs->addr & 0x7FFFF) >> 3;
         regs->lCOPR = (regs->addr & 0x7FFFF) >> 3;
-        regs->EDSR >>= 1;
         regs->EDSR |= 2;
    }
    CmdListLimit = MAX((regs->addr & 0x7FFFF), regs->addr);
@@ -1572,6 +1560,7 @@ static int Vdp1Draw(void)
 static void Vdp1NoDraw(void) {
    Vdp1Regs->lCOPR = 0;
    _Ygl->vdp1On[_Ygl->drawframe] = 0;
+   Vdp1External.status = VDP1_STATUS_IDLE;
    Vdp1FakeDrawCommands(Vdp1Ram, Vdp1Regs);
 }
 
