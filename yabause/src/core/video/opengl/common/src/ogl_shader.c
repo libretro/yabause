@@ -1931,7 +1931,6 @@ int YglBlitTexture(int* prioscreens, int* modescreens, int* isRGB, int * isBlur,
     glActiveTexture(GL_TEXTURE19);
     glBindTexture(GL_TEXTURE_2D, vdp1fb(1));
   }
-  printf("Draw Arrays\n");
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
   // Clean up

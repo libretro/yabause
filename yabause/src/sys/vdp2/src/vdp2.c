@@ -660,7 +660,6 @@ void Vdp2StartVisibleLine(void) {
   if (nbAddrToUpdate != 0){
     for (int i=0; i<0x1000; i++) {
       if (addrToUpdate[i] != 0) {
-        printf("Update vdp2colorRam %d\n", yabsys.LineCount);
         YglOnUpdateColorRamWord(i);
         addrToUpdate[i] = 0;
       }

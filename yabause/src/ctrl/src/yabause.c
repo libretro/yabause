@@ -783,7 +783,6 @@ int YabauseEmulate(void) {
       {
          // VBlankOUT
          PROFILE_START("VDP1/VDP2");
-         printf("Vblankout %d %d\n", yabsys.LineCount, yabsys.DecilineCount);
          Vdp1VBlankOUT();
          Vdp2VBlankOUT();
          PROFILE_STOP("VDP1/VDP2");
@@ -792,7 +791,6 @@ int YabauseEmulate(void) {
       {
          ScspAddCycles((u64)(44100 * 256 / frames)<< SCSP_FRACTIONAL_BITS);
          PROFILE_START("vblankin");
-         printf("vblankin %d %d\n", yabsys.LineCount, yabsys.DecilineCount);
          // VBlankIN
          SmpcINTBACKEnd();
          Vdp1VBlankIN();
