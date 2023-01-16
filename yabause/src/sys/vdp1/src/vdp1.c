@@ -354,7 +354,7 @@ u16 FASTCALL Vdp1ReadWord(SH2_struct *context, u8* mem, u32 addr) {
    addr &= 0xFF;
    switch(addr) {
       case 0x10:
-        FRAMELOG("Read EDSR %X line = %d\n", Vdp1Regs->EDSR, yabsys.LineCount);
+        FRAMELOG("Read EDSR %X line = %d (%d)\n", Vdp1Regs->EDSR, yabsys.LineCount, yabsys.DecilineCount);
         if (Vdp1External.checkEDSR == 0) {
           if (VIDCore != NULL)
             if (VIDCore->FinsihDraw != NULL)
@@ -454,7 +454,7 @@ void FASTCALL Vdp1WriteWord(SH2_struct *context, u8* mem, u32 addr, u16 val) {
     break;
     case 0x2:
       Vdp1Regs->FBCR = val;
-      FRAMELOG("FBCR => Write VBE=%d FCM=%d FCT=%d line = %d\n", (Vdp1Regs->TVMR >> 3) & 0x01, (Vdp1Regs->FBCR & 0x02) >> 1, (Vdp1Regs->FBCR & 0x01),  yabsys.LineCount);
+      FRAMELOG("FBCR => Write VBE=%d FCM=%d FCT=%d line = %d (%d)\n", (Vdp1Regs->TVMR >> 3) & 0x01, (Vdp1Regs->FBCR & 0x02) >> 1, (Vdp1Regs->FBCR & 0x01),  yabsys.LineCount, yabsys.DecilineCount);
       updateFBCRMode();
       break;
     case 0x4:
