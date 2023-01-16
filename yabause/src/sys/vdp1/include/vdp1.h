@@ -244,7 +244,7 @@ u8 *Vdp1DebugRawTexture(u32 number, int *w, int *h, int *numBytes);
 void ToggleVDP1(void);
 
 void Vdp1HBlankIN(void);
-void Vdp1HBlankOUT(void);
+void Vdp1StartVisibleLine(void);
 void Vdp1VBlankIN(void);
 void Vdp1VBlankOUT(void);
 

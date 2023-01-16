@@ -635,54 +635,51 @@ void Vdp2VBlankIN(void) {
 
 void Vdp2HBlankIN(void) {
 
+  if (yabsys.LineCount < yabsys.VBlankLineCount) {
+    Vdp2Regs->TVSTAT |= 0x0004;
+    ScuSendHBlankIN();
+    //if (yabsys.IsSSH2Running)
+    //  SH2SendInterrupt(SSH2, 0x41, 0x2);
+    u32 cell_scroll_table_start_addr = (Vdp2Regs->VCSTA.all & 0x7FFFE) << 1;
+    memcpy(Vdp2Lines + yabsys.LineCount, Vdp2Regs, sizeof(Vdp2));
+    for (int i = 0; i < 88; i++)
+    {
+      cell_scroll_data[yabsys.LineCount].data[i] = Vdp2RamReadLong(NULL, Vdp2Ram, cell_scroll_table_start_addr + i * 4);
+    }
+  } else {
+// Fix : Function doesn't exist without those defines
+#if defined(HAVE_LIBGL) || defined(__ANDROID__) || defined(IOS)
+  if(VIDCore && (VIDCore->id != VIDCORE_SOFT)) waitVdp2DrawScreensEnd(yabsys.LineCount == yabsys.VBlankLineCount, isSkipped);
+#endif
+  }
+}
+
+extern int vdp1_clock;
+void Vdp2StartVisibleLine(void) {
   #if defined(HAVE_LIBGL) || defined(__ANDROID__) || defined(IOS)
   if (nbAddrToUpdate != 0){
     for (int i=0; i<0x1000; i++) {
       if (addrToUpdate[i] != 0) {
+        printf("Update vdp2colorRam %d\n", yabsys.LineCount);
         YglOnUpdateColorRamWord(i);
         addrToUpdate[i] = 0;
       }
     }
     nbAddrToUpdate = 0;
   }
+  if(yabsys.LineCount == yabsys.MaxLineCount - 1) {
+    if (VIDCore != NULL && VIDCore->id != VIDCORE_SOFT) YglUpdateColorRam();
+  }
   #endif
 
-  if (yabsys.LineCount < yabsys.VBlankLineCount) {
-    Vdp2Regs->TVSTAT |= 0x0004;
-    ScuSendHBlankIN();
-    //if (yabsys.IsSSH2Running)
-    //  SH2SendInterrupt(SSH2, 0x41, 0x2);
-  } else {
-// Fix : Function doesn't exist without those defines
-#if defined(HAVE_LIBGL) || defined(__ANDROID__) || defined(IOS)
-  if(VIDCore && (VIDCore->id != VIDCORE_SOFT)) waitVdp2DrawScreensEnd(yabsys.LineCount == yabsys.VBlankLineCount, isSkipped );
-#endif
-  }
-}
-
-extern int vdp1_clock;
-void Vdp2HBlankOUT(void) {
-  int i;
   updateVdp2ColorRam(yabsys.LineCount);
   if (yabsys.LineCount < yabsys.VBlankLineCount)
   {
     Vdp2Regs->TVSTAT &= ~0x0004;
-    u32 cell_scroll_table_start_addr = (Vdp2Regs->VCSTA.all & 0x7FFFE) << 1;
-    memcpy(Vdp2Lines + yabsys.LineCount, Vdp2Regs, sizeof(Vdp2));
-    for (i = 0; i < 88; i++)
-    {
-      cell_scroll_data[yabsys.LineCount].data[i] = Vdp2RamReadLong(NULL, Vdp2Ram, cell_scroll_table_start_addr + i * 4);
-    }
-    if (yabsys.LineCount == 0) return;
   }
-
   if (yabsys.LineCount == 1) {
     VDP2genVRamCyclePattern();
     Vdp2External.frame_render_flg = 0;
-  }
-  if (Vdp2External.frame_render_flg == 0 && vdp1_clock>0 ){ // Delay if vdp1 ram was written
-    Vdp2External.frame_render_flg = 1;
-//Faire un delai pour vdp1 (45 lignes)
   }
 }
 
@@ -696,7 +693,6 @@ Vdp2 * Vdp2RestoreRegs(int line, Vdp2* lines) {
 void Vdp2VBlankOUT(void) {
   g_frame_count++;
   FRAMELOG("***** VOUT %d *****", g_frame_count);
-  if (VIDCore != NULL && VIDCore->id != VIDCORE_SOFT) YglUpdateColorRam();
 
    if (((Vdp2Regs->TVMD >> 6) & 0x3) == 0){
      vdp2_is_odd_frame = 1;

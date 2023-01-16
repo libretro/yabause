@@ -684,7 +684,7 @@ u32 YabauseGetCpuTime(){
 
 // cyclesinc
 
-#define HBLANK_IN_STEP ((DECILINE_STEP * 8)/10)
+#define PORCH_IN_STEP ((DECILINE_STEP)/10)
 
 //////////////////////////////////////////////////////////////////////////////
 static void FPSDisplay(void)
@@ -760,7 +760,7 @@ int YabauseEmulate(void) {
    u64 cpu_emutime = 0;
 
    TRACE_EMULATOR("YabauseEmulate");
-   yabsys.LineCount = 0;
+   yabsys.LineCount = -1;
    yabsys.DecilineCount = 0;
    while (yabsys.LineCount != yabsys.MaxLineCount)
    {
@@ -770,23 +770,16 @@ int YabauseEmulate(void) {
 		 u64 current_cpu_clock = YabauseGetTicks();
 #endif
 
-      THREAD_LOG("Unlock MSH2\n");
-       sh2ExecuteSync(MSH2, yabsys.LineCycle[yabsys.DecilineCount]);
-       if (yabsys.IsSSH2Running) {
-         sh2ExecuteSync(SSH2, yabsys.LineCycle[yabsys.DecilineCount]);
-       }
-
 #ifdef YAB_STATICS
 		 cpu_emutime += (YabauseGetTicks() - current_cpu_clock) * 1000000 / yabsys.tickfreq;
 #endif
     if (yabsys.DecilineCount == 0)
     {
       PROFILE_START("hblankout");
-      printf("hblankout %d %d\n", yabsys.LineCount, yabsys.DecilineCount);
-      Vdp2HBlankOUT();
-      Vdp1HBlankOUT();
+      // printf("hblankout %d %d\n", yabsys.LineCount, yabsys.DecilineCount);
+
       PROFILE_STOP("hblankout");
-      if (yabsys.LineCount == 0)
+      if (yabsys.LineCount == -1)
       {
          // VBlankOUT
          PROFILE_START("VDP1/VDP2");
@@ -795,7 +788,41 @@ int YabauseEmulate(void) {
          Vdp2VBlankOUT();
          PROFILE_STOP("VDP1/VDP2");
       }
+      if (yabsys.LineCount == yabsys.VBlankLineCount)
+      {
+         ScspAddCycles((u64)(44100 * 256 / frames)<< SCSP_FRACTIONAL_BITS);
+         PROFILE_START("vblankin");
+         printf("vblankin %d %d\n", yabsys.LineCount, yabsys.DecilineCount);
+         // VBlankIN
+         SmpcINTBACKEnd();
+         Vdp1VBlankIN();
+         Vdp2VBlankIN();
+         SyncCPUtoSCSP();
+         PROFILE_STOP("vblankin");
+         CheatDoPatches(MSH2);
+      }
     }
+    if(yabsys.DecilineCount == PORCH_IN_STEP) //Start display area
+    {
+      yabsys.LineCount++;
+      Vdp1StartVisibleLine();
+      Vdp2StartVisibleLine();
+    }
+    if(yabsys.DecilineCount == DECILINE_STEP - PORCH_IN_STEP) //Hblankin
+    {
+       // HBlankIN
+       PROFILE_START("hblankin");
+       // printf("hblankin %d %d\n", yabsys.LineCount, yabsys.DecilineCount);
+       Vdp1HBlankIN();
+       Vdp2HBlankIN();
+       PROFILE_STOP("hblankin");
+    }
+
+    THREAD_LOG("Unlock MSH2\n");
+     sh2ExecuteSync(MSH2, yabsys.LineCycle[yabsys.DecilineCount]);
+     if (yabsys.IsSSH2Running) {
+       sh2ExecuteSync(SSH2, yabsys.LineCycle[yabsys.DecilineCount]);
+     }
 
       PROFILE_START("SCU");
       ScuExec((yabsys.DecilineStop>>YABSYS_TIMING_BITS) / 2);
@@ -809,38 +836,8 @@ int YabauseEmulate(void) {
       Cs2Exec(yabsys.UsecFrac >> YABSYS_TIMING_BITS);
       PROFILE_STOP("CDB");
       yabsys.UsecFrac &= YABSYS_TIMING_MASK;
-
-      yabsys.DecilineCount++;
-      printf("Deciline %d line %d\n", yabsys.DecilineCount, yabsys.LineCount);
-      if(yabsys.DecilineCount == HBLANK_IN_STEP)
-      {
-         // HBlankIN
-         PROFILE_START("hblankin");
-         printf("hblankin %d %d\n", yabsys.LineCount, yabsys.DecilineCount);
-         Vdp1HBlankIN();
-         Vdp2HBlankIN();
-         PROFILE_STOP("hblankin");
-      }
-
-       if (yabsys.DecilineCount == DECILINE_STEP)
-       {
-          // HBlankOUT
-          if (yabsys.LineCount == yabsys.VBlankLineCount)
-          {
-             ScspAddCycles((u64)(44100 * 256 / frames)<< SCSP_FRACTIONAL_BITS);
-             PROFILE_START("vblankin");
-             printf("vblankin %d %d\n", yabsys.LineCount, yabsys.DecilineCount);
-             // VBlankIN
-             SmpcINTBACKEnd();
-             Vdp1VBlankIN();
-             Vdp2VBlankIN();
-             SyncCPUtoSCSP();
-             PROFILE_STOP("vblankin");
-             CheatDoPatches(MSH2);
-          }
-          yabsys.LineCount++;
-       }
-      yabsys.DecilineCount  = yabsys.DecilineCount%DECILINE_STEP;
+      // printf("Deciline %d line %d\n", yabsys.DecilineCount, yabsys.LineCount);
+      yabsys.DecilineCount  = (yabsys.DecilineCount+1)%DECILINE_STEP;
       PROFILE_STOP("Total Emulation");
    }
 
