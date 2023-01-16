@@ -2628,6 +2628,14 @@ void Vdp1HBlankIN(void)
 
 void Vdp1StartVisibleLine(void)
 {
+  if (yabsys.LineCount == yabsys.MaxLineCount-1) {
+    if (needVBlankErase()) {
+      int id = 0;
+      if (_Ygl != NULL) id = _Ygl->readframe;
+      Vdp1EraseWrite(id);
+    }
+    startField();
+  }
   vdp1_clock += getVdp1CyclesPerLine();
   Vdp1TryDraw();
 }
@@ -2646,10 +2654,4 @@ void Vdp1VBlankIN(void)
 void Vdp1VBlankOUT(void)
 {
   //Out of VBlankOut : Break Batman
-  if (needVBlankErase()) {
-    int id = 0;
-    if (_Ygl != NULL) id = _Ygl->readframe;
-    Vdp1EraseWrite(id);
-  }
-  startField();
 }
