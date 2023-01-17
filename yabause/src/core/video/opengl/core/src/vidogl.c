@@ -3534,9 +3534,6 @@ void VIDOGLVdp1Draw()
 
   YglTmPull(YglTM_vdp1[_Ygl->drawframe], 1);
 
-  int prioChanged = 0;
-  int max = (yabsys.VBlankLineCount<270)?yabsys.VBlankLineCount:270;
-
   _Ygl->msb_shadow_count_[_Ygl->drawframe] = 0;
 
   Vdp1DrawCommands(Vdp1Ram, Vdp1Regs, NULL);
