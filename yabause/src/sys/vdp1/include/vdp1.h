@@ -246,7 +246,6 @@ void ToggleVDP1(void);
 void Vdp1HBlankIN(void);
 void Vdp1StartVisibleLine(void);
 void Vdp1VBlankIN(void);
-void Vdp1VBlankOUT(void);
 
 #ifdef __cplusplus
 }

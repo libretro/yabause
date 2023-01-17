@@ -783,7 +783,6 @@ int YabauseEmulate(void) {
       {
          // VBlankOUT
          PROFILE_START("VDP1/VDP2");
-         Vdp1VBlankOUT();
          Vdp2VBlankOUT();
          PROFILE_STOP("VDP1/VDP2");
       }

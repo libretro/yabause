@@ -2648,10 +2648,3 @@ void Vdp1VBlankIN(void)
   //   if (VIDCore->composeVDP1 != NULL) VIDCore->composeVDP1();
   // }
 }
-
-//////////////////////////////////////////////////////////////////////////////
-
-void Vdp1VBlankOUT(void)
-{
-  //Out of VBlankOut : Break Batman
-}
