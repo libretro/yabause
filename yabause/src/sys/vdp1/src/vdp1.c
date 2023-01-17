@@ -2615,6 +2615,7 @@ void Vdp1HBlankIN(void)
     if (Vdp1External.plot_trigger_line == yabsys.LineCount){
       if(Vdp1External.plot_trigger_done == 0) {
         vdp1_clock = 0;
+        Vdp1Regs->EDSR |= 0x2;
         RequestVdp1ToDraw();
         Vdp1External.plot_trigger_done = 1;
       }
