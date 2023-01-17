@@ -2561,7 +2561,7 @@ static void startField(void) {
       FRAMELOG("[VDP1] PTMR == 0x2 start drawing immidiatly\n");
       abortVdp1();
       FRAMELOG("Reset vdp1_clock %d\n", yabsys.LineCount);
-      vdp1_clock = getVdp1CyclesPerLine();
+      vdp1_clock += getVdp1CyclesPerLine();
       RequestVdp1ToDraw();
       Vdp1TryDraw();
     }
