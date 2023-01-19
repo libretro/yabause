@@ -450,7 +450,7 @@ void FASTCALL Vdp1WriteWord(SH2_struct *context, u8* mem, u32 addr, u16 val) {
       if ((Vdp1Regs->FBCR & 3) != 3) val = (val & (~0x4));
       Vdp1Regs->TVMR = val;
       updateTVMRMode();
-      FRAMELOG("TVMR => Write VBE=%d FCM=%d FCT=%d line = %d\n", (Vdp1Regs->TVMR >> 3) & 0x01, (Vdp1Regs->FBCR & 0x02) >> 1, (Vdp1Regs->FBCR & 0x01),  yabsys.LineCount);
+      FRAMELOG("TVMR => Write VBE=%d FCM=%d FCT=%d line = %d (%d)\n", (Vdp1Regs->TVMR >> 3) & 0x01, (Vdp1Regs->FBCR & 0x02) >> 1, (Vdp1Regs->FBCR & 0x01),  yabsys.LineCount, yabsys.DecilineCount);
     break;
     case 0x2:
       Vdp1Regs->FBCR = val;
@@ -2520,6 +2520,7 @@ void ToggleVDP1(void)
 
 static void Vdp1EraseWrite(int id){
   lastHash = -1;
+  FRAMELOG("Erase FB\n");
   if ((VIDCore != NULL) && (VIDCore->Vdp1EraseWrite != NULL))VIDCore->Vdp1EraseWrite(id);
 }
 static void startField(void) {
@@ -2584,6 +2585,15 @@ static void startField(void) {
 
 void Vdp1HBlankIN(void)
 {
+  if (yabsys.LineCount == yabsys.MaxLineCount-1) {
+    FRAMELOG("HBlank-in line %d (%d) VBlankErase %d\n", yabsys.LineCount, yabsys.DecilineCount, needVBlankErase());
+    if (needVBlankErase()) {
+      int id = 0;
+      if (_Ygl != NULL) id = _Ygl->readframe;
+      Vdp1EraseWrite(id);
+    }
+  }
+
   int needToCompose = 0;
   if (nbCmdToProcess > 0) {
     for (int i = 0; i<nbCmdToProcess; i++) {
@@ -2614,6 +2624,7 @@ void Vdp1HBlankIN(void)
   if (Vdp1Regs->PTMR == 0x1){
     if (Vdp1External.plot_trigger_line == yabsys.LineCount){
       if(Vdp1External.plot_trigger_done == 0) {
+        FRAMELOG("Draw due to PTMR\n");
         vdp1_clock = 0;
         Vdp1Regs->EDSR |= 0x2;
         RequestVdp1ToDraw();
@@ -2631,11 +2642,6 @@ void Vdp1StartVisibleLine(void)
 {
   //Out of VBlankOut : Break Batman
   if (yabsys.LineCount == 0) {
-    if (needVBlankErase()) {
-      int id = 0;
-      if (_Ygl != NULL) id = _Ygl->readframe;
-      Vdp1EraseWrite(id);
-    }
     startField();
   }
 
@@ -2647,6 +2653,7 @@ void Vdp1StartVisibleLine(void)
 extern void vdp1_compute();
 void Vdp1VBlankIN(void)
 {
+  FRAMELOG("VBLANKIn line %d (%d)\n", yabsys.LineCount, yabsys.DecilineCount);
   // if (VIDCore != NULL) {
   //   if (VIDCore->composeVDP1 != NULL) VIDCore->composeVDP1();
   // }
