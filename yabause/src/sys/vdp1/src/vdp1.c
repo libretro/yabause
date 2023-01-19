@@ -2559,10 +2559,11 @@ static void startField(void) {
 
     // if Plot Trigger mode == 0x02 draw start
     if ((Vdp1Regs->PTMR == 0x2)){
+      int cylesPerLine = getVdp1CyclesPerLine();
       FRAMELOG("[VDP1] PTMR == 0x2 start drawing immidiatly\n");
       abortVdp1();
       FRAMELOG("Reset vdp1_clock %d\n", yabsys.LineCount);
-      vdp1_clock += getVdp1CyclesPerLine();
+      vdp1_clock = (vdp1_clock + cylesPerLine)%(cylesPerLine+1);
       RequestVdp1ToDraw();
       Vdp1TryDraw();
     }
@@ -2640,12 +2641,12 @@ void Vdp1HBlankIN(void)
 
 void Vdp1StartVisibleLine(void)
 {
-  //Out of VBlankOut : Break Batman
+  int cylesPerLine  = getVdp1CyclesPerLine();
   if (yabsys.LineCount == 0) {
     startField();
   }
 
-  vdp1_clock += getVdp1CyclesPerLine();
+  vdp1_clock = (vdp1_clock + cylesPerLine)%(cylesPerLine+1);
   Vdp1TryDraw();
 }
 
