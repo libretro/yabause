@@ -2642,7 +2642,9 @@ void Vdp1HBlankIN(void)
 void Vdp1StartVisibleLine(void)
 {
   int cylesPerLine  = getVdp1CyclesPerLine();
-  if (yabsys.LineCount == 0) {
+  if (((yabsys.LineCount == 1) && ((Vdp1Regs->FBCR&0x3) != 0x0)) || //Manual change
+     ((yabsys.LineCount == 0) && ((Vdp1Regs->FBCR&0x3) == 0x0))) //Automatic change
+  {
     startField();
   }
 
