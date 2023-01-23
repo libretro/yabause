@@ -699,6 +699,7 @@ void* Vdp1ReadTexture_in_async(void *p)
 }
 
 static void FASTCALL Vdp1ReadTexture(vdp1cmd_struct *cmd, YglSprite *sprite, YglTexture *texture, Vdp2 *varVdp2Regs) {
+  #ifdef VDP1_TEXTURE_ASYNC
    vdp1TextureTask *task = (vdp1TextureTask*)malloc(sizeof(vdp1TextureTask));
 
    task->cmd = (vdp1cmd_struct*)malloc(sizeof(vdp1cmd_struct));
@@ -711,7 +712,6 @@ static void FASTCALL Vdp1ReadTexture(vdp1cmd_struct *cmd, YglSprite *sprite, Ygl
 
    task->w = sprite->w;
    task->h = sprite->h;
-
    if (vdp1text_run == 0) {
      vdp1text_run = 1;
      vdp1q = YabThreadCreateQueue(NB_MSG);
@@ -724,6 +724,9 @@ static void FASTCALL Vdp1ReadTexture(vdp1cmd_struct *cmd, YglSprite *sprite, Ygl
    YabAddEventQueue(vdp1q_end, NULL);
    YabAddEventQueue(vdp1q, task);
    YabThreadYield();
+#else
+  Vdp1ReadTexture_in_sync(cmd, sprite->w, sprite->h, texture, varVdp2Regs);
+#endif
 }
 
 int waitVdp1Textures( int sync) {
