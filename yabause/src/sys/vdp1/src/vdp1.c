@@ -2641,14 +2641,14 @@ void Vdp1HBlankIN(void)
 
 void Vdp1StartVisibleLine(void)
 {
-  int cylesPerLine  = getVdp1CyclesPerLine();
+  int cyclesPerLine  = getVdp1CyclesPerLine();
   if (((yabsys.LineCount == 1) && ((Vdp1Regs->FBCR&0x3) != 0x0)) || //Manual change
      ((yabsys.LineCount == 0) && ((Vdp1Regs->FBCR&0x3) == 0x0))) //Automatic change
   {
     startField();
   }
-
-  vdp1_clock = (vdp1_clock + cylesPerLine)%(cylesPerLine+1);
+  if (vdp1_clock > 0) vdp1_clock = 0;
+  vdp1_clock += cyclesPerLine;
   Vdp1TryDraw();
 }
 
