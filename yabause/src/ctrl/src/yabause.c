@@ -762,7 +762,7 @@ int YabauseEmulate(void) {
    TRACE_EMULATOR("YabauseEmulate");
    yabsys.LineCount = -1;
    yabsys.DecilineCount = 0;
-   while (yabsys.LineCount != yabsys.MaxLineCount)
+   while (yabsys.LineCount < yabsys.MaxLineCount-1)
    {
       PROFILE_START("Total Emulation");
       VIDCore->setupFrame(0);
