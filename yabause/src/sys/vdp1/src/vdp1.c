@@ -2586,7 +2586,7 @@ static void startField(void) {
 
 void Vdp1HBlankIN(void)
 {
-  if (yabsys.LineCount == yabsys.MaxLineCount-1) {
+  if (yabsys.LineCount == yabsys.MaxLineCount-2) {
     FRAMELOG("HBlank-in line %d (%d) VBlankErase %d\n", yabsys.LineCount, yabsys.DecilineCount, needVBlankErase());
     if (needVBlankErase()) {
       int id = 0;
