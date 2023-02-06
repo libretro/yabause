@@ -695,7 +695,7 @@ void SH2KronosInterpreterSetInterrupts(SH2_struct *context, int num_interrupts,
    context->NumberOfInterrupts = num_interrupts;
 }
 
-void SH2KronosWriteNotify(SH2_struct *context, u32 start, u32 length){
+static void notify(SH2_struct *context, u32 start, u32 length) {
   int i;
   for (i=0; i<length; i+=2) {
     int id = ((start + i) >> 20) & 0xFFF;
@@ -703,9 +703,19 @@ void SH2KronosWriteNotify(SH2_struct *context, u32 start, u32 length){
     if (cacheId[id] == 0) {  //Special BAckupHandled case
       cacheCode[context->isslave][cacheId[id]][addr & 0x7FFFF] = biosDecode;
     }
-    else
-      cacheCode[context->isslave][cacheId[id]][(addr) & 0x7FFFF] = decode;
+    else{
+      cacheCode[context->isslave][cacheId[id]][addr & 0x7FFFF] = decode;
+    }
   }
+}
+
+void SH2KronosWriteNotify(SH2_struct *context, u32 start, u32 length){
+ notify(context, start, length);
+ //If the other core does not have the cache on, then it needs to see the modification
+ if ((context->isslave != 0) && (MSH2->cacheOn == 0)) notify(MSH2, start, length);
+ if ((context->isslave == 0) && (SSH2->cacheOn == 0)) notify(MSH2, start, length);
+//Need to add verification of cacheId in case non cacheable area is updated
+//Maybe need to fix accessing equivalent non cacheable area in any case
 }
 
 //////////////////////////////////////////////////////////////////////////////
