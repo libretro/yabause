@@ -33,7 +33,7 @@
 static void AllocAmendPrintString(const char *string1, const char *string2)
 {
    char *string;
-   int length = 0;
+   size_t length = 0;
    if (string1 != NULL) length += strlen(string1);
    if (string2 != NULL) length += strlen(string2);
    if ((string = (char *)malloc(length + 2)) == NULL)

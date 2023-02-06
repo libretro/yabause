@@ -62,6 +62,7 @@ SH2Interface_struct *SH2CoreList[] = {
 #endif
 #if DYNAREC_KRONOS
 &SH2KronosInterpreter,
+&SH2KronosDebugInterpreter,
 #endif
 NULL
 };
@@ -514,7 +515,7 @@ SoundInterface_struct QtYabause::defaultSNDCore()
 VideoInterface_struct QtYabause::defaultVIDCore()
 {
 #ifdef HAVE_LIBGL
-        return VIDOGL;
+        return VIDCS;
 #else
 	return VIDSoft;
 #endif

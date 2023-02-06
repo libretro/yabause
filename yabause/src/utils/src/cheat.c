@@ -244,28 +244,28 @@ void CheatDoPatches(SH2_struct *sh)
             if (cheatlist[i].enable == 0)
                continue;
             LOG("CheatDoPatches %08X", cheatlist[i].addr);
-            if (MappedMemoryReadWord(sh, cheatlist[i].addr) != cheatlist[i].val)
+            if (SH2MappedMemoryReadWord(sh, cheatlist[i].addr) != cheatlist[i].val)
                return;
             break;
          case CHEATTYPE_BYTEWRITE:
             if (cheatlist[i].enable == 0)
                continue;
             LOG("CheatDoPatches %08X", cheatlist[i].addr);
-            MappedMemoryWriteByte(sh, cheatlist[i].addr, (u8)cheatlist[i].val);
+            SH2MappedMemoryWriteByte(sh, cheatlist[i].addr, (u8)cheatlist[i].val);
             SH2WriteNotify(sh, cheatlist[i].addr, 1);
             break;
          case CHEATTYPE_WORDWRITE:
             if (cheatlist[i].enable == 0)
                continue;
             LOG("CheatDoPatches %08X", cheatlist[i].addr);
-            MappedMemoryWriteWord(sh, cheatlist[i].addr, (u16)cheatlist[i].val);
+            SH2MappedMemoryWriteWord(sh, cheatlist[i].addr, (u16)cheatlist[i].val);
             SH2WriteNotify(sh, cheatlist[i].addr, 2);
             break;
          case CHEATTYPE_LONGWRITE:
             if (cheatlist[i].enable == 0)
                continue;
             LOG("CheatDoPatches %08X", cheatlist[i].addr);
-            MappedMemoryWriteLong(sh, cheatlist[i].addr, cheatlist[i].val);
+            SH2MappedMemoryWriteLong(sh, cheatlist[i].addr, cheatlist[i].val);
             SH2WriteNotify(sh, cheatlist[i].addr, 4);
             break;
       }

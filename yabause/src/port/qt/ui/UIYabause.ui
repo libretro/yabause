@@ -881,7 +881,7 @@
     <string>Compatibility List</string>
    </property>
    <property name="statusTip">
-    <string>http://tradu-france.com/tfwiki-1.28.2/index.php?title=Compatibility_list_of_Kronos</string>
+    <string>https://tradu-france.com/wiki-emu-compatibility/index.php?title=Accueil</string>
    </property>
    <property name="shortcutVisibleInContextMenu">
     <bool>false</bool>

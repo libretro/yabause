@@ -30,11 +30,11 @@
 class YabauseThread : public QObject
 {
 	Q_OBJECT
-	
+
 public:
 	YabauseThread( QObject* owner = 0 );
 	virtual ~YabauseThread();
-	
+
 	yabauseinit_struct* yabauseConf();
 	bool emulationRunning();
 	bool emulationPaused();
@@ -50,14 +50,14 @@ protected:
 	bool mPause;
 	int mTimerId;
 	int mInit;
-	
-	void initEmulation();
+
 	void deInitEmulation();
 	void resetYabauseConf();
 	void timerEvent( QTimerEvent* );
 
 
 public slots:
+	void initEmulation();
 	bool pauseEmulation( bool pause, bool reset );
 	bool resetEmulation();
 	void reloadControllers();
@@ -71,7 +71,8 @@ signals:
 	void error( const QString& error, bool internal = true );
 	void pause( bool paused );
 	void reset();
-	void toggleEmulateMouse( bool enable );
+	void toggleEmulateMouse( bool enable, bool show );
+	void loopEnded();
 };
 
 #endif // YABAUSETHREAD_H

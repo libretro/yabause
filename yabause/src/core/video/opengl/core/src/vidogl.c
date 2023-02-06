@@ -116,6 +116,7 @@ void OSDPushMessageDirect(char * msg) {
 int VIDOGLInit(void);
 void VIDOGLDeInit(void);
 void VIDOGLResize(int, int, unsigned int, unsigned int, int);
+void VIDOGLGetScale(float *, float *, int *, int *);
 int VIDOGLIsFullscreen(void);
 int VIDOGLVdp1Reset(void);
 void VIDOGLVdp1Draw();
@@ -128,21 +129,19 @@ void VIDOGLVdp1LineDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* back_fra
 void VIDOGLVdp1UserClipping(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs);
 void VIDOGLVdp1SystemClipping(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs);
 void VIDOGLVdp1LocalCoordinate(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs);
+void VIDOGLVdp1DrawFB(void);
 int VIDOGLVdp2Reset(void);
 void VIDOGLVdp2Draw(void);
 static void VIDOGLVdp2DrawScreens(void);
 void VIDOGLVdp2SetResolution(u16 TVMD);
 void YglGetGlSize(int *width, int *height);
 void VIDOGLGetNativeResolution(int *width, int *height, int*interlace);
-void VIDOGLVdp1ReadFrameBuffer(u32 type, u32 addr, void * out);
-void VIDOGLVdp1WriteFrameBuffer(u32 type, u32 addr, u32 val);
 void VIDOGLSetSettingValueMode(int type, int value);
 void VIDOGLSync();
 void VIDOGLGetNativeResolution(int *width, int *height, int*interlace);
 void VIDOGLVdp2DispOff(void);
-void waitVdp2DrawScreensEnd(int sync, int abort);
 static int isEnabled(int id, Vdp2* varVdp2Regs);
-extern int YglGenFrameBuffer(int force);
+extern int YglGenFrameBuffer();
 extern void YglComposeVdp1(void);
 
 
@@ -152,6 +151,7 @@ VIDCORE_OGL,
 VIDOGLInit,
 VIDOGLDeInit,
 VIDOGLResize,
+VIDOGLGetScale,
 VIDOGLIsFullscreen,
 VIDOGLVdp1Reset,
 VIDOGLVdp1Draw,
@@ -164,8 +164,6 @@ VIDOGLVdp1LineDraw,
 VIDOGLVdp1UserClipping,
 VIDOGLVdp1SystemClipping,
 VIDOGLVdp1LocalCoordinate,
-VIDOGLVdp1ReadFrameBuffer,
-VIDOGLVdp1WriteFrameBuffer,
 YglEraseWriteVDP1,
 YglFrameChangeVDP1,
 NULL,
@@ -179,7 +177,8 @@ VIDOGLVdp2DispOff,
 YglRender,
 NULL, // YglComposeVdp1,
 YglGenFrameBuffer,
-NULL
+NULL,
+VIDOGLVdp1DrawFB
 };
 
 static int vdp1_interlace = 0;
@@ -697,6 +696,7 @@ void* Vdp1ReadTexture_in_async(void *p)
 }
 
 static void FASTCALL Vdp1ReadTexture(vdp1cmd_struct *cmd, YglSprite *sprite, YglTexture *texture, Vdp2 *varVdp2Regs) {
+  #ifdef VDP1_TEXTURE_ASYNC
    vdp1TextureTask *task = (vdp1TextureTask*)malloc(sizeof(vdp1TextureTask));
 
    task->cmd = (vdp1cmd_struct*)malloc(sizeof(vdp1cmd_struct));
@@ -709,7 +709,6 @@ static void FASTCALL Vdp1ReadTexture(vdp1cmd_struct *cmd, YglSprite *sprite, Ygl
 
    task->w = sprite->w;
    task->h = sprite->h;
-
    if (vdp1text_run == 0) {
      vdp1text_run = 1;
      vdp1q = YabThreadCreateQueue(NB_MSG);
@@ -722,6 +721,9 @@ static void FASTCALL Vdp1ReadTexture(vdp1cmd_struct *cmd, YglSprite *sprite, Ygl
    YabAddEventQueue(vdp1q_end, NULL);
    YabAddEventQueue(vdp1q, task);
    YabThreadYield();
+#else
+  Vdp1ReadTexture_in_sync(cmd, sprite->w, sprite->h, texture, varVdp2Regs);
+#endif
 }
 
 int waitVdp1Textures( int sync) {
@@ -3360,10 +3362,15 @@ void VIDOGLDeInit(void)
 
 //////////////////////////////////////////////////////////////////////////////
 
-int _VIDOGLIsFullscreen;
+static int _VIDOGLIsFullscreen;
 
 void VIDOGLResize(int originx, int originy, unsigned int w, unsigned int h, int on)
 {
+  if ((originx == _Ygl->originx)&&
+     (originy == _Ygl->originy)&&
+     (w == GlWidth)&&
+     (h == GlHeight)&&
+     (_VIDOGLIsFullscreen == on)) return;
 
   _VIDOGLIsFullscreen = on;
 
@@ -3379,6 +3386,58 @@ void VIDOGLResize(int originx, int originy, unsigned int w, unsigned int h, int 
 
 }
 
+void VIDOGLGetScale(float *xRatio, float *yRatio, int *xUp, int *yUp) {
+  double w = 0;
+  double h = 0;
+  int x,y = 0;
+  double dar = (double)GlWidth/(double)GlHeight;
+  double par = 4.0/3.0;
+
+  int Intw = (int)(floor((float)GlWidth/(float)_Ygl->width));
+  int Inth = (int)(floor((float)GlHeight/(float)_Ygl->height));
+  int Int  = 1;
+  int modeScreen = _Ygl->stretch;
+  #ifndef __LIBRETRO__
+  if (yabsys.isRotated) par = 1.0/par;
+  #endif
+  if (Intw == 0) {
+    modeScreen = 0;
+    Intw = 1;
+  }
+  if (Inth == 0) {
+    modeScreen = 0;
+    Inth = 1;
+  }
+  Int = (Inth<Intw)?Inth:Intw;
+
+  switch(modeScreen) {
+    case 0:
+      w = (dar>par)?(double)GlHeight*par:GlWidth;
+      h = (dar>par)?(double)GlHeight:(double)GlWidth/par;
+      x = (GlWidth-w)/2;
+      y = (GlHeight-h)/2;
+      break;
+    case 1:
+      w = GlWidth;
+      h = GlHeight;
+      x = 0;
+      y = 0;
+      break;
+    case 2:
+      w = Int * _Ygl->width;
+      h = Int * _Ygl->height;
+      x = (GlWidth-w)/2;
+      y = (GlHeight-h)/2;
+      break;
+    default:
+       break;
+   }
+
+  *xRatio = w / _Ygl->rwidth;
+  *yRatio = h / _Ygl->rheight;
+  *xUp = x;
+  *yUp = y;
+}
 //////////////////////////////////////////////////////////////////////////////
 
 int VIDOGLIsFullscreen(void) {
@@ -3479,9 +3538,6 @@ void VIDOGLVdp1Draw()
 #endif
 
   YglTmPull(YglTM_vdp1[_Ygl->drawframe], 1);
-
-  int prioChanged = 0;
-  int max = (yabsys.VBlankLineCount<270)?yabsys.VBlankLineCount:270;
 
   _Ygl->msb_shadow_count_[_Ygl->drawframe] = 0;
 
@@ -4379,6 +4435,14 @@ void VIDOGLVdp1UserClipping(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs)
 }
 
 //////////////////////////////////////////////////////////////////////////////
+void VIDOGLVdp1DrawFB(void) {
+  //Force flush of drawing
+  YglComposeVdp1();
+  vdp1_write_gl();
+  return;
+}
+
+//////////////////////////////////////////////////////////////////////////////
 
 void VIDOGLVdp1SystemClipping(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs)
 {
@@ -4980,9 +5044,6 @@ static int isEnabled(int id, Vdp2* varVdp2Regs) {
       break;
     case RBG1:
       display = ((varVdp2Regs->BGON & 0x20)!=0);
-      break;
-    case SPRITE:
-      display = (_Ygl->vdp1On[_Ygl->readframe] != 0);
       break;
     default:
       display = 1;
@@ -6220,18 +6281,14 @@ int WaitVdp2Async(int sync) {
   return empty;
 }
 
-void waitVdp2DrawScreensEnd(int sync, int abort) {
-  if (abort == 0){
-    YglCheckFBSwitch(0);
-    if (vdp2busy == 1) {
-      int empty = WaitVdp2Async(sync);
-      if (empty == 0) {
-        YglTmPush(YglTM_vdp2);
-        if (VIDCore != NULL) {
-          VIDOGLReadColorOffset();
-          VIDCore->composeFB(&Vdp2Lines[0]);
-        }
-      }
+void waitVdp2DrawScreensEnd(int sync) {
+  YglCheckFBSwitch(0);
+  if (vdp2busy == 1) {
+    WaitVdp2Async(sync);
+    YglTmPush(YglTM_vdp2);
+    if (VIDCore != NULL) {
+      VIDOGLReadColorOffset();
+      VIDCore->composeFB(&Vdp2Lines[0]);
     }
   }
 }

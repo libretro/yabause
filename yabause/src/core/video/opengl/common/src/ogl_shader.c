@@ -47,7 +47,6 @@ extern int GlWidth;
 static YglVdp1CommonParam _ids[PG_MAX] = { 0 };
 extern void vdp1_compute_reset(void);
 
-
 static void Ygl_printShaderError( GLuint shader )
 {
   GLsizei bufSize;
@@ -1925,17 +1924,16 @@ int YglBlitTexture(int* prioscreens, int* modescreens, int* isRGB, int * isBlur,
     else glBindTexture(GL_TEXTURE_2D, _Ygl->linecolorcoef_tex[1]);
   }
 
-  if ((vdp1fb != NULL) && (_Ygl->vdp1On[_Ygl->readframe] != 0)) {
+  if (vdp1fb != NULL) {
     glActiveTexture(GL_TEXTURE9);
     glBindTexture(GL_TEXTURE_2D, vdp1fb(0));
     glActiveTexture(GL_TEXTURE19);
     glBindTexture(GL_TEXTURE_2D, vdp1fb(1));
   }
-
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
   // Clean up
-  for (int i = 0; i<19; i++) {
+  for (int i = 0; i<20; i++) {
     glActiveTexture(gltext[i]);
     glBindTexture(GL_TEXTURE_2D, 0);
   }
@@ -2109,9 +2107,9 @@ SHADER_VERSION
 "  addr.x = int( v_texcoord.x);          \n"
 "  addr.y = int(v_texcoord.y);          \n"
 "  vec4 tex = texelFetch( s_texture, addr,0 );         \n"
-"  if (all(equal(tex.rg,vec2(0.0)))) discard;   \n"
-"  fragColor.r = tex.a;         \n"
-"  fragColor.g = tex.b;         \n"
+"  if (tex.a == 0.0) discard;   \n"
+"  fragColor.r = tex.r;         \n"
+"  fragColor.g = tex.g;         \n"
 "  fragColor.b = 0.0;         \n"
 "  fragColor.a = 0.0;         \n"
 "}  \n";
@@ -2296,6 +2294,28 @@ int YglBlitVDP1(u32 srcTexture, float w, float h, int write) {
   glDisableVertexAttribArray(1);
 
   return 0;
+}
+static u32 write_fb[512*256];
+void vdp1_write_gl() {
+  GLenum DrawBuffers[2]= {GL_COLOR_ATTACHMENT0,GL_COLOR_ATTACHMENT2};
+  VIDCore->setupFrame();
+  glBindTexture(GL_TEXTURE_2D, _Ygl->vdp1AccessTex[_Ygl->drawframe]);
+  glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->vdp1fbo);
+  glDrawBuffers(1, (const GLenum*)&DrawBuffers[_Ygl->drawframe]);
+  glViewport(0,0, _Ygl->vdp1width, _Ygl->vdp1height);
+  YglBlitVDP1(_Ygl->vdp1AccessTex[_Ygl->drawframe], 512, 256, 1);
+  // clean up
+  glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->default_fbo);
+}
+
+u32* vdp1_read_gl() {
+  glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->vdp1AccessFB[_Ygl->drawframe]);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _Ygl->vdp1AccessTex[_Ygl->drawframe], 0);
+  glViewport(0,0,512,256);
+  YglBlitVDP1(_Ygl->vdp1FrameBuff[_Ygl->drawframe*2], _Ygl->vdp1width, _Ygl->vdp1height, 0);
+  glReadPixels(0, 0, 512, 256, GL_RGBA, GL_UNSIGNED_BYTE, write_fb);
+  glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->default_fbo);
+	return &write_fb[0];
 }
 
 //----------------------------------------------------------------------------------------

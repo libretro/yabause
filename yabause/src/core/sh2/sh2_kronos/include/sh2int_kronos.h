@@ -2,6 +2,7 @@
 #define SH2INT_KRONOS_H
 
 #define SH2CORE_KRONOS_INTERPRETER 8
+#define SH2CORE_KRONOS_DEBUG_INTERPRETER 9
 
 typedef void (FASTCALL *opcode_func)(SH2_struct *);
 typedef u16 (FASTCALL *fetchfunc)(SH2_struct *context, u32);

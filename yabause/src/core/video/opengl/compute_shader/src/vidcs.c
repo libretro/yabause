@@ -90,6 +90,7 @@ FILE *ppfp = NULL;
 extern int VIDOGLInit(void);
 extern void VIDOGLDeInit(void);
 extern void VIDOGLResize(int, int, unsigned int, unsigned int, int);
+extern void VIDOGLGetScale(float *, float *, int *, int *);
 extern int VIDOGLIsFullscreen(void);
 extern int VIDOGLVdp1Reset(void);
 extern void VIDOGLVdp1Draw();
@@ -105,6 +106,7 @@ void VIDCSVdp1PolylineDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* back_
 void VIDCSVdp1LineDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* back_framebuffer);
 void VIDCSVdp1UserClipping(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs);
 void VIDCSVdp1SystemClipping(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs);
+void VIDCSVdp1DrawFB(void);
 extern void YglCSRender(Vdp2 *varVdp2Regs);
 extern void YglCSRenderVDP1(void);
 extern void YglCSFinsihDraw(void);
@@ -115,13 +117,11 @@ extern void VIDOGLVdp2Draw(void);
 extern void VIDOGLVdp2SetResolution(u16 TVMD);
 extern void YglGetGlSize(int *width, int *height);
 extern void VIDOGLGetNativeResolution(int *width, int *height, int*interlace);
-extern void YglCSVdp1ReadFrameBuffer(u32 type, u32 addr, void * out);
-extern void YglCSVdp1WriteFrameBuffer(u32 type, u32 addr, u32 val);
 extern void VIDOGLSetSettingValueMode(int type, int value);
 extern void VIDOGLSync();
 extern void VIDOGLGetNativeResolution(int *width, int *height, int*interlace);
 extern void VIDOGLVdp2DispOff(void);
-extern int YglGenFrameBuffer(int force);
+extern int YglGenFrameBuffer();
 extern void vdp1GenerateBuffer(vdp1cmd_struct* cmd);
 
 extern u32 FASTCALL Vdp1ReadPolygonColor(vdp1cmd_struct *cmd, Vdp2* varVdp2Regs);
@@ -132,6 +132,7 @@ VIDCORE_CS,
 VIDOGLInit,
 VIDOGLDeInit,
 VIDOGLResize,
+VIDOGLGetScale,
 VIDOGLIsFullscreen,
 VIDOGLVdp1Reset,
 VIDCSVdp1Draw,
@@ -144,8 +145,6 @@ VIDCSVdp1LineDraw,
 VIDCSVdp1UserClipping,
 VIDCSVdp1SystemClipping,
 VIDOGLVdp1LocalCoordinate,
-YglCSVdp1ReadFrameBuffer,
-YglCSVdp1WriteFrameBuffer,
 YglEraseWriteCSVDP1,
 YglFrameChangeCSVDP1,
 vdp1GenerateBuffer,
@@ -159,7 +158,8 @@ VIDOGLVdp2DispOff,
 YglCSRender,
 YglCSRenderVDP1,
 YglGenFrameBuffer,
-YglCSFinsihDraw
+YglCSFinsihDraw,
+VIDCSVdp1DrawFB
 };
 
 void addCSCommands(vdp1cmd_struct* cmd, int type)
@@ -364,6 +364,11 @@ void VIDCSVdp1SystemClipping(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs)
   vdp1_add(cmd,1);
   regs->systemclipX2 = cmd->CMDXC;
   regs->systemclipY2 = cmd->CMDYC;
+}
+
+void VIDCSVdp1DrawFB(void) {
+  YglCSRenderVDP1();
+  vdp1_write();
 }
 
 #endif

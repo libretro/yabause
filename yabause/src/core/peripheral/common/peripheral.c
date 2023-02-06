@@ -24,6 +24,7 @@
 
 #include "debug.h"
 #include "peripheral.h"
+#include "ygl.h"
 
 const char * PerPadNames[] =
 {
@@ -1092,7 +1093,7 @@ void PerAxis7Value(PerAnalog_struct * analog, u32 val)
 
 void PerGunTriggerPressed(PerGun_struct * gun)
 {
-   *(gun->gunbits) &= 0xEF;
+   *(gun->gunbits) &= ~0x10;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1106,7 +1107,7 @@ void PerGunTriggerReleased(PerGun_struct * gun)
 
 void PerGunStartPressed(PerGun_struct * gun)
 {
-   *(gun->gunbits) &= 0xDF;
+   *(gun->gunbits) &= ~0x20;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1118,21 +1119,13 @@ void PerGunStartReleased(PerGun_struct * gun)
 
 //////////////////////////////////////////////////////////////////////////////
 
-void PerGunMove(PerGun_struct * gun, s32 dispx, s32 dispy)
+void PerGunMove(PerGun_struct * gun, s32 x, s32 y)
 {
-   int x, y;
-   x = (*(gun->gunbits+1) << 8) +  *(gun->gunbits+2) + (dispx / 4);
-   y = (*(gun->gunbits+3) << 8) +  *(gun->gunbits+4) - (dispy / 4);
-
-   if (x < 0)
-      x = 0;
-   else if (x >= 320) // fix me
-      x = 319;
-
-   if (y < 0)
-      y = 0;
-   else if (y >= 224) // fix me
-      y = 223;
+   if ((x < 0) || (x>_Ygl->rwidth) || (y<0) || (y>_Ygl->rheight)) {
+		 *(gun->gunbits) |= 0x40;
+	 } else {
+		 *(gun->gunbits) &= ~0x40;
+	 }
 
    *(gun->gunbits+1) = x >> 8;
    *(gun->gunbits+2) = x;

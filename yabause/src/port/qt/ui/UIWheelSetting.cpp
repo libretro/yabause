@@ -41,8 +41,7 @@ UIWheelSetting::UIWheelSetting( PerInterface_struct* core, uint port, uint pad, 
 	mButtons[ tbY ] = PERPAD_Y;
 	mButtons[ tbZ ] = PERPAD_Z;
 	mButtons[ tbAxis1Left ] = PERANALOG_AXIS1;
-	mButtons[ tbAxis1Right ] = PERANALOG_AXIS1;
-	
+
 	mNames[ PERPAD_UP ] = QtYabause::translate( "Up" );
 	mNames[ PERPAD_DOWN ] = QtYabause::translate( "Down" );
 	mNames[ PERPAD_START ] = "Start";

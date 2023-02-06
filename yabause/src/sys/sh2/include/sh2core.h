@@ -365,11 +365,16 @@ codebreakpoint_struct *SH2GetBreakpointList(SH2_struct *context);
 void SH2ClearCodeBreakpoints(SH2_struct *context);
 
 u32 *SH2GetBacktraceList(SH2_struct *context, int *size);
+void SH2HandleBackTrace(SH2_struct *context);
+
+void SH2HandleStepOverOut(SH2_struct *context);
 
 int SH2AddMemoryBreakpoint(SH2_struct *context, u32 addr, u32 flags);
 int SH2DelMemoryBreakpoint(SH2_struct *context, u32 addr);
 memorybreakpoint_struct *SH2GetMemoryBreakpointList(SH2_struct *context);
 void SH2ClearMemoryBreakpoints(SH2_struct *context);
+void SH2HandleTrackInfLoop(SH2_struct *context);
+void SH2HandleBackTrace(SH2_struct *context);
 
 void SH2Step(SH2_struct *context);
 int SH2StepOver(SH2_struct *context, void (*func)(void *, u32, void *));
@@ -404,6 +409,7 @@ typedef struct SH2_struct_s
 {
    sh2regs_struct regs;
    Onchip_struct onchip;
+   u8 isAccessingCPUBUS;
 
    struct
    {
@@ -423,7 +429,7 @@ typedef struct SH2_struct_s
    u32 NumberOfInterrupts;
    u32 AddressArray[0x100];
    u8 DataArray[0x1000];
-   u32 delay;
+   u32 target_cycles;
    u32 cycles;
    u8 isslave;
    u8 isSleeping;
@@ -459,6 +465,8 @@ typedef struct SH2_struct_s
 //DEBUG Stuff
     backtrace_struct bt;
     breakpoint_struct bp;
+    u8 breakpointEnabled;
+    u8 backtraceEnabled;
     struct {
              u8 enabled;
              tilInfo_struct *match;
@@ -487,6 +495,7 @@ typedef struct
    void (*DeInit)(void);
    void (*Reset)(SH2_struct *context);
    void FASTCALL (*Exec)(SH2_struct *context, u32 cycles);
+   void FASTCALL (*ExecSave)(SH2_struct *context, u32 cycles, sh2regs_struct *oldRegs);
    void FASTCALL (*TestExec)(SH2_struct *context, u32 cycles);
 
    void (*GetRegisters)(SH2_struct *context, sh2regs_struct *regs);
@@ -520,6 +529,26 @@ typedef struct
    void(*AddCycle)(SH2_struct *context, u32 value);
 } SH2Interface_struct;
 
+static INLINE void SH2HandleBreakpoints(SH2_struct *context)
+{
+   int i;
+
+   for (i=0; i < context->bp.numcodebreakpoints; i++) {
+
+      if ((context->regs.PC == context->bp.codebreakpoint[i].addr) && context->bp.inbreakpoint == 0) {
+         context->bp.inbreakpoint = 1;
+         if (context->bp.BreakpointCallBack)
+             context->bp.BreakpointCallBack(context, context->bp.codebreakpoint[i].addr, context->bp.BreakpointUserData);
+         context->bp.inbreakpoint = 0;
+      }
+   }
+
+   if (context->bp.breaknow) {
+      context->bp.breaknow = 0;
+      context->bp.BreakpointCallBack(context, context->regs.PC, context->bp.BreakpointUserData);
+   }
+}
+
 extern SH2_struct *MSH2;
 extern SH2_struct *SSH2;
 extern SH2Interface_struct *SH2Core;
@@ -538,9 +567,20 @@ void SH2GetRegisters(SH2_struct *context, sh2regs_struct * r);
 void SH2SetRegisters(SH2_struct *context, sh2regs_struct * r);
 void SH2WriteNotify(SH2_struct *context, u32 start, u32 length);
 
+void SH2Step(SH2_struct *context);
+int SH2StepOver(SH2_struct *context, void (*func)(void *, u32, void *));
+void SH2StepOut(SH2_struct *context, void (*func)(void *, u32, void *));
+
+int SH2TrackInfLoopInit(SH2_struct *context);
+void SH2TrackInfLoopDeInit(SH2_struct *context);
+void SH2TrackInfLoopStart(SH2_struct *context);
+void SH2TrackInfLoopStop(SH2_struct *context);
+void SH2TrackInfLoopClear(SH2_struct *context);
+
 void SH2Disasm(u32 v_addr, u16 op, int mode, sh2regs_struct *r, char *string);
 void SH2DumpHistory(SH2_struct *context);
 
+void SH2SetCPUConcurrency(u8 on);
 
 int BackupHandled(SH2_struct * sh, u32 addr);
 int isBackupHandled(u32 addr);
@@ -585,6 +625,7 @@ extern SH2Interface_struct SH2DynDebug;
 
 #if DYNAREC_KRONOS
 extern SH2Interface_struct SH2KronosInterpreter;
+extern SH2Interface_struct SH2KronosDebugInterpreter;
 #endif
 
 #ifdef __cplusplus

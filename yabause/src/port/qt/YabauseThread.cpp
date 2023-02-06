@@ -52,9 +52,11 @@ yabauseinit_struct* YabauseThread::yabauseConf()
 
 void YabauseThread::initEmulation()
 {
-	reloadSettings();
-	mInit = YabauseInit( &mYabauseConf );
-	SetOSDToggle(showFPS);
+	if ( mInit < 0 ) {
+		reloadSettings();
+		mInit = YabauseInit( &mYabauseConf );
+		SetOSDToggle(showFPS);
+	}
 }
 
 void YabauseThread::deInitEmulation()
@@ -73,9 +75,7 @@ bool YabauseThread::pauseEmulation( bool pause, bool reset )
 		deInitEmulation();
 	}
 
-	if ( mInit < 0 ) {
-		initEmulation();
-	}
+	initEmulation();
 
 	if ( mInit < 0 )
 	{
@@ -91,9 +91,9 @@ bool YabauseThread::pauseEmulation( bool pause, bool reset )
 		mTimerId = -1;
 	}
 	else {
-                resetSyncVideo();
+    resetSyncVideo();
 		ScspUnMuteAudio(SCSP_MUTE_SYSTEM);
-		mTimerId = startTimer( 0 );
+		mTimerId = startTimer( 0, Qt::PreciseTimer );
 	}
 
 	VolatileSettings * vs = QtYabause::volatileSettings();
@@ -131,7 +131,7 @@ void YabauseThread::reloadControllers()
 
 	Settings* settings = QtYabause::settings();
 
-	emit toggleEmulateMouse( false );
+	emit toggleEmulateMouse( false, false );
 
 	for ( uint port = 1; port < 3; port++ )
 	{
@@ -258,6 +258,7 @@ void YabauseThread::reloadControllers()
 
 						PerSetKey( key.toUInt(), gunKey.toUInt(), gunbits );
 					}
+					emit toggleEmulateMouse( true, true );
 					break;
 				}
 				case PERKEYBOARD:
@@ -279,7 +280,7 @@ void YabauseThread::reloadControllers()
 						PerSetKey( key.toUInt(), mouseKey.toUInt(), mousebits );
 					}
 
-					emit toggleEmulateMouse( true );
+					emit toggleEmulateMouse( true, false );
 					break;
 				}
 				case 0:
@@ -494,6 +495,7 @@ void YabauseThread::timerEvent( QTimerEvent* )
 		if ( !mPause ) {
 			YabauseExec();
                 }
+		loopEnded();
 		//else
 			//msleep( 25 );
 		//sleep( 0 );

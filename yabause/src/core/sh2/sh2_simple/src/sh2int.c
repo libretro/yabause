@@ -51,6 +51,7 @@ SH2Interface_struct SH2Interpreter = {
    SH2InterpreterDeInit,
    SH2InterpreterReset,
    SH2InterpreterExec,
+   SH2InterpreterExecSave,
    SH2InterpreterTestExec,
 
    SH2InterpreterGetRegisters,
@@ -92,6 +93,7 @@ SH2Interface_struct SH2DebugInterpreter = {
    SH2InterpreterDeInit,
    SH2InterpreterReset,
    SH2DebugInterpreterExec,
+   SH2DebugInterpreterExecSave,
    SH2DebugInterpreterExec,
 
    SH2InterpreterGetRegisters,
@@ -2812,12 +2814,27 @@ int SH2InterpreterInit()
       }
    }
 
+    SH2ClearCodeBreakpoints(MSH2);
+    SH2ClearCodeBreakpoints(SSH2);
+    SH2ClearMemoryBreakpoints(MSH2);
+    SH2ClearMemoryBreakpoints(SSH2);
+    MSH2->breakpointEnabled = 0;
+    SSH2->breakpointEnabled = 0;
+    MSH2->backtraceEnabled = 0;
+    SSH2->backtraceEnabled = 0;
+    MSH2->stepOverOut.enabled = 0;
+    SSH2->stepOverOut.enabled = 0;
+
    return 0;
 }
 
 int SH2DebugInterpreterInit() {
 
   SH2InterpreterInit();
+  MSH2->breakpointEnabled = 1;
+  SSH2->breakpointEnabled = 1;
+  MSH2->backtraceEnabled = 1;
+  SSH2->backtraceEnabled = 1;
   return 0;
 }
 
@@ -2832,6 +2849,9 @@ void SH2InterpreterDeInit()
 
 void SH2InterpreterReset(UNUSED SH2_struct *context)
 {
+   // Reset any internal variables here
+   context->stepOverOut.enabled = 0;
+   context->stepOverOut.enabled = 0;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -2855,11 +2875,11 @@ static INLINE void SH2UBCInterrupt(SH2_struct *context, u32 flag)
 
 FASTCALL void SH2DebugInterpreterExec(SH2_struct *context, u32 cycles)
 {
-  u32 target_cycle = context->cycles + cycles;
+  context->target_cycles = context->cycles + cycles;
 
    SH2HandleInterrupts(context);
 
-   while (context->cycles < target_cycle)
+   while (context->cycles < context->target_cycles)
    {
 #ifdef SH2_UBC
       int ubcinterrupt=0, ubcflag=0;
@@ -2913,8 +2933,97 @@ FASTCALL void SH2DebugInterpreterExec(SH2_struct *context, u32 cycles)
 	  context->regshistory[context->pchistory_index & (MAX_DMPHISTORY - 1)] = context->regs;
 #endif
 
+      SH2HandleBackTrace(context);
+      SH2HandleStepOverOut(context);
+      SH2HandleTrackInfLoop(context);
+
       // Execute it
       opcodes[context->instruction](context);
+
+#ifdef SH2_UBC
+	  if (ubcinterrupt)
+	     SH2UBCInterrupt(context, ubcflag);
+#endif
+   }
+
+}
+
+FASTCALL void SH2DebugInterpreterExecSave(SH2_struct *context, u32 cycles, sh2regs_struct *oldRegs)
+//TODO: implement the locking mechanism dus to DMA
+{
+    context->target_cycles = context->cycles + cycles;
+
+   SH2HandleInterrupts(context);
+
+   while (context->cycles < context->target_cycles)
+   {
+#ifdef SH2_UBC
+      int ubcinterrupt=0, ubcflag=0;
+#endif
+
+    SH2HandleBreakpoints(context);
+
+#ifdef SH2_UBC
+      if (context->onchip.BBRA & (BBR_CPA_CPU | BBR_IDA_INST | BBR_RWA_READ)) // Break on cpu, instruction, read cycles
+      {
+         if (context->onchip.BARA.all == (context->regs.PC & (~context->onchip.BAMRA.all)))
+         {
+            LOG("Trigger UBC A interrupt: PC = %08X\n", context->regs.PC);
+            if (!(context->onchip.BRCR & BRCR_PCBA))
+            {
+               // Break before instruction fetch
+	           SH2UBCInterrupt(context, BRCR_CMFCA);
+            }
+            else
+            {
+            	// Break after instruction fetch
+               ubcinterrupt=1;
+               ubcflag = BRCR_CMFCA;
+            }
+         }
+      }
+      else if(context->onchip.BBRB & (BBR_CPA_CPU | BBR_IDA_INST | BBR_RWA_READ)) // Break on cpu, instruction, read cycles
+      {
+         if (context->onchip.BARB.all == (context->regs.PC & (~context->onchip.BAMRB.all)))
+         {
+            LOG("Trigger UBC B interrupt: PC = %08X\n", context->regs.PC);
+            if (!(context->onchip.BRCR & BRCR_PCBB))
+            {
+          	   // Break before instruction fetch
+       	       SH2UBCInterrupt(context, BRCR_CMFCB);
+            }
+            else
+            {
+               // Break after instruction fetch
+               ubcinterrupt=1;
+               ubcflag = BRCR_CMFCB;
+            }
+         }
+      }
+#endif
+
+      // Fetch Instruction
+      // Fetch Instruction
+      memcpy(oldRegs, &context->regs, sizeof(sh2regs_struct));
+      context->instruction = fetchlist[(context->regs.PC >> 20) & 0xFFF](context, context->regs.PC);
+
+#ifdef DMPHISTORY
+	  context->pchistory_index++;
+	  context->pchistory[context->pchistory_index & (MAX_DMPHISTORY - 1)] = context->regs.PC;
+	  context->regshistory[context->pchistory_index & (MAX_DMPHISTORY - 1)] = context->regs;
+#endif
+
+      SH2HandleBackTrace(context);
+      SH2HandleStepOverOut(context);
+      SH2HandleTrackInfLoop(context);
+
+      // Execute it
+      opcodes[context->instruction](context);
+      if(context->isAccessingCPUBUS != 0) {
+        context->cycles = context->target_cycles;
+        memcpy(& context->regs, oldRegs, sizeof(sh2regs_struct));
+        return;
+      }
 
 #ifdef SH2_UBC
 	  if (ubcinterrupt)
@@ -2929,9 +3038,9 @@ FASTCALL void SH2DebugInterpreterExec(SH2_struct *context, u32 cycles)
 
 FASTCALL void SH2InterpreterExec(SH2_struct *context, u32 cycles)
 {
-  u32 target_cycle = context->cycles + cycles;
+  context->target_cycles = context->cycles + cycles;
   SH2HandleInterrupts(context);
-   while (context->cycles < target_cycle)
+   while (context->cycles < context->target_cycles)
    {
 
       // Fetch Instruction
@@ -2942,9 +3051,29 @@ FASTCALL void SH2InterpreterExec(SH2_struct *context, u32 cycles)
    }
 }
 
+FASTCALL void SH2InterpreterExecSave(SH2_struct *context, u32 cycles, sh2regs_struct *oldRegs)
+{
+  context->target_cycles = context->cycles + cycles;
+  SH2HandleInterrupts(context);
+   while (context->cycles < context->target_cycles)
+   {
+      // Fetch Instruction
+      memcpy(oldRegs, &context->regs, sizeof(sh2regs_struct));
+      context->instruction = fetchlist[(context->regs.PC >> 20) & 0xFFF](context, context->regs.PC);
+
+      // Execute it
+      opcodes[context->instruction](context);
+      if(context->isAccessingCPUBUS != 0) {
+        context->cycles = context->target_cycles;
+        memcpy(& context->regs, oldRegs, sizeof(sh2regs_struct));
+        return;
+      }
+   }
+}
+
 FASTCALL void SH2InterpreterTestExec(SH2_struct *context, u32 cycles)
 {
-  u32 target_cycle = context->cycles + cycles;
+  context->target_cycles = context->cycles + cycles;
       context->instruction = fetchlist[(context->regs.PC >> 20) & 0xFFF](context, context->regs.PC);
 
       // Execute it

@@ -354,15 +354,9 @@ extern "C" {
   }
 
   void MappedMemoryInit(void);
-  u8 FASTCALL MappedMemoryReadByte(SH2_struct *context, u32 addr);
   u8 FASTCALL SH2MappedMemoryReadByte(SH2_struct *context, u32 addr);
-  u16 FASTCALL MappedMemoryReadWord(SH2_struct *context, u32 addr);
   u16 FASTCALL SH2MappedMemoryReadWord(SH2_struct *context, u32 addr);
-  u32 FASTCALL MappedMemoryReadLong(SH2_struct *context, u32 addr);
   u32 FASTCALL SH2MappedMemoryReadLong(SH2_struct *context, u32 addr);
-  void FASTCALL MappedMemoryWriteByte(SH2_struct *context, u32 addr, u8 val);
-  void FASTCALL MappedMemoryWriteWord(SH2_struct *context, u32 addr, u16 val);
-  void FASTCALL MappedMemoryWriteLong(SH2_struct *context, u32 addr, u32 val);
   void FASTCALL SH2MappedMemoryWriteByte(SH2_struct *context, u32 addr, u8 val);
   void FASTCALL SH2MappedMemoryWriteWord(SH2_struct *context, u32 addr, u16 val);
   void FASTCALL SH2MappedMemoryWriteLong(SH2_struct *context, u32 addr, u32 val);
@@ -418,7 +412,7 @@ extern "C" {
 #define SEARCHREL8BIT           (6 << 4)
 #define SEARCHREL16BIT          (7 << 4)
 
-  result_struct *MappedMemorySearch(SH2_struct *context,u32 startaddr, u32 endaddr, int searchtype,
+  result_struct *MappedMemorySearch(u32 startaddr, u32 endaddr, int searchtype,
     const char *searchstr,
     result_struct *prevresults, u32 *maxresults);
 

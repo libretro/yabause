@@ -3,7 +3,7 @@ matrix:
 
     # linux gcc
     - os: linux
-      dist: focal
+      dist: jammy
       sudo: required
       compiler: gcc
       env:

@@ -97,7 +97,7 @@ static void* sound_update_thd(void *ptr __attribute__((unused)))    {
 
     if( alcMakeContextCurrent(context) != AL_TRUE ){
         printf("fail to makecurrent\n");
-        return;
+        return NULL;
     }
 #if 0
     {
