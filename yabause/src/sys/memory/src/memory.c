@@ -884,6 +884,8 @@ LOG("Unhandled SH2 Long R %x %d\n", addr,(addr >> 29));
 
 void FASTCALL DMAMappedMemoryWriteByte(u32 addr, u8 val)
 {
+  SH2WriteNotify(MSH2, addr, 1);
+  SH2WriteNotify(SSH2, addr, 1);
     WriteByteList[(addr >> 16) & 0xFFF](NULL, *(MemoryBuffer[(addr >> 16) & 0xFFF]), addr, val);
 }
 
@@ -950,6 +952,8 @@ LOG("Unhandled Byte W %x\n", addr);
 
 void FASTCALL DMAMappedMemoryWriteWord(u32 addr, u16 val)
 {
+  SH2WriteNotify(MSH2, addr, 2);
+  SH2WriteNotify(SSH2, addr, 2);
   WriteWordList[(addr >> 16) & 0xFFF](NULL, *(MemoryBuffer[(addr >> 16) & 0xFFF]), addr, val);
 }
 
@@ -1018,6 +1022,8 @@ LOG("Unhandled Word W %x\n", addr);
 
 void FASTCALL DMAMappedMemoryWriteLong(u32 addr, u32 val)
 {
+  SH2WriteNotify(MSH2, addr, 4);
+  SH2WriteNotify(SSH2, addr, 4);
   WriteLongList[(addr >> 16) & 0xFFF](NULL, *(MemoryBuffer[(addr >> 16) & 0xFFF]), addr, val);
 }
 

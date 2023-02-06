@@ -710,10 +710,17 @@ static void notify(SH2_struct *context, u32 start, u32 length) {
 }
 
 void SH2KronosWriteNotify(SH2_struct *context, u32 start, u32 length){
- notify(context, start, length);
+ notify(context, start & 0x1FFFFFFF, length);
+ notify(context, (start & 0x1FFFFFFF)|0x20000000, length);
  //If the other core does not have the cache on, then it needs to see the modification
- if ((context->isslave != 0) && (MSH2->cacheOn == 0)) notify(MSH2, start, length);
- if ((context->isslave == 0) && (SSH2->cacheOn == 0)) notify(MSH2, start, length);
+ if ((context->isslave != 0) && (MSH2->cacheOn == 0)) {
+   notify(MSH2, start & 0x1FFFFFFF, length);
+   notify(MSH2, (start & 0x1FFFFFFF)|0x20000000, length);
+ }
+ if ((context->isslave == 0) && (SSH2->cacheOn == 0)) {
+   notify(SSH2, start & 0x1FFFFFFF, length);
+   notify(SSH2, (start & 0x1FFFFFFF)|0x20000000, length);
+ }
 //Need to add verification of cacheId in case non cacheable area is updated
 //Maybe need to fix accessing equivalent non cacheable area in any case
 }
