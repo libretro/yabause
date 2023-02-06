@@ -45,12 +45,10 @@ UI3DControlPadSetting::UI3DControlPadSetting( PerInterface_struct* core, uint po
 	mButtons[ tbY ] = PERPAD_Y;
 	mButtons[ tbZ ] = PERPAD_Z;
 	mButtons[ tbAxis1Left ] = PERANALOG_AXIS1;
-	mButtons[ tbAxis1Right ] = PERANALOG_AXIS1;
-	mButtons[ tbAxis2Up ] = PERANALOG_AXIS2;
 	mButtons[ tbAxis2Down ] = PERANALOG_AXIS2;
 	mButtons[ tbLeftTrigger ] = PERANALOG_AXIS3;
 	mButtons[ tbRightTrigger ] = PERANALOG_AXIS4;
-	
+
 	mNames[ PERPAD_UP ] = QtYabause::translate( "Up" );
 	mNames[ PERPAD_RIGHT ] = QtYabause::translate( "Right" );
 	mNames[ PERPAD_DOWN ] = QtYabause::translate( "Down" );

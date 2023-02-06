@@ -35,12 +35,10 @@
 extern int GlHeight;
 extern int GlWidth;
 
-extern int rebuild_frame_buffer;
 extern void vdp1_wait_regenerate(void);
 
 extern int DrawVDP2Screen(Vdp2 *varVdp2Regs, int id);
 
-extern int YglGenFrameBuffer(int force);
 extern void YglUpdateVdp2Reg();
 extern SpriteMode setupBlend(Vdp2 *varVdp2Regs, int layer);
 extern int setupColorMode(Vdp2 *varVdp2Regs, int layer);
@@ -50,7 +48,6 @@ extern int YglDrawBackScreen();
 
 extern u32* vdp1_read();
 extern void vdp1_write();
-extern u32* manualfb;
 
 //////////////////////////////////////////////////////////////////////////////
 void YglEraseWriteCSVDP1(int id) {
@@ -60,10 +57,8 @@ void YglEraseWriteCSVDP1(int id) {
   int priority;
   u32 alpha = 0;
   int status = 0;
-  if (_Ygl->vdp1_pbo == 0) return;
-  manualfb = NULL;
+  if (_Ygl->vdp1_pbo[0] == 0) return;
 
-  _Ygl->vdp1On[id] = 0;
   _Ygl->vdp1_stencil_mode = 0;
 
   _Ygl->vdp1levels[id].ux1 = 0;
@@ -75,19 +70,33 @@ void YglEraseWriteCSVDP1(int id) {
 
   color = Vdp1Regs->EWDR;
 
+  int shift = ((Vdp1Regs->TVMR & 0x1) == 1)?4:3;
+  int limits[4] = {0};
+  limits[0] = ((Vdp1Regs->EWLR>>9)&0x3F)<<shift;
+  limits[1] = ((Vdp1Regs->EWLR)&0x1FF); //TODO: manage double interlace
+
+  limits[2] = (((Vdp1Regs->EWRR>>9)&0x7F)<<shift) - 1;
+  limits[3] = ((Vdp1Regs->EWRR)&0x1FF); //TODO: manage double interlace
+
+  if ((limits[0]>=limits[2])||(limits[1]>limits[3])) return; //No erase write when invalid area - Should be done only for one dot but no idea of which dot it shall be
+
+//Can be usefull for next steps to evaluate effective possible pixels which can be deleted during VBLANK
+//see p49 of vdp1 doc. A raster is the number of maxLinecount
+/*
+  int nbPixels = (x3-x1+1)*(y3-y1+1) x 8;
+  int nbRaster =
+*/
   col[0] = (color & 0xFF) / 255.0f;
   col[1] = ((color >> 8) & 0xFF) / 255.0f;
 
   if (color != 0x0) {
-    _Ygl->vdp1On[id] = 1;
     if (((Vdp1Regs->TVMR & 0x1) == 1) && (col[0] != col[1])){
       YuiMsg("Unsupported clear process\n\tin 8 bits upper part of EWDR is for even coordinates and lower part for odd coordinates\n");
     }
   }
 
-
-  FRAMELOG("YglEraseWriteVDP1xx: clear %d\n", id);
-  vdp1_clear(id, col);
+  FRAMELOG("YglEraseWriteVDP1xx: clear %d (%d,%d)(%d,%d)\n", id, limits[0], limits[1], limits[2], limits[3]);
+  vdp1_clear(id, col, limits);
 
   //Get back to drawframe
   glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->default_fbo);
@@ -112,27 +121,12 @@ void YglFrameChangeCSVDP1(){
   current_drawframe = _Ygl->drawframe;
   _Ygl->drawframe = _Ygl->readframe;
   _Ygl->readframe = current_drawframe;
-  manualfb = NULL;
 
-  FRAMELOG("YglFrameChangeVDP1: swap drawframe =%d readframe = %d\n", _Ygl->drawframe, _Ygl->readframe);
+  FRAMELOG("YglFrameChangeVDP1: swap drawframe =%d readframe = %d (%d)\n", _Ygl->drawframe, _Ygl->readframe, yabsys.LineCount);
 }
 
 extern int WinS[enBGMAX+1];
 extern int WinS_mode[enBGMAX+1];
-
-static void YglSetVDP1FB(int i){
-  if (_Ygl->vdp1IsNotEmpty != 0) {
-    _Ygl->vdp1On[i] = 1;
-    // Arevoir ca risque de ne pas fonctionner
-    vdp1_set_directFB();
-    _Ygl->vdp1IsNotEmpty = 0;
-  }
-}
-
-static void YglUpdateVDP1FB(void) {
-  //Le directFB utilise drawframe
-  YglSetVDP1FB(_Ygl->readframe);
-}
 
 static int warning = 0;
 
@@ -146,6 +140,7 @@ void finishCSRender() {
   for (int i=0; i<SPRITE; i++)
     YglReset(_Ygl->vdp2levels[i]);
   glViewport(_Ygl->originx, _Ygl->originy, GlWidth, GlHeight);
+  glScissor(0, 0, _Ygl->width, _Ygl->height);
   glUseProgram(0);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
@@ -211,8 +206,6 @@ void YglCSRender(Vdp2 *varVdp2Regs) {
    }
    Int = (Inth<Intw)?Inth:Intw;
 
-   YglUpdateVDP1FB();
-
    glDepthMask(GL_FALSE);
    glDisable(GL_DEPTH_TEST);
    glDisable(GL_BLEND);
@@ -248,7 +241,7 @@ void YglCSRender(Vdp2 *varVdp2Regs) {
    glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->default_fbo);
    glClearBufferfv(GL_COLOR, 0, col);
 
-   YglGenFrameBuffer(0);
+   VIDCore->setupFrame();
 
     glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->original_fbo);
     glDrawBuffers(NB_RENDER_LAYER, &DrawBuffers[0]);
@@ -417,55 +410,3 @@ void YglCSRender(Vdp2 *varVdp2Regs) {
   return;
 }
 
-static u32* getVdp1DrawingFBMem() {
-	if (manualfb == NULL) {
-    YglGenFrameBuffer(0);
-		vdp1_compute();
-	  manualfb = vdp1_read();
-	}
-	return manualfb;
-}
-
-
-void YglCSVdp1WriteFrameBuffer(u32 type, u32 addr, u32 val )
-{
-  u16 full = 0;
-  _Ygl->vdp1fb_buf =  getVdp1DrawingFBMem();
-  switch (type)
-  {
-  case 0:
-    full = T1ReadLong((u8*)_Ygl->vdp1fb_buf, (addr&(~0x1))*2);
-    if (addr & 0x1) full = (full & 0xFF00) | (val& 0xFF);
-    else full = (full & 0xFF) | ((val& 0xFF) << 8);
-    T1WriteLong((u8 *)_Ygl->vdp1fb_buf, (addr&(~0x1))*2, VDP1COLORFB(full&0xFFFF));
-    break;
-  case 1:
-    T1WriteLong((u8*)_Ygl->vdp1fb_buf, addr*2, VDP1COLORFB(val&0xFFFF));
-    break;
-  case 2:
-    T1WriteLong((u8*)_Ygl->vdp1fb_buf, addr*2+4, VDP1COLORFB(val&0xFFFF));
-    T1WriteLong((u8*)_Ygl->vdp1fb_buf, addr*2, VDP1COLORFB((val>>16)&0xFFFF));
-    break;
-  default:
-    break;
-  }
-  _Ygl->vdp1IsNotEmpty = 1;
-}
-
-void YglCSVdp1ReadFrameBuffer(u32 type, u32 addr, void * out) {
-  _Ygl->vdp1fb_buf_read =  getVdp1DrawingFBMem();
-  switch (type)
-  {
-  case 0:
-    *(u8*)out = 0x0;
-    break;
-  case 1:
-    *(u16*)out = T1ReadLong((u8*)_Ygl->vdp1fb_buf_read, addr*2) & 0xFFFF;
-    break;
-  case 2:
-    *(u32*)out = ((T1ReadLong((u8*)_Ygl->vdp1fb_buf_read, addr*2)&0xFFFF)<<16)|((T1ReadLong((u8*)_Ygl->vdp1fb_buf_read, addr*2+4)&0xFFFF));
-    break;
-  default:
-    break;
-  }
-}

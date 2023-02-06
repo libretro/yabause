@@ -168,12 +168,14 @@ void YabAddEventQueue( YabEventQueue * queue_t, void* evcode )
 	scond_broadcast(queue->cond_empty);
 }
 
-void YabThreadUSleep( unsigned int stime )
+u32 YabThreadUSleep( unsigned int stime )
 {
 #if !defined(ARCH_IS_LINUX) && !defined(ARCH_IS_MACOSX)
 	SleepEx(stime/1000, 0);
+	return stime%1000;
 #else
 	usleep(stime);
+	return 0;
 #endif
 }
 

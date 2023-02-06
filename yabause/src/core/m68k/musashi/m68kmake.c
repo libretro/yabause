@@ -68,6 +68,62 @@ char* g_version = "3.3";
 #include <ctype.h>
 #include <stdarg.h>
 
+#ifdef HAVE_STDINT_H
+
+#include <stdint.h>
+  typedef uint8_t u8;
+  typedef  int8_t s8;
+  typedef uint16_t u16;
+  typedef  int16_t s16;
+  typedef uint32_t u32;
+  typedef  int32_t s32;
+  typedef uint64_t u64;
+  typedef  int64_t s64;
+  typedef uintptr_t pointer;
+
+#else  // !HAVE_STDINT_H
+
+  typedef unsigned char u8;
+  typedef unsigned short u16;
+
+  typedef signed char s8;
+  typedef signed short s16;
+
+#if defined(__LP64__)
+  // Generic 64-bit
+  typedef unsigned int u32;
+  typedef unsigned long u64;
+  typedef unsigned long pointer;
+
+  typedef signed int s32;
+  typedef signed long s64;
+
+#elif defined(_MSC_VER)
+  typedef unsigned long u32;
+  typedef unsigned __int64 u64;
+  typedef unsigned long long u64;
+#ifdef _WIN64
+  typedef __int64 pointer;
+#else
+  typedef unsigned long pointer;
+#endif
+
+  typedef signed long s32;
+  typedef __int64 s64;
+  typedef signed long long s64;
+
+#else
+  // 32-bit Linux GCC/MINGW/etc.
+  typedef unsigned long u32;
+  typedef unsigned long long u64;
+  typedef unsigned long pointer;
+
+  typedef signed long s32;
+  typedef signed long long s64;
+#endif
+
+#endif  // !HAVE_STDINT_H
+
 
 
 /* ======================================================================== */
@@ -218,9 +274,9 @@ typedef struct
 /* Function Prototypes */
 void error_exit(char* fmt, ...);
 void perror_exit(char* fmt, ...);
-int check_strsncpy(char* dst, char* src, int maxlength);
-int check_atoi(char* str, int *result);
-int skip_spaces(char* str);
+pointer check_strsncpy(char* dst, char* src, int maxlength);
+pointer check_atoi(char* str, int *result);
+pointer skip_spaces(char* str);
 int num_bits(int value);
 int atoh(char* buff);
 int fgetline(char* buff, int nchars, FILE* file);
@@ -492,7 +548,7 @@ void perror_exit(char* fmt, ...)
 
 
 /* copy until 0 or space and exit with error if we read too far */
-int check_strsncpy(char* dst, char* src, int maxlength)
+pointer check_strsncpy(char* dst, char* src, int maxlength)
 {
 	char* p = dst;
 	while(*src && *src != ' ')
@@ -506,7 +562,7 @@ int check_strsncpy(char* dst, char* src, int maxlength)
 }
 
 /* copy until 0 or specified character and exit with error if we read too far */
-int check_strcncpy(char* dst, char* src, char delim, int maxlength)
+pointer check_strcncpy(char* dst, char* src, char delim, int maxlength)
 {
 	char* p = dst;
 	while(*src && *src != delim)
@@ -520,7 +576,7 @@ int check_strcncpy(char* dst, char* src, char delim, int maxlength)
 }
 
 /* convert ascii to integer and exit with error if we find invalid data */
-int check_atoi(char* str, int *result)
+pointer check_atoi(char* str, int *result)
 {
 	int accum = 0;
 	char* p = str;
@@ -536,7 +592,7 @@ int check_atoi(char* str, int *result)
 }
 
 /* Skip past spaces in a string */
-int skip_spaces(char* str)
+pointer skip_spaces(char* str)
 {
 	char* p = str;
 

@@ -129,14 +129,6 @@
 # define FLUSH_SCSP()  /*nothing*/
 #endif
 
-#if defined(ARCH_IS_LINUX)
-#include "sys/resource.h"
-#include <errno.h>
-#include <pthread.h>
-pthread_cond_t  sync_cnd = PTHREAD_COND_INITIALIZER;
-pthread_mutex_t sync_mutex = PTHREAD_MUTEX_INITIALIZER;
-#endif
-
 int new_scsp_outbuf_pos = 0;
 s32 new_scsp_outbuf_l[900] = { 0 };
 s32 new_scsp_outbuf_r[900] = { 0 };
@@ -473,7 +465,7 @@ void fill_alfo_tables()
 void op1(struct Slot * slot)
 {
    u32 oct = slot->regs.oct ^ 8;
-   u32 fns = slot->regs.fns ^ 0x400;
+   u32 fns = 0x400 ^ slot->regs.fns;
    u32 phase_increment = fns << oct;
    int plfo_val = 0;
    int plfo_shifted = 0;
@@ -794,8 +786,13 @@ void op5(struct Slot * slot)
       else if (slot->regs.alfows == 3)
          alfo_val = alfo.noise_table[slot->state.lfo_pos];
 
-      lfo_add = (((alfo_val + 1)) >> (7 - slot->regs.alfos)) << 1;
-      sample = apply_volume(slot->regs.tl, slot->state.attenuation + lfo_add, slot->state.output);
+      // Direct Sound
+      if( slot->regs.sd ){
+        sample = slot->state.output;
+      }else{
+        lfo_add = (((alfo_val + 1)) >> (7 - slot->regs.alfos)) << 1;
+        sample = apply_volume(slot->regs.tl, slot->state.attenuation + lfo_add, slot->state.output);
+      }
       slot->state.output = sample;
    }
 }
@@ -1089,10 +1086,10 @@ void scsp_slot_write_byte(struct Scsp *s, u32 addr, u8 data)
       slot->regs.unknown3 = (data >> 7) & 1;
       slot->regs.oct = (data >> 3) & 0xf;
       slot->regs.unknown4 = (data >> 2) & 1;
-      slot->regs.fns = (slot->regs.fns & 0xff) | ((data & 3) << 8);
+      slot->regs.fns = (slot->regs.fns & 0xff) | ((data & 0x7) << 8);
       break;
    case 17:
-      slot->regs.fns = (slot->regs.fns & 0x300) | data;
+      slot->regs.fns = (slot->regs.fns & 0x700) | data;
       break;
    case 18:
       slot->regs.re = (data >> 7) & 1;
@@ -1300,7 +1297,7 @@ void scsp_slot_write_word(struct Scsp *s, u32 addr, u16 data)
       slot->regs.unknown3 = (data >> 15) & 1;
       slot->regs.unknown4 = (data >> 10) & 1;
       slot->regs.oct = (data >> 11) & 0xf;
-      slot->regs.fns = data & 0x3ff;
+      slot->regs.fns = data & 0x7ff;
       break;
    case 9:
       slot->regs.re = (data >> 15) & 1;
@@ -4334,7 +4331,7 @@ scsp_r_b (SH2_struct *context, UNUSED u8* m, u32 a)
     }
   else if (a >= 0xEC0 && a <= 0xEDF){
     u16 val = scsp_dsp.efreg[ (a>>1) & 0x1F];
-    if( a&0x01 == 0){
+    if( (a&0x01) == 0){
       return val >> 8;
     }else{
       return val & 0xFF;
@@ -4656,7 +4653,7 @@ scsp_init (u8 *scsp_ram, void (*sint_hand)(u32), void (*mint_hand)(void))
     scsp_tl_table[i] = scsp_round(pow(10, ((double)i * -0.3762) / 20) * 1024.0);
 
   scsp_reset();
-  g_scsp_ready = YabThreadCreateSem(1);
+  g_scsp_ready = YabThreadCreateSem(0);
   g_cpu_ready = YabThreadCreateSem(0);
   g_scsp_set_cyc_mtx = YabThreadCreateMutex();
   g_scsp_set_cond_mtx = YabThreadCreateMutex();
@@ -4826,32 +4823,15 @@ SoundRamWriteByte (SH2_struct *context, u8* mem, u32 addr, u8 val)
 //////////////////////////////////////////////////////////////////////////////
 
 // From CPU
-int sh2_read_req = 0;
 static int mem_access_counter = 0;
 void SyncSh2And68k(SH2_struct *context){
   if (IsM68KRunning) {
-    /*
-    #if defined(ARCH_IS_LINUX)
-    pthread_mutex_lock(&sync_mutex);
-    pthread_cond_signal(&sync_cnd);
-    pthread_mutex_unlock(&sync_mutex);
-    #else
-    sh2_read_req++;
-    #endif
-    */
     // Memory Access cycle = 128 times per 44.1Khz
     // 28437500 / 4410 / 128 = 50
     SH2Core->AddCycle(context, 50);
 
     if (mem_access_counter++ >= 128) {
-#if defined(ARCH_IS_LINUX)
-      pthread_mutex_lock(&sync_mutex);
-      pthread_cond_signal(&sync_cnd);
-      pthread_mutex_unlock(&sync_mutex);
-#else
-      sh2_read_req++;
       YabThreadYield();
-#endif
       mem_access_counter = 0;
     }
   }
@@ -5063,7 +5043,7 @@ ScspDeInit (void)
   YabThreadCondSignal(g_scsp_set_cyc_cond);
   YabSemPost(g_cpu_ready);
   YabSemPost(g_scsp_ready);
-  YabThreadWake(YAB_THREAD_SCSP);
+  // YabThreadWake(YAB_THREAD_SCSP);
   YabThreadWait(YAB_THREAD_SCSP);
 
   if (scspchannel[0].data32)
@@ -5154,15 +5134,13 @@ static s32 FASTCALL M68KExecBP (s32 cycles);
 
 void MM68KExec(s32 cycles)
 {
-  s32 newcycles = savedcycles - cycles;
   if (LIKELY(IsM68KRunning))
     {
-      if (LIKELY(newcycles < 0))
+      savedcycles += cycles;
+      if (LIKELY((savedcycles) > 0))
         {
-          s32 cyclestoexec = -newcycles;
-          newcycles += (*m68kexecptr)(cyclestoexec);
+          savedcycles = savedcycles - (*m68kexecptr)(savedcycles);
         }
-      savedcycles = newcycles;
     }
 }
 
@@ -5345,10 +5323,6 @@ u64 newCycles = 0;
 
 void* ScspAsynMainCpu( void * p ){
 
-
-#if defined(ARCH_IS_LINUX)
-  setpriority( PRIO_PROCESS, 0, -20);
-#endif
   YabThreadSetCurrentThreadAffinityMask( 0x03 );
 
   const int samplecnt = 256; // 11289600/44100
@@ -5392,100 +5366,16 @@ void* ScspAsynMainCpu( void * p ){
         ScspInternalVars->scsptiming1 = scsplines;
         ScspExecAsync();
         YabSemPost(g_scsp_ready);
-        YabThreadYield();
-        YabThreadSleep();
+        // YabThreadYield();
+        // YabThreadSleep();
         YabSemWait(g_cpu_ready);
         m68k_inc = 0;
         break;
       }
     }
-    while (scsp_mute_flags && thread_running) {
-      YabThreadUSleep((1000000 / fps));
-      YabSemPost(g_scsp_ready);
-      YabSemWait(g_cpu_ready);
-    }
   }
-  YabThreadWake(YAB_THREAD_SCSP);
+  // YabThreadWake(YAB_THREAD_SCSP);
   return NULL;
-}
-
-void ScspAsynMainRT( void * p ){
-
-  u64 before;
-  u64 now;
-  u32 difftime;
-  const int samplecnt = 256; // 11289600/44100
-  const int step = 256;
-  const int frame_div = 1;
-  int framecnt; // 11289600/60
-  int frame = 0;
-  int frame_count = 0;
-  int i;
-
-  const u32 base_clock = (u32)((644.8412698 / ((double)samplecnt / (double)step)) * (1 << CLOCK_SYNC_SHIFT));
-
-
-  YabThreadSetCurrentThreadAffinityMask( 0x03 );
-  before = YabauseGetTicks() * 1000000 / yabsys.tickfreq;
-  u32 wait_clock = 0;
-  while (thread_running){
-
-    framecnt = (11289600/fps) / frame_div;
-
-    while (g_scsp_lock){ YabThreadUSleep(1);  }
-
-    // Run 1 sample(44100Hz)
-    for (i = 0; i < samplecnt; i += step){
-      MM68KExec(step);
-      m68kcycle += base_clock;
-    }
-
-    wait_clock = 0;
-
-    new_scsp_exec((samplecnt << 1));
-
-    // Sync 1/4 Frame(60Hz)
-    frame += samplecnt;
-    if (frame >= framecnt){
-      frame = frame - framecnt;
-      frame_count++;
-      if (frame_count >= frame_div){
-        ScspInternalVars->scsptiming2 = 0;
-        ScspInternalVars->scsptiming1 = scsplines;
-        ScspExecAsync();
-        frame_count = 0;
-      }
-      int sleeptime = 0;
-      u64 checktime = 0;
-      m68kcycle = 0;
-      sh2_read_req = 0;
-      do {
-        now = YabauseGetTicks() * 1000000 / yabsys.tickfreq;
-        if (now > before){
-          difftime = now - before;
-        }
-        else{
-          difftime = now + (ULLONG_MAX - before);
-        }
-        sleeptime = ((1000000/fps) - difftime);
-        if ((sleeptime > 0) && (isAutoFrameSkip()==0)) YabThreadUSleep(sleeptime);
-
-        if(sh2_read_req != 0) {
-          for (i = 0; i < samplecnt; i += step) {
-            MM68KExec(step);
-            m68kcycle += base_clock;
-          }
-          frame += samplecnt;
-          new_scsp_exec((samplecnt << 1));
-          sh2_read_req = 0;
-        }
-      } while ((sleeptime > 0) && (isAutoFrameSkip()==0));
-      checktime = YabauseGetTicks() * 1000000 / yabsys.tickfreq;
-      //yprintf("vsynctime = %d(%d)\n", (s32)(checktime - before), (s32)(operation_time - before));
-      before = checktime;
-    }
-  }
-  YabThreadWake(YAB_THREAD_SCSP);
 }
 
 void ScspAddCycles(u64 cycles)
@@ -5541,8 +5431,10 @@ void ScspExecAsync() {
      if (audiosize > scspsoundbufsize - outstart)
         audiosize = scspsoundbufsize - outstart;
 
+    if (scsp_mute_flags == 0) {
      SNDCore->UpdateAudio(&scspchannel[0].data32[outstart],
         &scspchannel[1].data32[outstart], audiosize);
+    }
      scspsoundoutleft -= audiosize;
 
 #if 0
@@ -5551,7 +5443,7 @@ void ScspExecAsync() {
         (s16 *)stereodata16, audiosize);
      DRV_AviSoundUpdate(stereodata16, audiosize);
 #endif
-  }
+}
 
 #ifdef USE_SCSPMIDI
   // Process Midi ports
@@ -5629,10 +5521,9 @@ void
 ScspMuteAudio (int flags)
 {
   scsp_mute_flags |= flags;
-  if (SNDCore && scsp_mute_flags)
+  if (SNDCore && scsp_mute_flags) {
     SNDCore->MuteAudio ();
-
-  g_scsp_lock = 1;
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -5641,10 +5532,9 @@ void
 ScspUnMuteAudio (int flags)
 {
   scsp_mute_flags &= ~flags;
-  if (SNDCore && (scsp_mute_flags == 0))
+  if (SNDCore && (scsp_mute_flags == 0)) {
     SNDCore->UnMuteAudio ();
-
-  g_scsp_lock = 0;
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -5765,7 +5655,9 @@ M68KClearCodeBreakpoints ()
 int SoundSaveState(void ** stream)
 {
   int i;
+#ifndef IMPROVED_SAVESTATES
   u32 temp;
+#endif
   int offset;
   u8 nextphase;
 

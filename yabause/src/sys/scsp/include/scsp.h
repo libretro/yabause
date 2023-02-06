@@ -152,8 +152,6 @@ void scsp_debug_get_envelope(int chan, int * env, int * state);
 void scsp_debug_set_mode(int mode);
 void new_scsp_exec(s32 cycles);
 
-void SyncScsp();
-
 void M68KStep(void);
 
 extern void ScspLockThread();

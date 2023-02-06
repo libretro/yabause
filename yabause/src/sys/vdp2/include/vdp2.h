@@ -396,9 +396,9 @@ void Vdp2DeInit(void);
 void Vdp2Reset(void);
 void Vdp2VBlankIN(void);
 void Vdp2HBlankIN(void);
-void Vdp2HBlankOUT(void);
+void Vdp2StartVisibleLine(void);
 void Vdp2VBlankOUT(void);
-void Vdp2SendExternalLatch(int hcnt, int vcnt);
+void Vdp2SendExternalLatch(int valid, int hcnt, int vcnt);
 void SpeedThrottleEnable(void);
 void SpeedThrottleDisable(void);
 

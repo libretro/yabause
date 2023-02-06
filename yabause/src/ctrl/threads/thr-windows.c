@@ -111,9 +111,10 @@ void YabThreadYield(void)
 	SleepEx(0, 0);
 }
 
-void YabThreadUSleep( u32 stime )
+u32 YabThreadUSleep( u32 stime )
 {
 	SleepEx(stime/1000, 0);
+  return stime%1000;
 }
 
 void YabThreadSleep(void)

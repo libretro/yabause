@@ -285,6 +285,8 @@ static int generateComputeBuffer(int w, int h) {
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_vdp1access_);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, 512*256*4, NULL, GL_DYNAMIC_DRAW);
 
+	float col[4] = {0.0};
+	int limits[4] = {0, h, w, 0};
   glGenTextures(2, &compute_tex[0]);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, compute_tex[0]);
@@ -294,6 +296,7 @@ static int generateComputeBuffer(int w, int h) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	vdp1_clear(0, col, limits);
   glBindTexture(GL_TEXTURE_2D, compute_tex[1]);
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
   glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, w, h);
@@ -301,7 +304,7 @@ static int generateComputeBuffer(int w, int h) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
+	vdp1_clear(1, col, limits);
   return 0;
 }
 
@@ -480,7 +483,10 @@ int vdp1_add(vdp1cmd_struct* cmd, int clipcmd) {
 		}
 	}
 	if (clipcmd == 0) {
-		vdp1GenerateBuffer(cmd);
+		if (cmd->type != FB_WRITE) vdp1GenerateBuffer(cmd);
+		else {
+			requireCompute = 1;
+		}
 		if (_Ygl->meshmode != ORIGINAL_MESH) {
 			//Hack for Improved MESH
 			//Games like J.League Go Go Goal or Sailor Moon are using MSB shadow with VDP2 in RGB/Palette mode
@@ -559,18 +565,27 @@ int vdp1_add(vdp1cmd_struct* cmd, int clipcmd) {
 	}
 	if (requireCompute != 0){
 		vdp1_compute();
+		if (_Ygl->vdp1IsNotEmpty[_Ygl->drawframe] != -1) {
+			vdp1_write();
+			_Ygl->vdp1IsNotEmpty[_Ygl->drawframe] != -1;
+		}
   }
   return 0;
 }
 
-void vdp1_clear(int id, float *col) {
+void vdp1_clear(int id, float *col, int* limits) {
 	int progId = CLEAR;
 	if (prg_vdp1[progId] == 0)
     prg_vdp1[progId] = createProgram(sizeof(a_prg_vdp1[progId]) / sizeof(char*), (const GLchar**)a_prg_vdp1[progId]);
+	limits[0] = limits[0]*_Ygl->vdp1width/512;
+	limits[1] = _Ygl->vdp1height - (limits[1]*_Ygl->vdp1height/256) - 1 ;
+	limits[2] = limits[2]*_Ygl->vdp1width/512;
+	limits[3] = _Ygl->vdp1height - (limits[3]*_Ygl->vdp1height/256) - 1;
   glUseProgram(prg_vdp1[progId]);
 	glBindImageTexture(0, get_vdp1_tex(id), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
 	glBindImageTexture(1, get_vdp1_mesh(id), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
 	glUniform4fv(2, 1, col);
+	glUniform4iv(3, 1, limits);
 	glDispatchCompute(work_groups_x, work_groups_y, 1); //might be better to launch only the right number of workgroup
 	glBindImageTexture(0, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
 	glBindImageTexture(1, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
@@ -587,11 +602,12 @@ void vdp1_write() {
   glUseProgram(prg_vdp1[progId]);
 
 	glBindImageTexture(0, get_vdp1_tex(_Ygl->drawframe), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_vdp1access_);
+	glBindImageTexture(1, _Ygl->vdp1AccessTex[_Ygl->drawframe], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA8);
 	glUniform2f(2, wratio, hratio);
 
 	glDispatchCompute(work_groups_x, work_groups_y, 1); //might be better to launch only the right number of workgroup
 	glBindImageTexture(0, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+	glBindImageTexture(1, 0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA8);
 }
 
 u32* vdp1_read() {
@@ -661,16 +677,6 @@ void vdp1_compute_init(int width, int height, float ratiow, float ratioh)
 	return;
 }
 
-void vdp1_set_directFB() {
-	if (_Ygl->vdp1IsNotEmpty == 1) {
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_vdp1access_);
-		glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0x0, 512*256*4, (void*)(_Ygl->vdp1fb_buf));
-		vdp1_write();
-		_Ygl->vdp1On[_Ygl->drawframe] = 1;
-		//vdp1_fb_map = NULL;
-		_Ygl->vdp1IsNotEmpty = 0;
-	}
-}
 void vdp1_wait_regenerate(void) {
 	#ifdef VDP1RAM_CS_ASYNC
 	while (YaGetQueueSize(cmdq[_Ygl->drawframe])!=0)
@@ -703,12 +709,12 @@ static int oldProg = -1;
 void vdp1_compute() {
   GLuint error;
 	int progId = getProgramId();
-	int needRender = _Ygl->vdp1IsNotEmpty;
-
+	int needRender = 0;
   for (int i = 0; i < NB_COARSE_RAST; i++) {
     if (hasDrawingCmd[i] == 0) nbCmd[i] = 0;
     if (nbCmd[i] != 0) {
 			needRender = 1;
+			break;
 		}
   }
   if (needRender == 0) {
@@ -738,13 +744,13 @@ void vdp1_compute() {
 	}
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_cmd_list_);
 	glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, nbCmdToProcess*sizeof(vdp1cmd_struct), (void*)&cmdVdp1List[0]);
-	_Ygl->vdp1On[_Ygl->drawframe] = 1;
 
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_nbcmd_);
   glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(int)*NB_COARSE_RAST, (void*)nbCmd);
 
 	glBindImageTexture(0, compute_tex[_Ygl->drawframe], 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
 	glBindImageTexture(1, mesh_tex[_Ygl->drawframe], 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+	glBindImageTexture(2, _Ygl->vdp1AccessTex[_Ygl->drawframe], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA8);
 
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, ssbo_vdp1ram_[_Ygl->drawframe]);
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, ssbo_nbcmd_);
@@ -777,7 +783,6 @@ void vdp1_compute() {
   }
   glUniformMatrix4fv(10, 1, 0, (GLfloat*)m.m);
 
-	vdp1_set_directFB();
 	vdp1_setup();
 
   glDispatchCompute(work_groups_x, work_groups_y, 1); //might be better to launch only the right number of workgroup
@@ -786,6 +791,7 @@ void vdp1_compute() {
 
 	glBindImageTexture(0, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
 	glBindImageTexture(1, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+	glBindImageTexture(2, 0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA8);
   memset(nbCmd, 0, NB_COARSE_RAST*sizeof(int));
 	nbCmdToProcess = 0;
 	memset(hasDrawingCmd, 0, NB_COARSE_RAST*sizeof(int));

@@ -49,18 +49,51 @@ void InvalidateCache(SH2_struct *ctx);
 void DMATransferCycles(SH2_struct *context, Dmac * dmac, int cycles);
 int DMAProc(SH2_struct *context, int cycles );
 
+void (*SH2InterruptibleExec)(SH2_struct *context, u32 cycles);
+
 //////////////////////////////////////////////////////////////////////////////
+
+
+static void SH2StandardExec(SH2_struct *context, u32 cycles) {
+  SH2Core->Exec(context, cycles);
+}
+
+static sh2regs_struct oldRegs;
+static void SH2BlockableExec(SH2_struct *context, u32 cycles) {
+  if (context->isAccessingCPUBUS == 0) {
+    SH2Core->ExecSave(context, cycles, &oldRegs);
+  } else {
+    context->cycles += cycles;
+  }
+}
+
+void SH2SetCPUConcurrency(u8 on) {
+  if ((on!=0) && (SH2InterruptibleExec != SH2BlockableExec)) {
+    MSH2->isAccessingCPUBUS = 0;
+    SSH2->isAccessingCPUBUS = 0;
+    SH2InterruptibleExec = SH2BlockableExec;
+  }
+  if ((on==0) && (SH2InterruptibleExec != SH2StandardExec)) {
+    MSH2->isAccessingCPUBUS = 0;
+    SSH2->isAccessingCPUBUS = 0;
+    SH2InterruptibleExec = SH2StandardExec;
+  }
+}
 
 int SH2Init(int coreid)
 {
    int i;
-
+   SH2InterruptibleExec = SH2StandardExec;
    // MSH2
    if ((MSH2 = (SH2_struct *)calloc(1, sizeof(SH2_struct))) == NULL)
       return -1;
 
+   if (SH2TrackInfLoopInit(MSH2) != 0)
+      return -1;
+
    MSH2->onchip.BCR1 = 0x0000;
    MSH2->isslave = 0;
+   MSH2->isAccessingCPUBUS = 0;
 MSH2->trace = 0;
 
     MSH2->dma_ch0.CHCR = &MSH2->onchip.CHCR0;
@@ -80,9 +113,13 @@ MSH2->trace = 0;
    if ((SSH2 = (SH2_struct *)calloc(1, sizeof(SH2_struct))) == NULL)
       return -1;
 
+   if (SH2TrackInfLoopInit(SSH2) != 0)
+      return -1;
+
     SSH2->trace = 0;
     SSH2->onchip.BCR1 = 0x8000;
     SSH2->isslave = 1;
+    SSH2->isAccessingCPUBUS = 0;
 
     SSH2->dma_ch0.CHCR = &SSH2->onchip.CHCR0;
     SSH2->dma_ch0.CHCRM = &SSH2->onchip.CHCR0M;
@@ -144,12 +181,14 @@ void SH2DeInit()
 
    if (MSH2)
    {
+      SH2TrackInfLoopDeInit(MSH2);
       free(MSH2);
    }
    MSH2 = NULL;
 
    if (SSH2)
    {
+      SH2TrackInfLoopDeInit(SSH2);
       free(SSH2);
    }
    SSH2 = NULL;
@@ -161,6 +200,7 @@ void SH2Reset(SH2_struct *context)
 {
    int i;
 CACHE_LOG("%s reset\n", (context==SSH2)?"SSH2":"MSH2" );
+   SH2InterruptibleExec = SH2StandardExec;
    SH2Core->Reset(context);
 
    // Reset general registers
@@ -175,7 +215,7 @@ CACHE_LOG("%s reset\n", (context==SSH2)?"SSH2":"MSH2" );
    SH2Core->SetPR(context, 0x00000000);
 
    // Internal variables
-   context->delay = 0x00000000;
+   context->target_cycles = 0x00000000;
    context->cycles = 0;
    context->frtcycles = 0;
    context->wdtcycles = 0;
@@ -197,6 +237,9 @@ CACHE_LOG("%s reset\n", (context==SSH2)?"SSH2":"MSH2" );
    // Reset Onchip modules
    OnchipReset(context);
    InvalidateCache(context);
+
+   // Reset backtrace
+   context->bt.numbacktrace = 0;
 
 #ifdef DMPHISTORY
    memset(context->pchistory, 0, sizeof(context->pchistory));
@@ -222,7 +265,7 @@ void FASTCALL SH2TestExec(SH2_struct *context, u32 cycles)
 
 void FASTCALL SH2Exec(SH2_struct *context, u32 cycles)
 {
-   SH2Core->Exec(context, cycles);
+   SH2InterruptibleExec(context, cycles);
    FRTExec(context);
    WDTExec(context);
    DMAProc(context, cycles);
@@ -236,11 +279,205 @@ void FASTCALL SH2OnFrame(SH2_struct *context) {
 void SH2SendInterrupt(SH2_struct *context, u8 vector, u8 level)
 {
    SH2Core->SendInterrupt(context, vector, level);
+   if (SH2MappedMemoryReadWord(context, context->regs.PC) == 0x1B) {
+     //SH2 on a sleep command, wake it up
+     context->regs.PC+=2;
+   }
 }
 
 void SH2RemoveInterrupt(SH2_struct *context, u8 vector, u8 level)
 {
   SH2Core->RemoveInterrupt(context, vector, level);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+void SH2Step(SH2_struct *context)
+{
+   if (SH2Core)
+   {
+      u32 tmp = SH2Core->GetPC(context);
+
+      // Execute 1 instruction
+      SH2Exec(context, 1);
+
+      // Sometimes it doesn't always execute one instruction,
+      // let's make sure it did
+      if (tmp == SH2Core->GetPC(context))
+         SH2Exec(context, 1);
+   }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+int SH2StepOver(SH2_struct *context, void (*func)(void *, u32, void *))
+{
+   if (SH2Core)
+   {
+      u32 tmp = SH2Core->GetPC(context);
+      u16 inst= SH2MappedMemoryReadWord(context, context->regs.PC);
+
+      // If instruction is jsr, bsr, or bsrf, step over it
+      if ((inst & 0xF000) == 0xB000 || // BSR
+         (inst & 0xF0FF) == 0x0003 || // BSRF
+         (inst & 0xF0FF) == 0x400B)   // JSR
+      {
+         // Set breakpoint after at PC + 4
+         context->stepOverOut.callBack = func;
+         context->stepOverOut.type = SH2ST_STEPOVER;
+         context->stepOverOut.enabled = 1;
+         context->stepOverOut.address = context->regs.PC+4;
+         return 1;
+      }
+      else
+      {
+         // Execute 1 instruction instead
+         SH2Exec(context, 1);
+
+         // Sometimes it doesn't always execute one instruction,
+         // let's make sure it did
+         if (tmp == SH2Core->GetPC(context))
+            SH2Exec(context, 1);
+      }
+   }
+   return 0;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+void SH2StepOut(SH2_struct *context, void (*func)(void *, u32, void *))
+{
+   if (SH2Core)
+   {
+      context->stepOverOut.callBack = func;
+      context->stepOverOut.type = SH2ST_STEPOUT;
+      context->stepOverOut.enabled = 1;
+      context->stepOverOut.address = 0;
+   }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+int SH2TrackInfLoopInit(SH2_struct *context)
+{
+   context->trackInfLoop.maxNum = 100;
+   if ((context->trackInfLoop.match = calloc(context->trackInfLoop.maxNum, sizeof(tilInfo_struct))) == NULL)
+      return -1;
+
+   return 0;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+void SH2TrackInfLoopDeInit(SH2_struct *context)
+{
+   if (context->trackInfLoop.match)
+      free(context->trackInfLoop.match);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+void SH2TrackInfLoopStart(SH2_struct *context)
+{
+   context->trackInfLoop.enabled = 1;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+void SH2TrackInfLoopStop(SH2_struct *context)
+{
+   context->trackInfLoop.enabled = 0;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+void SH2TrackInfLoopClear(SH2_struct *context)
+{
+   memset(context->trackInfLoop.match, 0, sizeof(tilInfo_struct) * context->trackInfLoop.maxNum);
+   context->trackInfLoop.num = 0;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+void SH2HandleStepOverOut(SH2_struct *context)
+{
+   if (context->stepOverOut.enabled)
+   {
+      switch ((int)context->stepOverOut.type)
+      {
+      case SH2ST_STEPOVER: // Step Over
+         if (context->regs.PC == context->stepOverOut.address)
+         {
+            context->stepOverOut.enabled = 0;
+            context->stepOverOut.callBack(context, context->regs.PC, (void *)context->stepOverOut.type);
+         }
+         break;
+      case SH2ST_STEPOUT: // Step Out
+         {
+            u16 inst;
+
+            if (context->stepOverOut.levels < 0 && context->regs.PC == context->regs.PR)
+            {
+               context->stepOverOut.enabled = 0;
+               context->stepOverOut.callBack(context, context->regs.PC, (void *)context->stepOverOut.type);
+               return;
+            }
+
+            inst = context->instruction;;
+
+            if ((inst & 0xF000) == 0xB000 || // BSR
+               (inst & 0xF0FF) == 0x0003 || // BSRF
+               (inst & 0xF0FF) == 0x400B)   // JSR
+               context->stepOverOut.levels++;
+            else if (inst == 0x000B || // RTS
+                     inst == 0x002B)   // RTE
+               context->stepOverOut.levels--;
+
+            break;
+         }
+      default: break;
+      }
+   }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+void SH2HandleTrackInfLoop(SH2_struct *context)
+{
+   if (context->trackInfLoop.enabled)
+   {
+      // Look for specific bf/bt/bra instructions that branch to address < PC
+      if ((context->instruction & 0x8B80) == 0x8B80 || // bf
+          (context->instruction & 0x8F80) == 0x8F80 || // bf/s
+          (context->instruction & 0x8980) == 0x8980 || // bt
+          (context->instruction & 0x8D80) == 0x8D80 || // bt/s
+          (context->instruction & 0xA800) == 0xA800)   // bra
+      {
+         int i;
+
+         // See if it's already on match list
+         for (i = 0; i < context->trackInfLoop.num; i++)
+         {
+            if (context->regs.PC == context->trackInfLoop.match[i].addr)
+            {
+               context->trackInfLoop.match[i].count++;
+               return;
+            }
+         }
+
+         if (context->trackInfLoop.num >= context->trackInfLoop.maxNum)
+         {
+            context->trackInfLoop.match = realloc(context->trackInfLoop.match, sizeof(tilInfo_struct) * (context->trackInfLoop.maxNum * 2));
+            context->trackInfLoop.maxNum *= 2;
+         }
+
+         // Add new
+         i=context->trackInfLoop.num;
+         context->trackInfLoop.match[i].addr = context->regs.PC;
+         context->trackInfLoop.match[i].count = 1;
+         context->trackInfLoop.num++;
+      }
+   }
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1251,6 +1488,7 @@ static u8 getLRU(SH2_struct *context, u32 tag, u8 line) {
 }
 
 static inline void CacheWriteThrough(SH2_struct *context, u8* mem, u32 addr, u32 val, u8 size) {
+  context->isAccessingCPUBUS = 1; //When cpu access CPU-BUs at the same time as SCU, there might be a penalty
   switch(size) {
   case 1:
     WriteByteList[(addr >> 16) & 0xFFF](context, mem, addr, val);
@@ -1394,6 +1632,7 @@ void disableCache(SH2_struct *context) {
 void CacheFetch(SH2_struct *context, u8* memory, u32 addr, u8 way) {
   u8 line = (addr>>4)&0x3F;
   u32 tag = (addr>>10)&0x7FFFF;
+  context->isAccessingCPUBUS = 1; //When cpu access CPU-BUs at the same time as SCU, there might be a penalty
   UpdateLRU(context, line, way);
   context->tagWay[line][tag] = way;
   context->cacheTagArray[line][way] = tag;
@@ -2058,7 +2297,7 @@ int SH2SaveState(SH2_struct *context, void ** stream)
    MemStateWrite((void *)&context->NumberOfInterrupts, sizeof(u32), 1, stream);
    MemStateWrite((void *)context->AddressArray, sizeof(u32), 0x100, stream);
    MemStateWrite((void *)context->DataArray, sizeof(u8), 0x1000, stream);
-   MemStateWrite((void *)&context->delay, sizeof(u32), 1, stream);
+   MemStateWrite((void *)&context->target_cycles, sizeof(u32), 1, stream);
    MemStateWrite((void *)&context->cycles, sizeof(u32), 1, stream);
    MemStateWrite((void *)&context->isslave, sizeof(u8), 1, stream);
    MemStateWrite((void *)&context->instruction, sizeof(u16), 1, stream);
@@ -2104,7 +2343,7 @@ int SH2LoadState(SH2_struct *context, const void * stream, UNUSED int version, i
    SH2Core->SetInterrupts(context, context->NumberOfInterrupts, context->interrupts);
    MemStateRead((void *)context->AddressArray, sizeof(u32), 0x100, stream);
    MemStateRead((void *)context->DataArray, sizeof(u8), 0x1000, stream);
-   MemStateRead((void *)&context->delay, sizeof(u32), 1, stream);
+   MemStateRead((void *)&context->target_cycles, sizeof(u32), 1, stream);
    MemStateRead((void *)&context->cycles, sizeof(u32), 1, stream);
    MemStateRead((void *)&context->isslave, sizeof(u8), 1, stream);
    MemStateRead((void *)&context->instruction, sizeof(u16), 1, stream);
@@ -2129,7 +2368,7 @@ void SH2DumpHistory(SH2_struct *context){
 		int index = context->pchistory_index;
 		for (i = 0; i < (MAX_DMPHISTORY - 1); i++){
 		  char lineBuf[128];
-		  SH2Disasm(context->pchistory[(index & (MAX_DMPHISTORY - 1))], MappedMemoryReadWord(context->pchistory[(index & (MAX_DMPHISTORY - 1))]), 0, NULL /*&context->regshistory[index & 0xFF]*/, lineBuf);
+		  SH2Disasm(context->pchistory[(index & (MAX_DMPHISTORY - 1))], SH2MappedMemoryReadWord(context->pchistory[(index & (MAX_DMPHISTORY - 1))]), 0, NULL /*&context->regshistory[index & 0xFF]*/, lineBuf);
 		  fprintf(history,lineBuf);
 		  fprintf(history, "\n");
 		  index--;
@@ -2494,7 +2733,7 @@ int SH2AddMemoryBreakpoint(SH2_struct *context, u32 addr, u32 flags) {
       {
          // Make sure function isn't already being breakpointed by another breakpoint
          if (!CheckForMemoryBreakpointDupes(context, addr, BREAK_BYTEREAD, &which))
-            ReadByteList[(addr >> 16) & 0xFFF] = &SH2MemoryBreakpointReadByte;
+            ReadByteList[(addr >> 16) & 0xFFF] = CacheReadByteList[(addr >> 16) & 0xFFF] = &SH2MemoryBreakpointReadByte;
          else
             // fix old memory access function
             context->bp.memorybreakpoint[context->bp.nummemorybreakpoints].oldreadbyte = context->bp.memorybreakpoint[which].oldreadbyte;
@@ -2504,7 +2743,7 @@ int SH2AddMemoryBreakpoint(SH2_struct *context, u32 addr, u32 flags) {
       {
          // Make sure function isn't already being breakpointed by another breakpoint
          if (!CheckForMemoryBreakpointDupes(context, addr, BREAK_WORDREAD, &which))
-            ReadWordList[(addr >> 16) & 0xFFF] = &SH2MemoryBreakpointReadWord;
+            ReadWordList[(addr >> 16) & 0xFFF] = CacheReadWordList[(addr >> 16) & 0xFFF] = &SH2MemoryBreakpointReadWord;
          else
             // fix old memory access function
             context->bp.memorybreakpoint[context->bp.nummemorybreakpoints].oldreadword = context->bp.memorybreakpoint[which].oldreadword;
@@ -2514,7 +2753,7 @@ int SH2AddMemoryBreakpoint(SH2_struct *context, u32 addr, u32 flags) {
       {
          // Make sure function isn't already being breakpointed by another breakpoint
          if (!CheckForMemoryBreakpointDupes(context, addr, BREAK_LONGREAD, &which))
-            ReadLongList[(addr >> 16) & 0xFFF] = &SH2MemoryBreakpointReadLong;
+            ReadLongList[(addr >> 16) & 0xFFF] = CacheReadLongList[(addr >> 16) & 0xFFF] = &SH2MemoryBreakpointReadLong;
          else
             // fix old memory access function
             context->bp.memorybreakpoint[context->bp.nummemorybreakpoints].oldreadword = context->bp.memorybreakpoint[which].oldreadword;
@@ -2524,7 +2763,7 @@ int SH2AddMemoryBreakpoint(SH2_struct *context, u32 addr, u32 flags) {
       {
          // Make sure function isn't already being breakpointed by another breakpoint
          if (!CheckForMemoryBreakpointDupes(context, addr, BREAK_BYTEWRITE, &which))
-            WriteByteList[(addr >> 16) & 0xFFF] = &SH2MemoryBreakpointWriteByte;
+            WriteByteList[(addr >> 16) & 0xFFF] = CacheWriteByteList[(addr >> 16) & 0xFFF] = &SH2MemoryBreakpointWriteByte;
          else
             // fix old memory access function
             context->bp.memorybreakpoint[context->bp.nummemorybreakpoints].oldwritebyte = context->bp.memorybreakpoint[which].oldwritebyte;
@@ -2534,7 +2773,7 @@ int SH2AddMemoryBreakpoint(SH2_struct *context, u32 addr, u32 flags) {
       {
          // Make sure function isn't already being breakpointed by another breakpoint
          if (!CheckForMemoryBreakpointDupes(context, addr, BREAK_WORDWRITE, &which))
-            WriteWordList[(addr >> 16) & 0xFFF] = &SH2MemoryBreakpointWriteWord;
+            WriteWordList[(addr >> 16) & 0xFFF] = CacheWriteWordList[(addr >> 16) & 0xFFF] = &SH2MemoryBreakpointWriteWord;
          else
             // fix old memory access function
             context->bp.memorybreakpoint[context->bp.nummemorybreakpoints].oldwriteword = context->bp.memorybreakpoint[which].oldwriteword;
@@ -2544,10 +2783,10 @@ int SH2AddMemoryBreakpoint(SH2_struct *context, u32 addr, u32 flags) {
       {
          // Make sure function isn't already being breakpointed by another breakpoint
          if (!CheckForMemoryBreakpointDupes(context, addr, BREAK_LONGWRITE, &which))
-            WriteLongList[(addr >> 16) & 0xFFF] = &SH2MemoryBreakpointWriteLong;
+           WriteLongList[(addr >> 16) & 0xFFF] = CacheWriteLongList[(addr >> 16) & 0xFFF] = &SH2MemoryBreakpointWriteLong;
          else
-            // fix old memory access function
-            context->bp.memorybreakpoint[context->bp.nummemorybreakpoints].oldwritelong = context->bp.memorybreakpoint[which].oldwritelong;
+           // fix old memory access function
+           context->bp.memorybreakpoint[context->bp.nummemorybreakpoints].oldwritelong = context->bp.memorybreakpoint[which].oldwritelong;
       }
 
       context->bp.nummemorybreakpoints++;
@@ -2603,22 +2842,24 @@ int SH2DelMemoryBreakpoint(SH2_struct *context, u32 addr) {
             }
 
             if (context->bp.memorybreakpoint[i].flags & BREAK_BYTEREAD)
-               ReadByteList[(addr >> 16) & 0xFFF] = context->bp.memorybreakpoint[i].oldreadbyte;
+               ReadByteList[(addr >> 16) & 0xFFF] = CacheReadByteList[(addr >> 16) & 0xFFF] = context->bp.memorybreakpoint[i].oldreadbyte;
 
             if (context->bp.memorybreakpoint[i].flags & BREAK_WORDREAD)
-               ReadWordList[(addr >> 16) & 0xFFF] = context->bp.memorybreakpoint[i].oldreadword;
+               ReadWordList[(addr >> 16) & 0xFFF] = CacheReadWordList[(addr >> 16) & 0xFFF] = context->bp.memorybreakpoint[i].oldreadword;
 
             if (context->bp.memorybreakpoint[i].flags & BREAK_LONGREAD)
-               ReadLongList[(addr >> 16) & 0xFFF] = context->bp.memorybreakpoint[i].oldreadlong;
+               ReadLongList[(addr >> 16) & 0xFFF] = CacheReadLongList[(addr >> 16) & 0xFFF] = context->bp.memorybreakpoint[i].oldreadlong;
 
             if (context->bp.memorybreakpoint[i].flags & BREAK_BYTEWRITE)
-               WriteByteList[(addr >> 16) & 0xFFF] = context->bp.memorybreakpoint[i].oldwritebyte;
+               WriteByteList[(addr >> 16) & 0xFFF] = CacheWriteByteList[(addr >> 16) & 0xFFF] = context->bp.memorybreakpoint[i].oldwritebyte;
 
             if (context->bp.memorybreakpoint[i].flags & BREAK_WORDWRITE)
-               WriteWordList[(addr >> 16) & 0xFFF] = context->bp.memorybreakpoint[i].oldwriteword;
+               WriteWordList[(addr >> 16) & 0xFFF] = CacheWriteWordList[(addr >> 16) & 0xFFF] = context->bp.memorybreakpoint[i].oldwriteword;
 
-            if (context->bp.memorybreakpoint[i].flags & BREAK_LONGWRITE)
-               WriteLongList[(addr >> 16) & 0xFFF] = context->bp.memorybreakpoint[i].oldwritelong;
+            if (context->bp.memorybreakpoint[i].flags & BREAK_LONGWRITE) {
+              WriteLongList[(addr >> 16) & 0xFFF] = CacheWriteLongList[(addr >> 16) & 0xFFF] = context->bp.memorybreakpoint[i].oldwritelong;
+
+            }
 
             context->bp.memorybreakpoint[i].addr = 0xFFFFFFFF;
             SH2SortMemoryBreakpoints(context);
@@ -2655,116 +2896,33 @@ void SH2ClearMemoryBreakpoints(SH2_struct *context) {
    context->bp.nummemorybreakpoints = 0;
 }
 
+//////////////////////////////////////////////////////////////////////////////
+
+void SH2HandleBackTrace(SH2_struct *context)
+{
+   u16 inst = context->instruction;
+   if ((inst & 0xF000) == 0xB000 || // BSR
+      (inst & 0xF0FF) == 0x0003 || // BSRF
+      (inst & 0xF0FF) == 0x400B)   // JSR
+   {
+      if (context->bt.numbacktrace < sizeof(context->bt.addr)/sizeof(u32))
+      {
+         context->bt.addr[context->bt.numbacktrace] = context->regs.PC;
+         context->bt.numbacktrace++;
+      }
+   }
+   else if (inst == 0x000B) // RTS
+   {
+      if (context->bt.numbacktrace > 0)
+         context->bt.numbacktrace--;
+   }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
 u32 *SH2GetBacktraceList(SH2_struct *context, int *size)
 {
    *size = context->bt.numbacktrace;
    return context->bt.addr;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-void SH2Step(SH2_struct *context)
-{
-   if (SH2Core)
-   {
-      u32 tmp = SH2Core->GetPC(context);
-
-      // Execute 1 instruction
-      SH2Exec(context, context->cycles+1);
-
-      // Sometimes it doesn't always execute one instruction,
-      // let's make sure it did
-      if (tmp == SH2Core->GetPC(context))
-         SH2Exec(context, context->cycles+1);
-   }
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-int SH2StepOver(SH2_struct *context, void (*func)(void *, u32, void *))
-{
-   if (SH2Core)
-   {
-      u32 tmp = SH2Core->GetPC(context);
-      u16 inst= SH2MappedMemoryReadWord(context, context->regs.PC);
-
-      // If instruction is jsr, bsr, or bsrf, step over it
-      if ((inst & 0xF000) == 0xB000 || // BSR
-         (inst & 0xF0FF) == 0x0003 || // BSRF
-         (inst & 0xF0FF) == 0x400B)   // JSR
-      {
-         // Set breakpoint after at PC + 4
-         context->stepOverOut.callBack = func;
-         context->stepOverOut.type = SH2ST_STEPOVER;
-         context->stepOverOut.enabled = 1;
-         context->stepOverOut.address = context->regs.PC+4;
-         return 1;
-      }
-      else
-      {
-         // Execute 1 instruction instead
-         SH2Exec(context, context->cycles+1);
-
-         // Sometimes it doesn't always execute one instruction,
-         // let's make sure it did
-         if (tmp == SH2Core->GetPC(context))
-            SH2Exec(context, context->cycles+1);
-      }
-   }
-   return 0;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-void SH2StepOut(SH2_struct *context, void (*func)(void *, u32, void *))
-{
-   if (SH2Core)
-   {
-      context->stepOverOut.callBack = func;
-      context->stepOverOut.type = SH2ST_STEPOUT;
-      context->stepOverOut.enabled = 1;
-      context->stepOverOut.address = 0;
-   }
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-int SH2TrackInfLoopInit(SH2_struct *context)
-{
-   context->trackInfLoop.maxNum = 100;
-   if ((context->trackInfLoop.match = calloc(context->trackInfLoop.maxNum, sizeof(tilInfo_struct))) == NULL)
-      return -1;
-
-   return 0;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-void SH2TrackInfLoopDeInit(SH2_struct *context)
-{
-   if (context->trackInfLoop.match)
-      free(context->trackInfLoop.match);
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-void SH2TrackInfLoopStart(SH2_struct *context)
-{
-   context->trackInfLoop.enabled = 1;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-void SH2TrackInfLoopStop(SH2_struct *context)
-{
-   context->trackInfLoop.enabled = 0;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-void SH2TrackInfLoopClear(SH2_struct *context)
-{
-   memset(context->trackInfLoop.match, 0, sizeof(tilInfo_struct) * context->trackInfLoop.maxNum);
-   context->trackInfLoop.num = 0;
 }
 

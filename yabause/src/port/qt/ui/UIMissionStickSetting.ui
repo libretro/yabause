@@ -313,34 +313,6 @@
     <set>QDialogButtonBox::Close</set>
    </property>
   </widget>
-  <widget class="QToolButton" name="tbAxis2Up">
-   <property name="geometry">
-    <rect>
-     <x>380</x>
-     <y>180</y>
-     <width>31</width>
-     <height>30</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
-   </property>
-   <property name="toolTip">
-    <string>Stick Up</string>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">QPushButton:hover,QToolButton:hover {
-  background-color: rgba(117, 190, 218, 0.5); 
-}
-</string>
-   </property>
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="autoRaise">
-    <bool>true</bool>
-   </property>
-  </widget>
   <widget class="QToolButton" name="tbAxis1Left">
    <property name="geometry">
     <rect>
@@ -386,35 +358,7 @@
    </property>
    <property name="styleSheet">
     <string notr="true">QPushButton:hover,QToolButton:hover {
-  background-color: rgba(117, 190, 218, 0.5); 
-}
-</string>
-   </property>
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="autoRaise">
-    <bool>true</bool>
-   </property>
-  </widget>
-  <widget class="QToolButton" name="tbAxis1Right">
-   <property name="geometry">
-    <rect>
-     <x>430</x>
-     <y>220</y>
-     <width>30</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
-   </property>
-   <property name="toolTip">
-    <string>Stick Right</string>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">QPushButton:hover,QToolButton:hover {
-  background-color: rgba(117, 190, 218, 0.5); 
+  background-color: rgba(117, 190, 218, 0.5);
 }
 </string>
    </property>
@@ -442,35 +386,7 @@
    </property>
    <property name="styleSheet">
     <string notr="true">QPushButton:hover,QToolButton:hover {
-  background-color: rgba(117, 190, 218, 0.5); 
-}
-</string>
-   </property>
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="autoRaise">
-    <bool>true</bool>
-   </property>
-  </widget>
-  <widget class="QToolButton" name="tbAxis3Down">
-   <property name="geometry">
-    <rect>
-     <x>430</x>
-     <y>150</y>
-     <width>31</width>
-     <height>30</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
-   </property>
-   <property name="toolTip">
-    <string>Throttle Down</string>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">QPushButton:hover,QToolButton:hover {
-  background-color: rgba(117, 190, 218, 0.5); 
+  background-color: rgba(117, 190, 218, 0.5);
 }
 </string>
    </property>

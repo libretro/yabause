@@ -20,6 +20,7 @@
 
 #ifndef THREADS_H
 #define THREADS_H
+#include "core.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -152,7 +153,7 @@ YabBarrier * YabThreadCreateBarrier(int nbWorkers);
 void YabThreadSetCurrentThreadAffinityMask(int mask);
 int YabThreadGetCurrentThreadAffinityMask();
 
-void YabThreadUSleep( unsigned int stime );
+u32 YabThreadUSleep( unsigned int stime );
 
 ///////////////////////////////////////////////////////////////////////////
 

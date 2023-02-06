@@ -52,7 +52,7 @@ static char * wcsdupstr(const wchar_t * path)
    size_t len = wcstombs(NULL, path, 0);
    if (len == (size_t) -1) return NULL;
 
-   mbs = (char*)malloc(len);
+   mbs = (char*)calloc(1, len);
    len = wcstombs(mbs, path, len);
    if (len == (size_t) -1)
    {
@@ -421,7 +421,7 @@ static FILE* fopenInPath(char* filename, char* path){
   for(i = 0; i < nbFiles; i++){
     if (strncasecmp(filename, fileListTemp[i]->d_name, l) == 0) {
       int p= (l + charToEscape(filename) + charToEscape(path)+strlen(path));
-      char* filepath = (char*)malloc(p*sizeof(char));
+      char* filepath = (char*)calloc(1, p*sizeof(char));
       tmp = filepath;
       for (k=0; k<strlen(path); k++) {
         if (shallBeEscaped(path[k])) *tmp++='\\';
@@ -441,9 +441,9 @@ static FILE* fopenInPath(char* filename, char* path){
 }
 #else
 static FILE* fopenInPath(char* filename, char* path){
-  int l = strlen(filename)+2;
+  size_t l = strlen(filename)+2;
   int k;
-  char* filepath = (char*)malloc((l + charToEscape(filename) + charToEscape(path)+strlen(path))*sizeof(char));
+  char* filepath = (char*)calloc(1, (l + charToEscape(filename) + charToEscape(path)+strlen(path))*sizeof(char));
   char* tmp;
   tmp = filepath;
   for (k=0; k<strlen(path); k++) {
@@ -523,13 +523,13 @@ static int LoadBinCue(const char *cuefilename, FILE *iso_file)
    int fad = 150;
 
 	memset(trk, 0, sizeof(trk));
-   disc.session_num = 1;
-   disc.session = (session_info_struct*)malloc(sizeof(session_info_struct) * disc.session_num);
+   disc.session = (session_info_struct*)calloc(1, sizeof(session_info_struct));
    if (disc.session == NULL)
    {
       YabSetError(YAB_ERR_MEMORYALLOC, NULL);
       return -1;
    }
+   disc.session_num = 1;
 
    fseek(iso_file, 0, SEEK_END);
    size = ftell(iso_file);
@@ -639,6 +639,7 @@ static int LoadBinCue(const char *cuefilename, FILE *iso_file)
      YabSetError(YAB_ERR_FILENOTFOUND, NULL);
      free(disc.session);
      disc.session = NULL;
+     disc.session_num = 0;
      return -1;
    }
 
@@ -649,12 +650,13 @@ static int LoadBinCue(const char *cuefilename, FILE *iso_file)
    disc.session[0].fad_start = 150;
    disc.session[0].fad_end = trk[track_num-1].fad_end;
    disc.session[0].track_num = track_num;
-   disc.session[0].track = (track_info_struct*)malloc(sizeof(track_info_struct) * disc.session[0].track_num);
+   disc.session[0].track = (track_info_struct*)calloc(1, sizeof(track_info_struct) * disc.session[0].track_num);
    if (disc.session[0].track == NULL)
    {
       YabSetError(YAB_ERR_MEMORYALLOC, NULL);
       free(disc.session);
       disc.session = NULL;
+      disc.session_num = 0;
       return -1;
    }
 
@@ -669,7 +671,7 @@ static int LoadBinCue(const char *cuefilename, FILE *iso_file)
 
 
 int infoFile(JZFile *zip, int idx, JZFileHeader *header, char *filename, void *user_data) {
-    long offset;
+    size_t offset;
     char name[1024];
     ZipEntry *entry;
     offset = zip->tell(zip); // store current position
@@ -692,6 +694,7 @@ int infoFile(JZFile *zip, int idx, JZFileHeader *header, char *filename, void *u
           printf("Couldn't read local file header!\n");
           exit(-1);
         }
+        if (entry->zipBuffer != NULL) free(entry->zipBuffer);
         entry->zipBuffer = NULL;
         entry->size = header->uncompressedSize;
         return 0;
@@ -703,6 +706,7 @@ int infoFile(JZFile *zip, int idx, JZFileHeader *header, char *filename, void *u
       else last = last+1;
       if (strcmp(last, fileToSearch) == 0) {
         //File found
+        if (entry->zipBuffer != NULL) free(entry->zipBuffer);
         entry->zipBuffer = NULL;
         entry->size = header->uncompressedSize;
         return 0;
@@ -715,7 +719,7 @@ int infoFile(JZFile *zip, int idx, JZFileHeader *header, char *filename, void *u
 }
 
 int deflateFile(JZFile *zip, int idx, JZFileHeader *header, char *filename, void *user_data) {
-    long offset;
+    size_t offset;
     char name[1024];
     offset = zip->tell(zip); // store current position
     ZipEntry *entry = (ZipEntry*)user_data;
@@ -735,14 +739,15 @@ int deflateFile(JZFile *zip, int idx, JZFileHeader *header, char *filename, void
           exit(-1);
         }
         CDLOG("uncompressed %d %f %f\n", header->uncompressedSize, header->uncompressedSize/2448.0, header->uncompressedSize/2352.0);
-        if((entry->zipBuffer = (u8*)malloc(header->uncompressedSize)) == NULL) {
+        if (entry->zipBuffer != NULL) free(entry->zipBuffer);
+        if((entry->zipBuffer = (u8*)calloc(1, header->uncompressedSize)) == NULL) {
           printf("Couldn't allocate memory!\n");
           exit(-1);
         }
         if (jzReadData(zip, header, entry->zipBuffer) == Z_OK)
           entry->size = header->uncompressedSize;
         else {
-          free (entry->zipBuffer);
+          if (entry->zipBuffer != NULL) free(entry->zipBuffer);
           entry->zipBuffer = NULL;
           entry->size = 0;
         }
@@ -759,14 +764,15 @@ int deflateFile(JZFile *zip, int idx, JZFileHeader *header, char *filename, void
           exit(-1);
         }
         CDLOG("uncompressed %d %f %f\n", header->uncompressedSize, header->uncompressedSize/2448.0, header->uncompressedSize/2352.0);
-        if((entry->zipBuffer = (u8*)malloc(header->uncompressedSize)) == NULL) {
+        if (entry->zipBuffer != NULL) free(entry->zipBuffer);
+        if((entry->zipBuffer = (u8*)calloc(1, header->uncompressedSize)) == NULL) {
           printf("Couldn't allocate memory!\n");
           exit(-1);
         }
         if (jzReadData(zip, header, entry->zipBuffer) == Z_OK)
           entry->size = header->uncompressedSize;
         else {
-          free (entry->zipBuffer);
+          if (entry->zipBuffer != NULL) free(entry->zipBuffer);
           entry->zipBuffer = NULL;
           entry->size = 0;
         }
@@ -778,8 +784,9 @@ int deflateFile(JZFile *zip, int idx, JZFileHeader *header, char *filename, void
 }
 
 static ZipEntry* getZipFileLocalInfo(JZFile *zip, JZEndRecord* endRecord, char* filename, int deflate) {
-   ZipEntry* entry = (ZipEntry*)malloc(sizeof(ZipEntry));
+   ZipEntry* entry = (ZipEntry*)calloc(1, sizeof(ZipEntry));
    entry->filename = NULL;
+   if (entry->zipBuffer != NULL) free(entry->zipBuffer);
    entry->zipBuffer = NULL;
    entry->size = 0;
    if (filename != NULL)
@@ -814,7 +821,7 @@ static int LoadBinCueInZip(const char *filename, FILE *fp)
    int fad = 150;
    int pos;
 
-   JZEndRecord* endRecord = (JZEndRecord*)malloc(sizeof(JZEndRecord));
+   JZEndRecord* endRecord = (JZEndRecord*)calloc(1, sizeof(JZEndRecord));
    JZFileHeader header;
    u8* data;
    ZipEntry* tracktr = NULL;
@@ -834,15 +841,16 @@ static int LoadBinCueInZip(const char *filename, FILE *fp)
   if (cue == NULL) return -1;
 
    memset(trk, 0, sizeof(trk));
-   disc.session_num = 1;
-   disc.zip = zip;
-   disc.endRecord = endRecord;
-   disc.session = (session_info_struct*)malloc(sizeof(session_info_struct) * disc.session_num);
+   disc.session = (session_info_struct*)calloc(1, sizeof(session_info_struct));
    if (disc.session == NULL)
    {
+      disc.session_num = 0;
       YabSetError(YAB_ERR_MEMORYALLOC, NULL);
       return -1;
    }
+   disc.session_num = 1;
+   disc.zip = zip;
+   disc.endRecord = endRecord;
 
    size = cue->size;
 
@@ -950,6 +958,7 @@ static int LoadBinCueInZip(const char *filename, FILE *fp)
    if (track_num == 0) {
      YabSetError(YAB_ERR_FILENOTFOUND, NULL);
      free(disc.session);
+     disc.session_num = 0;
      disc.session = NULL;
      return -1;
    }
@@ -961,11 +970,12 @@ static int LoadBinCueInZip(const char *filename, FILE *fp)
    disc.session[0].fad_start = 150;
    disc.session[0].fad_end = trk[track_num-1].fad_end;
    disc.session[0].track_num = track_num;
-   disc.session[0].track = (track_info_struct*)malloc(sizeof(track_info_struct) * disc.session[0].track_num);
+   disc.session[0].track = (track_info_struct*)calloc(1, sizeof(track_info_struct) * disc.session[0].track_num);
    if (disc.session[0].track == NULL)
    {
       YabSetError(YAB_ERR_MEMORYALLOC, NULL);
       free(disc.session);
+      disc.session_num = 0;
       disc.session = NULL;
       return -1;
    }
@@ -986,7 +996,7 @@ int LoadMDSTracks(const char *mds_filename, FILE *iso_file, mds_session_struct *
    int track_num=0;
    u32 fad_end = 0;
 
-   session->track = (track_info_struct*)malloc(sizeof(track_info_struct) * mds_session->last_track);
+   session->track = (track_info_struct*)calloc(1, sizeof(track_info_struct) * mds_session->last_track);
    if (session->track == NULL)
    {
       YabSetError(YAB_ERR_MEMORYALLOC, NULL);
@@ -1041,6 +1051,7 @@ int LoadMDSTracks(const char *mds_filename, FILE *iso_file, mds_session_struct *
             {
                YabSetError(YAB_ERR_FILEREAD, mds_filename);
                free(session->track);
+               session->track = NULL;
                return -1;
             }
 
@@ -1055,6 +1066,7 @@ int LoadMDSTracks(const char *mds_filename, FILE *iso_file, mds_session_struct *
                {
                   YabSetError(YAB_ERR_FILEREAD, mds_filename);
                   free(session->track);
+                  session->track = NULL;
                   return -1;
                }
 
@@ -1080,6 +1092,7 @@ int LoadMDSTracks(const char *mds_filename, FILE *iso_file, mds_session_struct *
                {
                   YabSetError(YAB_ERR_FILEREAD, mds_filename);
                   free(session->track);
+                  session->track = NULL;
                   return -1;
                }
 
@@ -1091,6 +1104,7 @@ int LoadMDSTracks(const char *mds_filename, FILE *iso_file, mds_session_struct *
                   {
                      YabSetError(YAB_ERR_FILEREAD, mds_filename);
                      free(session->track);
+                     session->track = NULL;
                      return -1;
                   }
                   strcpy(filename, mds_filename);
@@ -1107,6 +1121,7 @@ int LoadMDSTracks(const char *mds_filename, FILE *iso_file, mds_session_struct *
             {
                YabSetError(YAB_ERR_FILEREAD, mds_filename);
                free(session->track);
+               session->track = NULL;
                return -1;
             }
 
@@ -1170,9 +1185,10 @@ static int LoadMDS(const char *mds_filename, FILE *iso_file)
    }
 
    disc.session_num = header.session_count;
-   disc.session = (session_info_struct*)malloc(sizeof(session_info_struct) * disc.session_num);
+   disc.session = (session_info_struct*)calloc(1, sizeof(session_info_struct) * disc.session_num);
    if (disc.session == NULL)
    {
+      disc.session_num = 0;
       YabSetError(YAB_ERR_MEMORYALLOC, NULL);
       return -1;
    }
@@ -1185,6 +1201,8 @@ static int LoadMDS(const char *mds_filename, FILE *iso_file)
       if (fread(&session, 1, sizeof(mds_session_struct), iso_file) != sizeof(mds_session_struct))
       {
          free(disc.session);
+         disc.session = NULL;
+         disc.session_num = 0;
          YabSetError(YAB_ERR_FILEREAD, mds_filename);
          return -1;
       }
@@ -1204,21 +1222,22 @@ static int LoadISO(FILE *iso_file)
 {
    track_info_struct *track;
 
-   disc.session_num = 1;
-   disc.session = (session_info_struct*)malloc(sizeof(session_info_struct) * disc.session_num);
+   disc.session = (session_info_struct*)calloc(1, sizeof(session_info_struct));
    if (disc.session == NULL)
    {
       YabSetError(YAB_ERR_MEMORYALLOC, NULL);
       return -1;
    }
+   disc.session_num = 1;
 
    disc.session[0].fad_start = 150;
    disc.session[0].track_num = 1;
-   disc.session[0].track = (track_info_struct*)malloc(sizeof(track_info_struct) * disc.session[0].track_num);
+   disc.session[0].track = (track_info_struct*)calloc(1, sizeof(track_info_struct) * disc.session[0].track_num);
    if (disc.session[0].track == NULL)
    {
       YabSetError(YAB_ERR_MEMORYALLOC, NULL);
       free(disc.session);
+      disc.session_num = 0;
       disc.session = NULL;
       return -1;
    }
@@ -1286,7 +1305,7 @@ int LoadParseCCD(FILE *ccd_fp, ccd_struct *ccd)
 	char * start, *end, *name, *value;
 	int lineno = 0, error = 0, max_size = 100;
 
-	ccd->dict = (ccd_dict_struct *)malloc(sizeof(ccd_dict_struct)*max_size);
+	ccd->dict = (ccd_dict_struct *)calloc(1, sizeof(ccd_dict_struct)*max_size);
 	if (ccd->dict == NULL)
 		return -1;
 
@@ -1335,6 +1354,7 @@ int LoadParseCCD(FILE *ccd_fp, ccd_struct *ccd)
 					if (ccd->dict == NULL)
 					{
 						free(ccd->dict);
+            ccd->dict = NULL;
 						return -2;
 					}
 				}
@@ -1354,6 +1374,7 @@ int LoadParseCCD(FILE *ccd_fp, ccd_struct *ccd)
 	if (error)
 	{
 		free(ccd->dict);
+    ccd->dict = NULL;
 		ccd->num_dict = 0;
 	}
 
@@ -1434,20 +1455,25 @@ static int LoadCCD(const char *ccd_filename, FILE *iso_file)
 		return -1;
 	}
 
-	disc.session = (session_info_struct*)malloc(sizeof(session_info_struct) * disc.session_num);
+	disc.session = (session_info_struct*)calloc(1, sizeof(session_info_struct));
 	if (disc.session == NULL)
 	{
 		fclose(fp);
 		free(ccd.dict);
+    ccd.dict = NULL;
 		YabSetError(YAB_ERR_MEMORYALLOC, NULL);
 		return -1;
 	}
+    disc.session_num = 1;
 
 	if (GetIntCCD(&ccd, "DISC", "DataTracksScrambled"))
 	{
 		fclose(fp);
 		free(ccd.dict);
 		free(disc.session);
+    ccd.dict = NULL;
+    disc.session = NULL;
+    disc.session_num = 0;
 		YabSetError(YAB_ERR_OTHER, "CCD Scrambled Tracks not supported");
 		return -1;
 	}
@@ -1467,12 +1493,15 @@ static int LoadCCD(const char *ccd_filename, FILE *iso_file)
 
 			disc.session[ses-1].fad_start = 150;
 			disc.session[ses-1].track_num=GetIntCCD(&ccd, sect_name, "PMin");;
-			disc.session[ses-1].track = (track_info_struct *)malloc(disc.session[ses-1].track_num * sizeof(track_info_struct));
+			disc.session[ses-1].track = (track_info_struct *)calloc(1, disc.session[ses-1].track_num * sizeof(track_info_struct));
 			if (disc.session[ses-1].track == NULL)
 			{
 				fclose(fp);
 				free(ccd.dict);
 				free(disc.session);
+        ccd.dict = NULL;
+        disc.session = NULL;
+        disc.session_num = 0;
 				YabSetError(YAB_ERR_MEMORYALLOC, NULL);
 				return -1;
 			}
@@ -1634,11 +1663,11 @@ static int ISOCDInit(const char * iso) {
 
 static void ISOCDDeInit(void) {
    int i, j, k;
-   if (disc.session)
+   if (disc.session != NULL)
    {
       for (i = 0; i < disc.session_num; i++)
       {
-         if (disc.session[i].track)
+         if (disc.session[i].track != NULL)
          {
             for (j = 0; j < disc.session[i].track_num; j++)
             {
@@ -1646,8 +1675,9 @@ static void ISOCDDeInit(void) {
                {
                  if(disc.session[i].track[j].tr != NULL)
                  {
-                   if (disc.session[i].track[j].tr->zipBuffer != NULL)
+                   if (disc.session[i].track[j].tr->zipBuffer != NULL) {
                      free(disc.session[i].track[j].tr->zipBuffer);
+                   }
                    disc.session[i].track[j].tr->zipBuffer = NULL;
                    if (disc.session[i].track[j].tr->filename != NULL)
                      free(disc.session[i].track[j].tr->filename);
@@ -1671,9 +1701,12 @@ static void ISOCDDeInit(void) {
                }
             }
             free(disc.session[i].track);
+            disc.session[i].track = NULL;
          }
       }
       free(disc.session);
+      disc.session = NULL;
+      disc.session_num = 0;
       if (disc.zip != NULL)
         disc.zip->close(disc.zip);
       disc.zip = NULL;
@@ -1771,7 +1804,6 @@ static int ISOCDReadSectorFAD(u32 FAD, void *buffer) {
    } else {
 	 if (offset > tr->size) offset = tr->size;
      zipBuffer = &tr->zipBuffer[offset];
-
    }
 
    if (currentTrack->sector_size == 2448)
@@ -1883,16 +1915,17 @@ static int LoadCHD(const char *chd_filename, FILE *iso_file)
   int postgap = 0;
 
   int meta_outlen = 512 * 1024;
-  u8 * buf = (u8*)malloc(meta_outlen);
+  u8 * buf = (u8*)calloc(1, meta_outlen);
   u32 resultlen;
   u32 resulttag;
   u8 resultflags;
 
   if (pChdInfo != NULL) {
     free(pChdInfo);
+    pChdInfo = NULL;
   }
 
-  pChdInfo = (ChdInfo*)malloc(sizeof(ChdInfo));
+  pChdInfo = (ChdInfo*)calloc(1, sizeof(ChdInfo));
   memset(pChdInfo, 0, sizeof(ChdInfo));
 
   track_info_struct trk[100];
@@ -2052,7 +2085,7 @@ static int LoadCHD(const char *chd_filename, FILE *iso_file)
   //trk[num_tracks - 1].fad_end = (pChdInfo->header->logicalbytes - trk[num_tracks - 1].file_offset) / trk[num_tracks - 1].sector_size;
 
   disc.session_num = 1;
-  disc.session = (session_info_struct*)malloc(sizeof(session_info_struct) * disc.session_num);
+  disc.session = (session_info_struct*)calloc(1, sizeof(session_info_struct) * disc.session_num);
   if (disc.session == NULL)
   {
     YabSetError(YAB_ERR_MEMORYALLOC, NULL);
@@ -2061,18 +2094,19 @@ static int LoadCHD(const char *chd_filename, FILE *iso_file)
   disc.session[0].fad_start = 150;
   disc.session[0].fad_end = trk[num_tracks - 1].fad_end;
   disc.session[0].track_num = num_tracks;
-  disc.session[0].track = (track_info_struct*)malloc(sizeof(track_info_struct) * disc.session[0].track_num);
+  disc.session[0].track = (track_info_struct*)calloc(1, sizeof(track_info_struct) * disc.session[0].track_num);
   if (disc.session[0].track == NULL)
   {
     YabSetError(YAB_ERR_MEMORYALLOC, NULL);
     free(disc.session);
     disc.session = NULL;
+    disc.session_num = 0;
     return -1;
   }
 
   memcpy(disc.session[0].track, trk, num_tracks * sizeof(track_info_struct));
 
-  pChdInfo->hunk_buffer = (char*)malloc(pChdInfo->header->hunkbytes);
+  pChdInfo->hunk_buffer = (char*)calloc(1, pChdInfo->header->hunkbytes);
   chd_read(pChdInfo->chd, 0, pChdInfo->hunk_buffer);
   pChdInfo->current_hunk_id = 0;
 

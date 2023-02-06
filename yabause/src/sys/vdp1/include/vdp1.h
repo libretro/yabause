@@ -153,6 +153,7 @@ typedef struct
    int (*Init)(void);
    void (*DeInit)(void);
    void (*Resize)(int,int,unsigned int, unsigned int, int);
+   void (*getScale)(float *xRatio, float *yRatio, int *xUp, int *yUp);
    int (*IsFullscreen)(void);
    // VDP1 specific
    int (*Vdp1Reset)(void);
@@ -166,8 +167,6 @@ typedef struct
    void(*Vdp1UserClipping)(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs);
    void(*Vdp1SystemClipping)(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs);
    void(*Vdp1LocalCoordinate)(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs);
-   void(*Vdp1ReadFrameBuffer)(u32 type, u32 addr, void * out);
-   void(*Vdp1WriteFrameBuffer)(u32 type, u32 addr, u32 val);
    void(*Vdp1EraseWrite)(int id);
    void(*Vdp1FrameChange)(void);
    void(*Vdp1RegenerateCmd)(vdp1cmd_struct* cmd);
@@ -181,8 +180,9 @@ typedef struct
    void(*Vdp2DispOff)(void);
    void (*composeFB)(Vdp2 *regs);
    void (*composeVDP1)(void);
-   int (*setupFrame)(int);
+   int (*setupFrame)();
    void (*FinsihDraw)(void);
+   void (*Vdp1FBDraw)(void);
 } VideoInterface_struct;
 
 extern VideoInterface_struct *VIDCore;
@@ -192,7 +192,6 @@ extern vdp1cmdctrl_struct cmdBufferBeingProcessed[CMD_QUEUE_SIZE];
 extern u8 * Vdp1Ram;
 extern int vdp1Ram_update_start;
 extern int vdp1Ram_update_end;
-
 
 u8 FASTCALL	Vdp1RamReadByte(SH2_struct *context, u8*, u32);
 u16 FASTCALL	Vdp1RamReadWord(SH2_struct *context, u8*, u32);
@@ -243,9 +242,8 @@ u8 *Vdp1DebugRawTexture(u32 number, int *w, int *h, int *numBytes);
 void ToggleVDP1(void);
 
 void Vdp1HBlankIN(void);
-void Vdp1HBlankOUT(void);
+void Vdp1StartVisibleLine(void);
 void Vdp1VBlankIN(void);
-void Vdp1VBlankOUT(void);
 
 #ifdef __cplusplus
 }

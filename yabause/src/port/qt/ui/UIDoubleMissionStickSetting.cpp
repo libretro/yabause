@@ -43,18 +43,12 @@ UIDoubleMissionStickSetting::UIDoubleMissionStickSetting( PerInterface_struct* c
 
    //right stick
 	mButtons[ tbAxis1Left ] = PERANALOG_AXIS1;
-	mButtons[ tbAxis1Right ] = PERANALOG_AXIS1;
-	mButtons[ tbAxis2Up ] = PERANALOG_AXIS2;
 	mButtons[ tbAxis2Down ] = PERANALOG_AXIS2;
-	mButtons[ tbAxis3Up] = PERANALOG_AXIS3;
    mButtons[ tbAxis3Down] = PERANALOG_AXIS3;
 
    //left stick
    mButtons[tbAxis5Left] = PERANALOG_AXIS5;
-   mButtons[tbAxis5Right] = PERANALOG_AXIS5;
-   mButtons[tbAxis6Up] = PERANALOG_AXIS6;
    mButtons[tbAxis6Down] = PERANALOG_AXIS6;
-   mButtons[tbAxis7Up] = PERANALOG_AXIS7;
    mButtons[tbAxis7Down] = PERANALOG_AXIS7;
 
 	mNames[ PERPAD_RIGHT_TRIGGER ] = QtYabause::translate( "Right trigger" );;

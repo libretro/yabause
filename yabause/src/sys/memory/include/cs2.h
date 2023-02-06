@@ -244,6 +244,10 @@ typedef struct {
   u16 mpegvideostatus;
   u16 vcounter;
 
+  u8 _seekToStop;
+
+  u8 nextStatus;
+
 } Cs2;
 
 typedef struct {
@@ -283,7 +287,6 @@ int Cs2GetTimeToNextSector(void);
 void Cs2Execute(void);
 void Cs2Reset(void);
 void Cs2SetTiming(int);
-void Cs2Command(void);
 void Cs2SetCommandTiming(u8 cmd);
 
 //   command name                             command code

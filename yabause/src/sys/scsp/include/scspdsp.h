@@ -112,7 +112,8 @@ union ScspDspInstruction {
       u64 ewa : 4;
       u64 adrl : 1;
       u64 frcl : 1;
-      u64 shift : 2;
+      u64 shift1 : 1;
+      u64 shift0 : 1;
       u64 yrl : 1;
       u64 negb : 1;
       u64 zero : 1;

@@ -41,11 +41,8 @@ UIMissionStickSetting::UIMissionStickSetting( PerInterface_struct* core, uint po
 	mButtons[ tbY ] = PERPAD_Y;
 	mButtons[ tbZ ] = PERPAD_Z;
 	mButtons[ tbAxis1Left ] = PERANALOG_AXIS1;
-	mButtons[ tbAxis1Right ] = PERANALOG_AXIS1;
-	mButtons[ tbAxis2Up ] = PERANALOG_AXIS2;
 	mButtons[ tbAxis2Down ] = PERANALOG_AXIS2;
 	mButtons[ tbAxis3Up] = PERANALOG_AXIS3;
-   	mButtons[ tbAxis3Down] = PERANALOG_AXIS3;
 
 	mNames[ PERPAD_RIGHT_TRIGGER ] = QtYabause::translate( "Right trigger" );;
 	mNames[ PERPAD_LEFT_TRIGGER ] = QtYabause::translate( "Left trigger" );;

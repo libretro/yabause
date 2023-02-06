@@ -127,7 +127,7 @@ void biosDecode(SH2_struct *context) {
 }
 
 
-int SH2KronosInterpreterInit()
+int SH2KronosInterpreterInit(void)
 {
 
    int i,j;
@@ -209,7 +209,7 @@ int SH2KronosInterpreterInit()
 
 //////////////////////////////////////////////////////////////////////////////
 
-void SH2KronosInterpreterDeInit()
+void SH2KronosInterpreterDeInit(void)
 {
    // DeInitialize any internal variables here
 }
@@ -275,58 +275,199 @@ static void showCPUState(SH2_struct *context)
 
 u8 execInterrupt = 0;
 
-FASTCALL void SH2KronosInterpreterExecLoop(SH2_struct *context, u32 cycles)
-{
-  u32 target_cycle = context->cycles + cycles;
-   while (context->cycles < target_cycle)
-   {
-     cacheCode[context->isslave][cacheId[(context->regs.PC >> 20) & 0xFFF]][(context->regs.PC >> 1) & 0x7FFFF](context);
-   }
-}
-
 FASTCALL void SH2KronosInterpreterExec(SH2_struct *context, u32 cycles)
 {
-  u32 target_cycle = context->cycles + cycles;
-  while (context->cycles < target_cycle){
-    SH2HandleInterrupts(context);
-    SH2KronosInterpreterExecLoop(context, target_cycle-context->cycles);
+  context->target_cycles = context->cycles + cycles;
+  SH2HandleInterrupts(context);
+  while (context->cycles < context->target_cycles){
+    cacheCode[context->isslave][cacheId[(context->regs.PC >> 20) & 0xFFF]][(context->regs.PC >> 1) & 0x7FFFF](context);
+  }
+}
+
+FASTCALL void SH2KronosInterpreterExecSave(SH2_struct *context, u32 cycles, sh2regs_struct *oldRegs)
+{
+  context->target_cycles = context->cycles + cycles;
+  SH2HandleInterrupts(context);
+  while (context->cycles < context->target_cycles){
+    memcpy(oldRegs, &context->regs, sizeof(sh2regs_struct));
+    int id = (context->regs.PC >> 20) & 0xFFF;
+    u16 opcode = krfetchlist[id](context, context->regs.PC);
+    if(context->isAccessingCPUBUS == 0) opcodeTable[opcode](context);
+    if(context->isAccessingCPUBUS != 0) {
+      context->cycles = context->target_cycles;
+      memcpy(&context->regs, oldRegs, sizeof(sh2regs_struct));
+      return;
+    }
   }
 }
 
 static int enableTrace = 0;
 
+FASTCALL void SH2KronosDebugInterpreterExecSave(SH2_struct *context, u32 cycles, sh2regs_struct *oldRegs) {
+  u32 target_cycle = context->cycles + cycles;
+
+   SH2HandleInterrupts(context);
+
+   while (context->cycles < target_cycle)
+   {
+#ifdef SH2_UBC
+      int ubcinterrupt=0, ubcflag=0;
+#endif
+
+#ifdef SH2_UBC
+      if (context->onchip.BBRA & (BBR_CPA_CPU | BBR_IDA_INST | BBR_RWA_READ)) // Break on cpu, instruction, read cycles
+      {
+         if (context->onchip.BARA.all == (context->regs.PC & (~context->onchip.BAMRA.all)))
+         {
+            LOG("Trigger UBC A interrupt: PC = %08X\n", context->regs.PC);
+            if (!(context->onchip.BRCR & BRCR_PCBA))
+            {
+               // Break before instruction fetch
+             SH2UBCInterrupt(context, BRCR_CMFCA);
+            }
+            else
+            {
+              // Break after instruction fetch
+               ubcinterrupt=1;
+               ubcflag = BRCR_CMFCA;
+            }
+         }
+      }
+      else if(context->onchip.BBRB & (BBR_CPA_CPU | BBR_IDA_INST | BBR_RWA_READ)) // Break on cpu, instruction, read cycles
+      {
+         if (context->onchip.BARB.all == (context->regs.PC & (~context->onchip.BAMRB.all)))
+         {
+            LOG("Trigger UBC B interrupt: PC = %08X\n", context->regs.PC);
+            if (!(context->onchip.BRCR & BRCR_PCBB))
+            {
+               // Break before instruction fetch
+               SH2UBCInterrupt(context, BRCR_CMFCB);
+            }
+            else
+            {
+               // Break after instruction fetch
+               ubcinterrupt=1;
+               ubcflag = BRCR_CMFCB;
+            }
+         }
+      }
+#endif
+
+      memcpy(oldRegs, &context->regs, sizeof(sh2regs_struct));
+
+      // Fetch Instruction
+      int id = (context->regs.PC >> 20) & 0xFFF;
+      context->instruction = krfetchlist[id](context, context->regs.PC);
+      cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & 0x7FFFF] = opcodeTable[context->instruction];
+
+#ifdef DMPHISTORY
+    context->pchistory_index++;
+    context->pchistory[context->pchistory_index & (MAX_DMPHISTORY - 1)] = context->regs.PC;
+    context->regshistory[context->pchistory_index & (MAX_DMPHISTORY - 1)] = context->regs;
+#endif
+
+      SH2HandleBackTrace(context);
+      SH2HandleStepOverOut(context);
+      SH2HandleTrackInfLoop(context);
+
+      // Execute it
+      if(context->isAccessingCPUBUS == 0) {
+        opcodeTable[context->instruction](context);
+      }
+      if(context->isAccessingCPUBUS != 0) {
+        context->cycles = context->target_cycles;
+        memcpy(&context->regs, oldRegs, sizeof(sh2regs_struct));
+        return;
+      }
+
+#ifdef SH2_UBC
+    if (ubcinterrupt)
+       SH2UBCInterrupt(context, ubcflag);
+#endif
+   }
+}
+
+
 FASTCALL void SH2KronosDebugInterpreterExec(SH2_struct *context, u32 cycles)
 {
-//   u32 target_cycle = context->cycles + cycles;
-//   SH2HandleInterrupts(context);
-//   char res[512];
-//   execInterrupt = 0;
-//    while (execInterrupt == 0)
-//    {
-//      int id = (context->regs.PC >> 20) & 0xFFF;
-//
-// #if 0
-//      if ((context == MSH2) && (context->regs.PC & 0xFFFFFFF) == 0x60b0000) {
-//        showCPUState(MSH2);
-//        enableTrace = 1;
-//      }
-// #endif
-//      if((cache[cacheId[id]][(context->regs.PC >> 1) & 0x7FFFF]) != (opcodeTable[krfetchlist[id](context, context->regs.PC)]))
-//         if ((cache[cacheId[id]][(context->regs.PC >> 1) & 0x7FFFF] != decode) && (cache[cacheId[id]][(context->regs.PC >> 1) & 0x7FFFF] != biosDecode))
-//           printf("Error of interpreter cache @ 0x%x\n", context->regs.PC);
-//
-// //     if (enableTrace) {
-// //       SH2Disasm(context->regs.PC, krfetchlist[id](context, context->regs.PC), 0, &(context->regs), res);
-// //     }
-//
-//      cache[cacheId[(context->regs.PC >> 20) & 0xFFF]][(context->regs.PC >> 1) & 0x7FFFF](context);
-//      execInterrupt |= (context->cycles >= target_cycle);
-//    }
+  u32 target_cycle = context->cycles + cycles;
+
+   SH2HandleInterrupts(context);
+
+   while (context->cycles < target_cycle)
+   {
+#ifdef SH2_UBC
+      int ubcinterrupt=0, ubcflag=0;
+#endif
+
+#ifdef SH2_UBC
+      if (context->onchip.BBRA & (BBR_CPA_CPU | BBR_IDA_INST | BBR_RWA_READ)) // Break on cpu, instruction, read cycles
+      {
+         if (context->onchip.BARA.all == (context->regs.PC & (~context->onchip.BAMRA.all)))
+         {
+            LOG("Trigger UBC A interrupt: PC = %08X\n", context->regs.PC);
+            if (!(context->onchip.BRCR & BRCR_PCBA))
+            {
+               // Break before instruction fetch
+	           SH2UBCInterrupt(context, BRCR_CMFCA);
+            }
+            else
+            {
+            	// Break after instruction fetch
+               ubcinterrupt=1;
+               ubcflag = BRCR_CMFCA;
+            }
+         }
+      }
+      else if(context->onchip.BBRB & (BBR_CPA_CPU | BBR_IDA_INST | BBR_RWA_READ)) // Break on cpu, instruction, read cycles
+      {
+         if (context->onchip.BARB.all == (context->regs.PC & (~context->onchip.BAMRB.all)))
+         {
+            LOG("Trigger UBC B interrupt: PC = %08X\n", context->regs.PC);
+            if (!(context->onchip.BRCR & BRCR_PCBB))
+            {
+          	   // Break before instruction fetch
+       	       SH2UBCInterrupt(context, BRCR_CMFCB);
+            }
+            else
+            {
+               // Break after instruction fetch
+               ubcinterrupt=1;
+               ubcflag = BRCR_CMFCB;
+            }
+         }
+      }
+#endif
+
+      // Fetch Instruction
+      int id = (context->regs.PC >> 20) & 0xFFF;
+      context->instruction = krfetchlist[id](context, context->regs.PC);
+
+#ifdef DMPHISTORY
+	  context->pchistory_index++;
+	  context->pchistory[context->pchistory_index & (MAX_DMPHISTORY - 1)] = context->regs.PC;
+	  context->regshistory[context->pchistory_index & (MAX_DMPHISTORY - 1)] = context->regs;
+#endif
+
+      SH2HandleBackTrace(context);
+      SH2HandleStepOverOut(context);
+      SH2HandleTrackInfLoop(context);
+
+      // Execute it
+      cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & 0x7FFFF] = opcodeTable[context->instruction];
+      opcodeTable[context->instruction](context);
+
+#ifdef SH2_UBC
+	  if (ubcinterrupt)
+	     SH2UBCInterrupt(context, ubcflag);
+#endif
+   }
+
 }
 
 FASTCALL void SH2KronosInterpreterTestExec(SH2_struct *context, u32 cycles)
 {
-  u32 target_cycle = context->cycles + cycles;
+  context->target_cycles = context->cycles + cycles;
   cacheCode[context->isslave][cacheId[(context->regs.PC >> 20) & 0xFFF]][(context->regs.PC >> 1) & 0x7FFFF](context);
 }
 
@@ -576,7 +717,49 @@ SH2Interface_struct SH2KronosInterpreter = {
    SH2KronosInterpreterDeInit,
    SH2KronosInterpreterReset,
    SH2KronosInterpreterExec,
-//SH2KronosDebugInterpreterExec,
+   SH2KronosInterpreterExecSave,
+   SH2KronosInterpreterTestExec,
+
+   SH2KronosInterpreterGetRegisters,
+   SH2KronosInterpreterGetGPR,
+   SH2KronosInterpreterGetSR,
+   SH2KronosInterpreterGetGBR,
+   SH2KronosInterpreterGetVBR,
+   SH2KronosInterpreterGetMACH,
+   SH2KronosInterpreterGetMACL,
+   SH2KronosInterpreterGetPR,
+   SH2KronosInterpreterGetPC,
+
+   SH2KronosInterpreterSetRegisters,
+   SH2KronosInterpreterSetGPR,
+   SH2KronosInterpreterSetSR,
+   SH2KronosInterpreterSetGBR,
+   SH2KronosInterpreterSetVBR,
+   SH2KronosInterpreterSetMACH,
+   SH2KronosInterpreterSetMACL,
+   SH2KronosInterpreterSetPR,
+   SH2KronosInterpreterSetPC,
+   SH2KronosIOnFrame,
+
+   SH2KronosInterpreterSendInterrupt,
+   SH2KronosInterpreterRemoveInterrupt,
+   SH2KronosInterpreterGetInterrupts,
+   SH2KronosInterpreterSetInterrupts,
+
+   SH2KronosWriteNotify,
+   SH2KronosInterpreterAddCycles
+};
+
+//////////////////////////////////////////////////////////////////////////////
+SH2Interface_struct SH2KronosDebugInterpreter = {
+   SH2CORE_KRONOS_DEBUG_INTERPRETER,
+   "SH2 Kronos Debug Interpreter",
+
+   SH2KronosInterpreterInit,
+   SH2KronosInterpreterDeInit,
+   SH2KronosInterpreterReset,
+   SH2KronosDebugInterpreterExec,
+   SH2KronosDebugInterpreterExecSave,
    SH2KronosInterpreterTestExec,
 
    SH2KronosInterpreterGetRegisters,

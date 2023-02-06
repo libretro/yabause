@@ -109,9 +109,6 @@ u64 tickfreq;
 //todo this ought to be in scspdsp.c
 ScspDsp scsp_dsp = { 0 };
 
-u32 saved_scsp_cycles = 0;//fixed point
-volatile u64 saved_m68k_cycles = 0;//fixed point
-
 //////////////////////////////////////////////////////////////////////////////
 
 #ifndef NO_CLI
@@ -147,23 +144,31 @@ void YuiTimedSwapBuffers(){
 }
 #endif
 
+static int fpsframecount = 0;
+static int vdp1fpsframecount = 0;
+static int fps = 0;
+static int vdp1fps = 0;
+
 static void syncVideoMode(void) {
   unsigned long sleep = 0;
   unsigned long now;
-  unsigned long delay = 0;
+  signed long delay = 0;
   YuiEndOfFrame();
   now = YabauseGetTicks();
   if (nextFrameTime == 0) nextFrameTime = YabauseGetTicks();
   if(nextFrameTime > now) {
-    sleep = ((nextFrameTime - now)*1000000.0)/yabsys.tickfreq;
-  } else {
-    delay = nextFrameTime - now;
+    if (isAutoFrameSkip() == 0) {
+      sleep = ((nextFrameTime - now)*1000000.0)/yabsys.tickfreq;
+      delay = YabThreadUSleep(sleep) * yabsys.tickfreq/1000000.0;
+      nextFrameTime += delay;
+    }
   }
-  if (isAutoFrameSkip() == 0) {
-    YabThreadUSleep(sleep);
-    now = YabauseGetTicks();
-  }
-  nextFrameTime  = now + yabsys.OneFrameTime + delay;
+  nextFrameTime  += yabsys.OneFrameTime;
+  // if ((isAutoFrameSkip() == 0)||(fpsframecount == 0)) {
+  //   now = YabauseGetTicks();
+  // }
+  if (fpsframecount == 0) nextFrameTime = YabauseGetTicks() + yabsys.OneFrameTime;
+
 }
 
 void resetSyncVideo(void) {
@@ -208,7 +213,12 @@ extern YabSem * g_scsp_ready;
 extern YabSem * g_cpu_ready;
 
 static void sh2ExecuteSync( SH2_struct* sh, int req ) {
-     SH2Exec(sh, req);
+   int unbiasedReq = req + sh->cdiff;
+   if (unbiasedReq > 0) {
+     int sh2start = sh->cycles;
+     SH2Exec(sh, unbiasedReq);
+     sh->cdiff = unbiasedReq - (sh->cycles-sh2start);
+   }
 }
 
 int YabauseSh2Init(yabauseinit_struct *init)
@@ -667,11 +677,6 @@ int YabauseExec(void) {
 //////////////////////////////////////////////////////////////////////////////
 int saved_centicycles;
 
-u32 get_cycles_per_line_division(u32 clock, int frames, int lines, int divisions_per_line)
-{
-   return ((u64)(clock / frames) << SCSP_FRACTIONAL_BITS) / (lines * divisions_per_line);
-}
-
 u32 YabauseGetCpuTime(){
 
   return MSH2->cycles;
@@ -679,13 +684,9 @@ u32 YabauseGetCpuTime(){
 
 // cyclesinc
 
-#define HBLANK_IN_STEP ((DECILINE_STEP * 8)/10)
+#define PORCH_IN_STEP ((DECILINE_STEP)/10)
 
 //////////////////////////////////////////////////////////////////////////////
-static int fpsframecount = 0;
-static int vdp1fpsframecount = 0;
-static int fps = 0;
-static int vdp1fps = 0;
 static void FPSDisplay(void)
 {
   fpsframecount++;
@@ -728,7 +729,6 @@ u64 g_m68K_dec_cycle = 0;
 
 int YabauseEmulate(void) {
    int ret = 0;
-   int oneframeexec = 0;
    yabsys.frame_count++;
 
    const u32 usecinc = yabsys.DecilineUsec;
@@ -736,24 +736,16 @@ int YabauseEmulate(void) {
    unsigned int m68kcycles;       // Integral M68k cycles per call
    unsigned int m68kcenticycles;  // 1/100 M68k cycles per call
 
-   u64 m68k_cycles_per_deciline = 0;
-   u64 scsp_cycles_per_deciline = 0;
-
-   int lines = 0;
    int frames = 0;
 
    if (yabsys.IsPal)
    {
-     lines = 313;
      frames = 50;
    }
    else
    {
-     lines = 263;
      frames = 60;
    }
-   scsp_cycles_per_deciline = get_cycles_per_line_division(44100 * 512, frames, lines, DECILINE_STEP);
-   m68k_cycles_per_deciline = get_cycles_per_line_division(44100 * 256, frames, lines, DECILINE_STEP);
 
    DoMovie();
 
@@ -768,71 +760,69 @@ int YabauseEmulate(void) {
    u64 cpu_emutime = 0;
 
    TRACE_EMULATOR("YabauseEmulate");
-
-   while (!oneframeexec)
+   yabsys.LineCount = -1;
+   yabsys.DecilineCount = 0;
+   while (yabsys.LineCount < yabsys.MaxLineCount-1)
    {
       PROFILE_START("Total Emulation");
-      VIDCore->setupFrame(0);
+      VIDCore->setupFrame();
 #ifdef YAB_STATICS
 		 u64 current_cpu_clock = YabauseGetTicks();
 #endif
 
-      THREAD_LOG("Unlock MSH2\n");
-       sh2ExecuteSync(MSH2, yabsys.LineCycle[yabsys.DecilineCount]);
-       if (yabsys.IsSSH2Running) {
-         sh2ExecuteSync(SSH2, yabsys.LineCycle[yabsys.DecilineCount]);
-       }
-
 #ifdef YAB_STATICS
 		 cpu_emutime += (YabauseGetTicks() - current_cpu_clock) * 1000000 / yabsys.tickfreq;
 #endif
+    if (yabsys.DecilineCount == 0)
+    {
+      PROFILE_START("hblankout");
+      // printf("hblankout %d %d\n", yabsys.LineCount, yabsys.DecilineCount);
 
-     yabsys.DecilineCount++;
-     if(yabsys.DecilineCount == HBLANK_IN_STEP)
-     {
-        // HBlankIN
-        PROFILE_START("hblankin");
-        Vdp1HBlankIN();
-        Vdp2HBlankIN();
-        PROFILE_STOP("hblankin");
+      PROFILE_STOP("hblankout");
+      if (yabsys.LineCount == -1)
+      {
+         // VBlankOUT
+         PROFILE_START("VDP1/VDP2");
+         Vdp2VBlankOUT();
+         PROFILE_STOP("VDP1/VDP2");
+      }
+      if (yabsys.LineCount == yabsys.VBlankLineCount)
+      {
+         ScspAddCycles((u64)(44100 * 256 / frames)<< SCSP_FRACTIONAL_BITS);
+         PROFILE_START("vblankin");
+         // VBlankIN
+         SmpcINTBACKEnd();
+         Vdp1VBlankIN();
+         Vdp2VBlankIN();
+         SyncCPUtoSCSP();
+         PROFILE_STOP("vblankin");
+         CheatDoPatches(MSH2);
+      }
+    }
+    if(yabsys.DecilineCount == PORCH_IN_STEP) //Start display area
+    {
+      yabsys.LineCount++;
+      Vdp1StartVisibleLine();
+      Vdp2StartVisibleLine();
+    }
+    if(yabsys.DecilineCount == DECILINE_STEP - PORCH_IN_STEP) //Hblankin
+    {
+       // HBlankIN
+       PROFILE_START("hblankin");
+       // printf("hblankin %d %d\n", yabsys.LineCount, yabsys.DecilineCount);
+       Vdp1HBlankIN();
+       Vdp2HBlankIN();
+       PROFILE_STOP("hblankin");
+    }
+
+    THREAD_LOG("Unlock MSH2\n");
+     sh2ExecuteSync(MSH2, yabsys.LineCycle[yabsys.DecilineCount]);
+     if (yabsys.IsSSH2Running) {
+       sh2ExecuteSync(SSH2, yabsys.LineCycle[yabsys.DecilineCount]);
      }
 
-      if (yabsys.DecilineCount == DECILINE_STEP)
-      {
-         // HBlankOUT
-         PROFILE_START("hblankout");
-         Vdp2HBlankOUT();
-         Vdp1HBlankOUT();
-        // SyncScsp();
-         PROFILE_STOP("hblankout");
-         yabsys.DecilineCount = 0;
-         yabsys.LineCount++;
-         if (yabsys.LineCount == yabsys.VBlankLineCount)
-         {
-            ScspAddCycles((u64)(44100 * 256 / frames)<< SCSP_FRACTIONAL_BITS);
-            PROFILE_START("vblankin");
-            // VBlankIN
-            SmpcINTBACKEnd();
-            Vdp1VBlankIN();
-            Vdp2VBlankIN();
-            SyncCPUtoSCSP();
-            PROFILE_STOP("vblankin");
-            CheatDoPatches(MSH2);
-         }
-         else if (yabsys.LineCount == yabsys.MaxLineCount)
-         {
-            // VBlankOUT
-            PROFILE_START("VDP1/VDP2");
-            Vdp1VBlankOUT();
-            Vdp2VBlankOUT();
-            yabsys.LineCount = 0;
-            oneframeexec = 1;
-            PROFILE_STOP("VDP1/VDP2");
-         }
-      }
-
       PROFILE_START("SCU");
-      ScuExec((yabsys.DecilineStop>>YABSYS_TIMING_BITS) / 2);
+      ScuExec(yabsys.DecilineStop>>YABSYS_TIMING_BITS);
       PROFILE_STOP("SCU");
 
       yabsys.UsecFrac += usecinc;
@@ -843,9 +833,8 @@ int YabauseEmulate(void) {
       Cs2Exec(yabsys.UsecFrac >> YABSYS_TIMING_BITS);
       PROFILE_STOP("CDB");
       yabsys.UsecFrac &= YABSYS_TIMING_MASK;
-
-      saved_m68k_cycles  += m68k_cycles_per_deciline;
-      // ScspAddCycles(m68k_cycles_per_deciline);
+      // printf("Deciline %d line %d\n", yabsys.DecilineCount, yabsys.LineCount);
+      yabsys.DecilineCount  = (yabsys.DecilineCount+1)%DECILINE_STEP;
       PROFILE_STOP("Total Emulation");
    }
 
@@ -886,9 +875,8 @@ int YabauseEmulate(void) {
 void SyncCPUtoSCSP() {
   //LOG("[SH2] WAIT SCSP");
     YabSemWait(g_scsp_ready);
-    YabThreadWake(YAB_THREAD_SCSP);
+    // YabThreadWake(YAB_THREAD_SCSP);
     YabSemPost(g_cpu_ready);
-    saved_m68k_cycles = 0;
   //LOG("[SH2] START SCSP");
 }
 
@@ -898,23 +886,23 @@ void YabauseStartSlave(void) {
    if (yabsys.IsSSH2Running == 1) return;
    if (yabsys.emulatebios)
    {
-      MappedMemoryWriteLong(SSH2, 0xFFFFFFE0, 0xA55A03F1); // BCR1
-      MappedMemoryWriteLong(SSH2, 0xFFFFFFE4, 0xA55A00FC); // BCR2
-      MappedMemoryWriteLong(SSH2, 0xFFFFFFE8, 0xA55A5555); // WCR
-      MappedMemoryWriteLong(SSH2, 0xFFFFFFEC, 0xA55A0070); // MCR
+      SH2MappedMemoryWriteLong(SSH2, 0xFFFFFFE0, 0xA55A03F1); // BCR1
+      SH2MappedMemoryWriteLong(SSH2, 0xFFFFFFE4, 0xA55A00FC); // BCR2
+      SH2MappedMemoryWriteLong(SSH2, 0xFFFFFFE8, 0xA55A5555); // WCR
+      SH2MappedMemoryWriteLong(SSH2, 0xFFFFFFEC, 0xA55A0070); // MCR
 
-      MappedMemoryWriteWord(SSH2, 0xFFFFFEE0, 0x0000); // ICR
-      MappedMemoryWriteWord(SSH2, 0xFFFFFEE2, 0x0000); // IPRA
-      MappedMemoryWriteWord(SSH2, 0xFFFFFE60, 0x0F00); // VCRWDT
-      MappedMemoryWriteWord(SSH2, 0xFFFFFE62, 0x6061); // VCRA
-      MappedMemoryWriteWord(SSH2, 0xFFFFFE64, 0x6263); // VCRB
-      MappedMemoryWriteWord(SSH2, 0xFFFFFE66, 0x6465); // VCRC
-      MappedMemoryWriteWord(SSH2, 0xFFFFFE68, 0x6600); // VCRD
-      MappedMemoryWriteWord(SSH2, 0xFFFFFEE4, 0x6869); // VCRWDT
-      MappedMemoryWriteLong(SSH2, 0xFFFFFFA8, 0x0000006C); // VCRDMA1
-      MappedMemoryWriteLong(SSH2, 0xFFFFFFA0, 0x0000006D); // VCRDMA0
-      MappedMemoryWriteLong(SSH2, 0xFFFFFF0C, 0x0000006E); // VCRDIV
-      MappedMemoryWriteLong(SSH2, 0xFFFFFE10, 0x00000081); // TIER
+      SH2MappedMemoryWriteWord(SSH2, 0xFFFFFEE0, 0x0000); // ICR
+      SH2MappedMemoryWriteWord(SSH2, 0xFFFFFEE2, 0x0000); // IPRA
+      SH2MappedMemoryWriteWord(SSH2, 0xFFFFFE60, 0x0F00); // VCRWDT
+      SH2MappedMemoryWriteWord(SSH2, 0xFFFFFE62, 0x6061); // VCRA
+      SH2MappedMemoryWriteWord(SSH2, 0xFFFFFE64, 0x6263); // VCRB
+      SH2MappedMemoryWriteWord(SSH2, 0xFFFFFE66, 0x6465); // VCRC
+      SH2MappedMemoryWriteWord(SSH2, 0xFFFFFE68, 0x6600); // VCRD
+      SH2MappedMemoryWriteWord(SSH2, 0xFFFFFEE4, 0x6869); // VCRWDT
+      SH2MappedMemoryWriteLong(SSH2, 0xFFFFFFA8, 0x0000006C); // VCRDMA1
+      SH2MappedMemoryWriteLong(SSH2, 0xFFFFFFA0, 0x0000006D); // VCRDMA0
+      SH2MappedMemoryWriteLong(SSH2, 0xFFFFFF0C, 0x0000006E); // VCRDIV
+      SH2MappedMemoryWriteLong(SSH2, 0xFFFFFE10, 0x00000081); // TIER
 
       SH2GetRegisters(SSH2, &SSH2->regs);
       SSH2->regs.R[15] = Cs2GetSlaveStackAdress();
@@ -1019,46 +1007,46 @@ void YabauseSpeedySetup(void)
       // Setup the vector table area, etc.(all bioses have it at 0x00000600-0x00000810)
       for (i = 0; i < 0x210; i+=4)
       {
-         data = MappedMemoryReadLong(MSH2, 0x00000600+i);
-         MappedMemoryWriteLong(MSH2, 0x06000000+i, data);
+         data = SH2MappedMemoryReadLong(MSH2, 0x00000600+i);
+         SH2MappedMemoryWriteLong(MSH2, 0x06000000+i, data);
       }
 
       // Setup the bios function pointers, etc.(all bioses have it at 0x00000820-0x00001100)
       for (i = 0; i < 0x8E0; i+=4)
       {
-         data = MappedMemoryReadLong(MSH2, 0x00000820+i);
-         MappedMemoryWriteLong(MSH2, 0x06000220+i, data);
+         data = SH2MappedMemoryReadLong(MSH2, 0x00000820+i);
+         SH2MappedMemoryWriteLong(MSH2, 0x06000220+i, data);
       }
 
       // I'm not sure this is really needed
       for (i = 0; i < 0x700; i+=4)
       {
-         data = MappedMemoryReadLong(MSH2, 0x00001100+i);
-         MappedMemoryWriteLong(MSH2, 0x06001100+i, data);
+         data = SH2MappedMemoryReadLong(MSH2, 0x00001100+i);
+         SH2MappedMemoryWriteLong(MSH2, 0x06001100+i, data);
       }
 
       // Fix some spots in 0x06000210-0x0600032C area
-      MappedMemoryWriteLong(MSH2, 0x06000234, 0x000002AC);
-      MappedMemoryWriteLong(MSH2, 0x06000238, 0x000002BC);
-      MappedMemoryWriteLong(MSH2, 0x0600023C, 0x00000350);
-      MappedMemoryWriteLong(MSH2, 0x06000240, 0x32524459);
-      MappedMemoryWriteLong(MSH2, 0x0600024C, 0x00000000);
-      MappedMemoryWriteLong(MSH2, 0x06000268, MappedMemoryReadLong(MSH2, 0x00001344));
-      MappedMemoryWriteLong(MSH2, 0x0600026C, MappedMemoryReadLong(MSH2, 0x00001348));
-      MappedMemoryWriteLong(MSH2, 0x0600029C, MappedMemoryReadLong(MSH2, 0x00001354));
-      MappedMemoryWriteLong(MSH2, 0x060002C4, MappedMemoryReadLong(MSH2, 0x00001104));
-      MappedMemoryWriteLong(MSH2, 0x060002C8, MappedMemoryReadLong(MSH2, 0x00001108));
-      MappedMemoryWriteLong(MSH2, 0x060002CC, MappedMemoryReadLong(MSH2, 0x0000110C));
-      MappedMemoryWriteLong(MSH2, 0x060002D0, MappedMemoryReadLong(MSH2, 0x00001110));
-      MappedMemoryWriteLong(MSH2, 0x060002D4, MappedMemoryReadLong(MSH2, 0x00001114));
-      MappedMemoryWriteLong(MSH2, 0x060002D8, MappedMemoryReadLong(MSH2, 0x00001118));
-      MappedMemoryWriteLong(MSH2, 0x060002DC, MappedMemoryReadLong(MSH2, 0x0000111C));
-      MappedMemoryWriteLong(MSH2, 0x06000328, 0x000004C8);
-      MappedMemoryWriteLong(MSH2, 0x0600032C, 0x00001800);
+      SH2MappedMemoryWriteLong(MSH2, 0x06000234, 0x000002AC);
+      SH2MappedMemoryWriteLong(MSH2, 0x06000238, 0x000002BC);
+      SH2MappedMemoryWriteLong(MSH2, 0x0600023C, 0x00000350);
+      SH2MappedMemoryWriteLong(MSH2, 0x06000240, 0x32524459);
+      SH2MappedMemoryWriteLong(MSH2, 0x0600024C, 0x00000000);
+      SH2MappedMemoryWriteLong(MSH2, 0x06000268, SH2MappedMemoryReadLong(MSH2, 0x00001344));
+      SH2MappedMemoryWriteLong(MSH2, 0x0600026C, SH2MappedMemoryReadLong(MSH2, 0x00001348));
+      SH2MappedMemoryWriteLong(MSH2, 0x0600029C, SH2MappedMemoryReadLong(MSH2, 0x00001354));
+      SH2MappedMemoryWriteLong(MSH2, 0x060002C4, SH2MappedMemoryReadLong(MSH2, 0x00001104));
+      SH2MappedMemoryWriteLong(MSH2, 0x060002C8, SH2MappedMemoryReadLong(MSH2, 0x00001108));
+      SH2MappedMemoryWriteLong(MSH2, 0x060002CC, SH2MappedMemoryReadLong(MSH2, 0x0000110C));
+      SH2MappedMemoryWriteLong(MSH2, 0x060002D0, SH2MappedMemoryReadLong(MSH2, 0x00001110));
+      SH2MappedMemoryWriteLong(MSH2, 0x060002D4, SH2MappedMemoryReadLong(MSH2, 0x00001114));
+      SH2MappedMemoryWriteLong(MSH2, 0x060002D8, SH2MappedMemoryReadLong(MSH2, 0x00001118));
+      SH2MappedMemoryWriteLong(MSH2, 0x060002DC, SH2MappedMemoryReadLong(MSH2, 0x0000111C));
+      SH2MappedMemoryWriteLong(MSH2, 0x06000328, 0x000004C8);
+      SH2MappedMemoryWriteLong(MSH2, 0x0600032C, 0x00001800);
 
       // Fix SCU interrupts
       for (i = 0; i < 0x80; i+=4)
-         MappedMemoryWriteLong(MSH2, 0x06000A00+i, 0x0600083C);
+         SH2MappedMemoryWriteLong(MSH2, 0x06000A00+i, 0x0600083C);
    }
 
    // Set the cpu's, etc. to sane states
@@ -1198,12 +1186,12 @@ int YabauseQuickLoadGame(void)
          if (size >= 2048)
          {
             for (i2 = 0; i2 < 2048; i2++)
-               MappedMemoryWriteByte(MSH2, 0x06002000 + (i * 0x800) + i2, buffer[i2]);
+               SH2MappedMemoryWriteByte(MSH2, 0x06002000 + (i * 0x800) + i2, buffer[i2]);
          }
          else
          {
             for (i2 = 0; i2 < size; i2++)
-               MappedMemoryWriteByte(MSH2, 0x06002000 + (i * 0x800) + i2, buffer[i2]);
+               SH2MappedMemoryWriteByte(MSH2, 0x06002000 + (i * 0x800) + i2, buffer[i2]);
          }
 
          size -= 2048;
@@ -1270,12 +1258,12 @@ int YabauseQuickLoadGame(void)
          if (size >= 2048)
          {
             for (i2 = 0; i2 < 2048; i2++)
-               MappedMemoryWriteByte(MSH2, addr + (i * 0x800) + i2, buffer[i2]);
+               SH2MappedMemoryWriteByte(MSH2, addr + (i * 0x800) + i2, buffer[i2]);
          }
          else
          {
             for (i2 = 0; i2 < size; i2++)
-               MappedMemoryWriteByte(MSH2, addr + (i * 0x800) + i2, buffer[i2]);
+               SH2MappedMemoryWriteByte(MSH2, addr + (i * 0x800) + i2, buffer[i2]);
          }
 
          size -= 2048;

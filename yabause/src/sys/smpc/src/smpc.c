@@ -218,10 +218,10 @@ void SmpcCKCHG352(void) {
    // Send NMI
    SH2NMI(MSH2);
    // Reset VDP1, VDP2, SCU, and SCSP
-   Vdp1Reset();  
-   Vdp2Reset();  
-   ScuReset();  
-   ScspReset();  
+   Vdp1Reset();
+   Vdp2Reset();
+   ScuReset();
+   ScspReset();
 
    // Clear VDP1/VDP2 ram
 
@@ -242,10 +242,10 @@ void SmpcCKCHG320(void) {
    SH2NMI(MSH2);
 
    // Reset VDP1, VDP2, SCU, and SCSP
-   Vdp1Reset();  
-   Vdp2Reset();  
-   ScuReset();  
-   ScspReset();  
+   Vdp1Reset();
+   Vdp2Reset();
+   ScuReset();
+   ScspReset();
 
    // Clear VDP1/VDP2 ram
 
@@ -281,7 +281,7 @@ static void SmpcINTBACKStatus(void) {
 
    SmpcRegs->OREG[0] = 0x80 | (SmpcInternalVars->resd << 6);   // goto normal startup
    //SmpcRegs->OREG[0] = 0x0 | (SmpcInternalVars->resd << 6);  // goto setclock/setlanguage screen
-    
+
    // write time data in OREG1-7
    if (SmpcInternalVars->clocksync) {
       tmp = SmpcInternalVars->basetime + ((u64)framecounter * 1001 / 60000);
@@ -337,7 +337,7 @@ static void SmpcINTBACKStatus(void) {
 
    // write cartidge data in OREG8
    SmpcRegs->OREG[8] = 0; // FIXME : random value
-    
+
    // write zone data in OREG9 bits 0-7
    // 1 -> japan
    // 2 -> asia/ntsc
@@ -358,10 +358,10 @@ static void SmpcINTBACKStatus(void) {
    // 4   | 1      |
    // 3   | MSHNMI |
    // 2   | 1      |
-   // 1   | SYSRES | 
+   // 1   | SYSRES |
    // 0   | SNDRES |
    SmpcRegs->OREG[10] = 0x34|(SmpcInternalVars->dotsel<<6)|(SmpcInternalVars->mshnmi<<3)|(SmpcInternalVars->sysres<<1)|SmpcInternalVars->sndres;
-    
+
    // system state, second part in OREG11, bit 6
    // bit 6 -> CDRES
    SmpcRegs->OREG[11] = SmpcInternalVars->cdres << 6; // FIXME
@@ -369,7 +369,7 @@ static void SmpcINTBACKStatus(void) {
    // SMEM
    for(i = 0;i < 4;i++)
       SmpcRegs->OREG[12+i] = SmpcInternalVars->SMEM[i];
-    
+
    SmpcRegs->OREG[31] = 0x10; // set to intback command
 }
 
@@ -688,13 +688,23 @@ u8 FASTCALL SmpcReadByte(SH2_struct *context, u8* mem, u32 addr) {
      return bustmp;
    }
 
-   if ((addr == 0x77) && ((SmpcRegs->DDR[1] & 0x7F) == 0x18)) { //PDR2
+   if (addr == 0x77){
+     //PDR2
+    if((SmpcRegs->DDR[1] & 0x7F) == 0x18) {
      u8 val = (((0x67 & ~0x19) | 0x18 | (eeprom_do_read()<<0)) & ~SmpcRegs->DDR[1]) | m_pdr2_readback;
      return val; //Shall use eeprom normally look at mame stv driver
+   } else {
+     return (SmpcRegsT[addr >> 1] & SmpcRegs->DDR[1]) | (PORTDATA2.data[2] & ~SmpcRegs->DDR[1]);
    }
-   if ((addr == 0x75) && ((SmpcRegs->DDR[0] & 0x7F) == 0x3f)) { //PDR1
-     u8 val = (((0x40 & 0x40) | 0x3f) & ~SmpcRegs->DDR[0]) | m_pdr1_readback;
-     return val;
+   }
+   if (addr == 0x75){
+     //PDR1
+     if ((SmpcRegs->DDR[0] & 0x7F) == 0x3f) {
+       u8 val = (((0x40 & 0x40) | 0x3f) & ~SmpcRegs->DDR[0]) | m_pdr1_readback;
+       return val;
+     // } else {
+     //   return (SmpcRegsT[addr >> 1] & SmpcRegs->DDR[0]) | (PORTDATA1.data[2] & ~SmpcRegs->DDR[0]);
+     }
    }
 
    if ((addr >= 0x21) && (addr <= 0x5D)) { //OREG[0-30]
@@ -788,7 +798,7 @@ static void SmpcSetTiming(void) {
          SmpcInternalVars->timing = 1;
          return;
       case 0x3:
-         SmpcInternalVars->timing = 1;                        
+         SmpcInternalVars->timing = 1;
          return;
       case 0x6:
       case 0x7:
@@ -809,14 +819,24 @@ static void SmpcSetTiming(void) {
 //acquiring megadrive id
 //world heroes perfect wants to find a saturn pad
 //id = 0xb
-u8 do_th_mode(u8 val)
+u8 do_th_mode(u8 val, PortData_struct* port)
 {
+  u8 id;
+
+  switch (port->data[1]) {
+    default:
+      id = 0xCF;
+    break;
+    case PERGUN:
+      id = 0xCC;
+    break;
+  }
    switch (val & 0x40) {
    case 0x40:
-      return 0x70 | ((PORTDATA1.data[3] & 0xF) & 0xc);
+      return 0x70 | (id>>4);
       break;
    case 0x00:
-      return 0x30 | ((PORTDATA1.data[2] >> 4) & 0xf);
+      return 0x30 | (id&0xF);
       break;
    }
 
@@ -833,7 +853,7 @@ void FASTCALL SmpcWriteByte(SH2_struct *context, u8* mem, u32 addr, u8 val) {
    oldVal = SmpcRegsT[addr >> 1];
    bustmp = val;
    if (addr == 0x1F) {
-      //COMREG 
+      //COMREG
       SmpcRegsT[0xF] = val&0x1F;
    } else
      SmpcRegsT[addr >> 1] = val;
@@ -852,7 +872,7 @@ void FASTCALL SmpcWriteByte(SH2_struct *context, u8* mem, u32 addr, u8 val) {
                SmpcRegs->SF = 0;
                break;
             }
-            else if (SmpcRegs->IREG[0] & 0x80) {                    
+            else if (SmpcRegs->IREG[0] & 0x80) {
                // Continue
                SMPCLOG("INTBACK Continue\n");
                SmpcSetTiming();
@@ -870,12 +890,14 @@ void FASTCALL SmpcWriteByte(SH2_struct *context, u8* mem, u32 addr, u8 val) {
          // FIX ME (should support other peripherals)
          switch (SmpcRegs->DDR[0] & 0x7F) { // Which Control Method do we use?
             case 0x00:
-               if (PORTDATA1.data[1] == PERGUN && (val & 0x7F) == 0x7F)
-                  SmpcRegs->PDR[0] = PORTDATA1.data[2];
+               if (PORTDATA1.data[1] == PERGUN && (val & 0x7F) == 0x7F){
+                 SmpcRegs->PDR[0] = PORTDATA1.data[2];
+               }
                break;
             //th control mode (acquire id)
             case 0x40:
-               SmpcRegs->PDR[0] = do_th_mode(val);
+               SmpcRegs->PDR[0] = do_th_mode(val, &PORTDATA1);
+               SMPCLOG("PDR 0 %x %x %x => %x\n", val, PORTDATA1.data[2], PORTDATA1.data[3], SmpcRegs->PDR[0]);
                break;
             //th tr control mode
             case 0x60:
@@ -917,6 +939,11 @@ void FASTCALL SmpcWriteByte(SH2_struct *context, u8* mem, u32 addr, u8 val) {
 			  if (PORTDATA2.data[1] == PERGUN && (val & 0x7F) == 0x7F)
 				  SmpcRegs->PDR[1] = PORTDATA2.data[2];
 			  break;
+        //th control mode (acquire id)
+      case 0x40:
+         SmpcRegs->PDR[1] = do_th_mode(val, &PORTDATA2);
+         SMPCLOG("PDR 1 %x %x %x => %x\n", val, PORTDATA2.data[2], PORTDATA2.data[3], SmpcRegs->PDR[1]);
+         break;
 		  case 0x60:
 			  switch (val & 0x60) {
 			  case 0x60: // 1st Data
@@ -983,13 +1010,13 @@ void FASTCALL SmpcWriteByte(SH2_struct *context, u8* mem, u32 addr, u8 val) {
                         case PERWHEEL:
                         case PERMISSIONSTICK:
                         case PERTWINSTICKS:
-                        default: 
+                        default:
                            SMPCLOG("smpc\t: Peripheral TH Control Method not supported for peripherl id %02X\n", PORTDATA1.data[1]);
                            break;
                      }
                      break;
                   }
-                  default: 
+                  default:
                      SmpcRegs->PDR[0] = 0x71;
                      break;
                }
@@ -997,9 +1024,58 @@ void FASTCALL SmpcWriteByte(SH2_struct *context, u8* mem, u32 addr, u8 val) {
                break;
             default: break;
          }
+         SmpcRegs->DDR[0] = (val & 0x7F);
          break;
          case 0x7B: // DDR2
-            SmpcRegs->DDR[1] = (val & 0x7F);
+         switch (SmpcRegs->DDR[1] & 0x7F) { // Which Control Method do we use?
+            case 0x00: // Low Nibble of Peripheral ID
+            case 0x40: // High Nibble of Peripheral ID
+               switch (PORTDATA2.data[0])
+               {
+                  case 0xA0:
+                  {
+                    SMPCLOG("value 0x%x\n", PORTDATA2.data[1]);
+                     if (PORTDATA2.data[1] == PERGUN)
+                        SmpcRegs->PDR[1] = 0x7C;
+                           break;
+                  }
+                  case 0xF0:
+                     SmpcRegs->PDR[1] = 0x7F;
+                     break;
+                  case 0xF1:
+                  {
+                     switch(PORTDATA2.data[1])
+                     {
+                        case PERPAD:
+                           SmpcRegs->PDR[1] = 0x7C;
+                           break;
+                        case PER3DPAD:
+                        case PERKEYBOARD:
+                           SmpcRegs->PDR[1] = 0x71;
+                           break;
+                        case PERMOUSE:
+                           SmpcRegs->PDR[1] = 0x70;
+                           break;
+                        case PERWHEEL:
+                        case PERMISSIONSTICK:
+                        case PERTWINSTICKS:
+                        case PERGUN:
+                        default:
+                           SmpcRegs->PDR[1] = 0xA0;
+                           SMPCLOG("smpc\t: Peripheral TH Control Method not supported for peripherl id %02X\n", PORTDATA1.data[1]);
+                           break;
+                     }
+                     break;
+                  }
+                  default:
+                     SmpcRegs->PDR[1] = 0x71;
+                     break;
+               }
+
+               break;
+            default: break;
+         }
+        SmpcRegs->DDR[1] = (val & 0x7F);
          break;
 	  case 0x7D: // IOSEL
 		  SmpcRegs->IOSEL = val;

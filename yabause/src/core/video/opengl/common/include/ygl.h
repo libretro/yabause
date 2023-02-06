@@ -563,16 +563,13 @@ typedef struct {
    GLuint rboid_depth;
    GLuint vdp1fbo;
    GLuint vdp1FrameBuff[4];
-   GLuint smallfbo;
-   GLuint smallfbotex;
-   GLuint vdp1pixelBufferID;
-   void * pFrameBuffer;
-   GLuint vdp1AccessFB;
-   GLuint vdp1AccessTex;
-   GLuint vdp1_pbo;
-   GLuint vdp1IsNotEmpty;
-   u32* vdp1fb_buf;
-   u32* vdp1fb_buf_read;
+   GLuint vdp1AccessFB[2];
+   GLuint vdp1AccessTex[2];
+   GLuint vdp1_pbo[2];
+   GLuint vdp1IsNotEmpty[2];
+   GLuint FBDirty[2];
+   u32* vdp1fb_write_buf[2];
+   u32* vdp1fb_read_buf[2];
    GLuint original_fbo;
    GLuint original_fbotex[NB_RENDER_LAYER];
 
@@ -707,7 +704,6 @@ typedef struct {
 } Ygl;
 
 extern Ygl * _Ygl;
-extern int opengl_mode; // 0 => gles3 , 1 => gl3.3
 
 // Rotate Screen
 
@@ -769,7 +765,6 @@ int YglSetLevelBlendmode( int pri, int mode );
 extern int YglBlitSimple(int texture, int blend);
 extern int YglBlitTexture(int* prioscreens, int* modescreens, int* isRGB, int * isBlur, int* isPerline, int* isShadow, int* lncl, GetFBFunc vdp1fb, int win_s, int win_s_mode, int Win0, int Win0_mode, int Win1, int Win1_mode, int Win_op, int* use_lncl_off, Vdp2 *varVdp2Regs);
 extern SpriteMode getSpriteRenderMode(Vdp2* varVdp2Regs);
-extern void executeTMVDP1(int in, int out);
 
 extern u8 * YglGetVDP2RegPointer();
 
@@ -800,6 +795,13 @@ int YglUpscaleFramebuffer(u32 srcTexture, u32 targetFbo, float w, float h, float
 void YglRenderVDP1(void);
 u32 * YglGetLineColorScreenPointer();
 void YglSetLineColorScreen(u32 * pbuf, int size);
+
+//To be removed
+void vdp1_write_gl();
+u32* vdp1_read_gl();
+void vdp1_write();
+u32* vdp1_read();
+//End of remove
 
 u32 * YglGetLineColorOffsetPointer(int id, int start, int size);
 void YglSetLineColorOffset(u32 * pbuf, int start, int size, int id);
