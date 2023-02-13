@@ -30,7 +30,7 @@ extern "C" {
 //YuiMsg
 #define ROTATED 1
 
-#define NB_STV_GAMES 98
+#define NB_STV_GAMES 99
 
 GameLink availableGames[NB_STV_GAMES];
 BiosLink biosLink;
@@ -849,6 +849,31 @@ Game GameList[NB_STV_GAMES]={
         GAME_WORD_BLOB, "ic23",  0x1200000, 0x0200000, 0x00000000,
         GAME_WORD_BLOB, "ic25",  0x1400000, 0x0200000, 0x00000000,
         EEPROM_BLOB, "nclubv3.nv",  0x0000, 0x0080, 0x00000000,
+        GAME_END, "", 0, 0, 0
+    },
+    STV,
+  },
+  {
+    "nclubdis",
+    NULL,
+    "Name Club Disney (J 980614 V1.000)",
+    STV_REGION_JP,
+    0,
+    0,
+    NULL,
+    NULL,
+    {
+        GAME_WORD_BLOB, "ic22",  0x0200000, 0x0200000, 0x00000000,
+        GAME_WORD_BLOB, "ic24",  0x0400000, 0x0200000, 0x00000000,
+        GAME_WORD_BLOB, "ic26",  0x0600000, 0x0200000, 0x00000000,
+        GAME_WORD_BLOB, "ic28",  0x0800000, 0x0200000, 0x00000000,
+        GAME_WORD_BLOB, "ic30",  0x0a00000, 0x0200000, 0x00000000,
+        GAME_WORD_BLOB, "ic32",  0x0c00000, 0x0200000, 0x00000000,
+        GAME_WORD_BLOB, "ic34",  0x0e00000, 0x0200000, 0x00000000,
+        GAME_WORD_BLOB, "ic36",  0x1000000, 0x0200000, 0x00000000,
+        GAME_WORD_BLOB, "ic23",  0x1200000, 0x0200000, 0x00000000,
+        GAME_WORD_BLOB, "ic25",  0x1400000, 0x0200000, 0x00000000,
+        EEPROM_BLOB, "nclubdis.nv",  0x0000, 0x0080, 0x00000000,
         GAME_END, "", 0, 0, 0
     },
     STV,
