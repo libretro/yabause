@@ -30,7 +30,7 @@ extern "C" {
 //YuiMsg
 #define ROTATED 1
 
-#define NB_STV_GAMES 99
+#define NB_STV_GAMES 100
 
 GameLink availableGames[NB_STV_GAMES];
 BiosLink biosLink;
@@ -360,6 +360,32 @@ Game GameList[NB_STV_GAMES]={
     },
     STV,
   },
+  {
+    "dfeverg",
+    NULL,
+    "Dancing Fever Gold (J 000821 V2.001)",
+    STV_REGION_JP,
+    0,
+    0,
+    NULL,
+    NULL,
+    {
+        GAME_WORD_BLOB, "13",  0x0000000, 0x800000, 0x00000000,
+        GAME_WORD_BLOB, "1",   0x0400000, 0x400000, 0x00000000,
+        GAME_WORD_BLOB, "2",   0x0800000, 0x400000, 0x00000000,
+        GAME_WORD_BLOB, "3",   0x0c00000, 0x400000, 0x00000000,
+        GAME_WORD_BLOB, "4",   0x1000000, 0x400000, 0x00000000,
+        GAME_WORD_BLOB, "5",   0x1400000, 0x400000, 0x00000000,
+        GAME_WORD_BLOB, "6",   0x1800000, 0x400000, 0x00000000,
+        GAME_WORD_BLOB, "8",   0x1c00000, 0x400000, 0x00000000,
+        GAME_WORD_BLOB, "9",   0x2000000, 0x400000, 0x00000000,
+        GAME_WORD_BLOB, "10",  0x2400000, 0x400000, 0x00000000,
+        GAME_WORD_BLOB, "11",  0x2800000, 0x400000, 0x00000000,
+        GAME_WORD_BLOB, "12",  0x2c00000, 0x400000, 0x00000000,
+        GAME_END, "", 0, 0, 0
+    },
+    STV,
+  },  
   {
     "decathlto",
     "decathlt",
@@ -1780,7 +1806,7 @@ Game GameList[NB_STV_GAMES]={
     0,
     0,
     NULL,
-    NULL,
+    NV_1P,
     {
         GAME_WORD_BLOB, "ic22.bin",   0x0200000, 0x200000, 0x00000000,
         GAME_WORD_BLOB, "ic24.bin",   0x0400000, 0x200000, 0x00000000,
@@ -1788,7 +1814,7 @@ Game GameList[NB_STV_GAMES]={
         GAME_WORD_BLOB, "ic28.bin",   0x0800000, 0x200000, 0x00000000,
         GAME_WORD_BLOB, "ic30.bin",   0x0a00000, 0x200000, 0x00000000,
         GAME_WORD_BLOB, "ic32.bin",   0x0c00000, 0x200000, 0x00000000,
-        EEPROM_BLOB, "skychal.nv", 0x0000, 0x0080, 0x00000000,
+        EEPROM_BLOB,    "skychal.nv", 0x0000, 0x0080, 0x00000000,
         GAME_END, "", 0, 0, 0
     },
     PATOCAR,
@@ -1803,7 +1829,7 @@ Game GameList[NB_STV_GAMES]={
     NULL,
     NULL,
     {
-        HEADER_BLOB, "epr-20091.ic8", 0x0000001, 0x200000, 0x00000000,
+        HEADER_BLOB, "epr-20091.ic8", 0x0000001, 0x008000, 0x00000000,
         GAME_WORD_BLOB, "ic22.bin",   0x0200000, 0x200000, 0x00000000,
         GAME_WORD_BLOB, "ic24.bin",   0x0400000, 0x200000, 0x00000000,
         GAME_WORD_BLOB, "ic26.bin",   0x0600000, 0x200000, 0x00000000,
