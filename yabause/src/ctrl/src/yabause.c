@@ -764,6 +764,10 @@ int YabauseEmulate(void) {
    TRACE_EMULATOR("YabauseEmulate");
    yabsys.LineCount = -1;
    yabsys.DecilineCount = 0;
+
+   ScspAddCycles((u64)(44100 * 256 / frames)<< SCSP_FRACTIONAL_BITS);
+   SyncCPUtoSCSP();
+
    while (yabsys.LineCount < yabsys.MaxLineCount-1)
    {
       PROFILE_START("Total Emulation");
@@ -790,13 +794,11 @@ int YabauseEmulate(void) {
       }
       if (yabsys.LineCount == yabsys.VBlankLineCount)
       {
-         ScspAddCycles((u64)(44100 * 256 / frames)<< SCSP_FRACTIONAL_BITS);
          PROFILE_START("vblankin");
          // VBlankIN
          SmpcINTBACKEnd();
          Vdp1VBlankIN();
          Vdp2VBlankIN();
-         SyncCPUtoSCSP();
          PROFILE_STOP("vblankin");
          CheatDoPatches(MSH2);
       }
