@@ -2332,7 +2332,7 @@ Game GameList[NB_STV_GAMES]={
     0,
     0,
     NULL,
-    NULL,
+    NV_1P,
     {
         HEADER_BLOB,   "epr20424.13",  0x0000001, 0x0100000, 0x00000000,
         GAME_WORD_BLOB, "mpr20431.7",  0x0200000, 0x0200000, 0x00000000,
