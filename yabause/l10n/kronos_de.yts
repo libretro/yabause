@@ -72,6 +72,7 @@ Asia (NTSC)|Asien (NTSC)
 Asia (PAL)|Asien (PAL)
 Assembly code|Montagecode			  
 Auto-detect|Automatische Erkennung
+Autostart|Auto-Start
 Awaiting input for|Erwarte Eingabe für
 Autostart|Autostart
 Axis|Achse
@@ -121,7 +122,7 @@ Choose a cheat file to save to|Cheatdatei zum Speichern auswählen
 Choose a file to save your state|Datei zum Speichern des Spielstandes auswählen
 Choose a file to store bios settings|Wählen Sie eine Datei zum Speichern der Bios-Einstellungen
 Choose a folder to store save states|Wählen Sie einen Ordner zum Speichern der Sicherungszustände
-Choose a folder to store screenshots|Wählen Sie einen Ordner zum Speichern von Screenshots						 
+Choose a folder to store screenshots|Wählen Sie einen Ordner zum Speichern von Screenshots
 Choose a location for binary file|Wähle eine Position für die Binärdatei
 Choose a location for your binary file|Wählen Sie einen Ort für Ihre Binärdatei
 Choose a location for your bitmap|Wählen Sie einen Ort für Ihre Bitmap
@@ -137,11 +138,12 @@ Code Breakpoints|Code Breakpoints
 COFF Program Files (*.cof *.coff)|COFF-Programmdateien (*.cof *.coff)
 Comment :|Kommentar :
 Common Control Registers|Common Control Registers
-Compatibility List|Kompatibilitätsliste			   
 Compare Type|Vergleiche Typen
+Compatibility List|Kompatibilitätsliste			   
 Compute Shader Video Interface|Shader berechnen Video-Schnittstelle
 Couldn't save state file|Statusdatei konnte nicht gespeichert werden
 Couldn't load state file|Statusdatei konnte nicht geladen werden
+Count|Zählen
 CPU Tesselation|CPU Tesselation
 Data Size|Datengrösse
 Data Size :|Datengrösse :
@@ -157,11 +159,11 @@ Debug VDP1|Debug VDP1
 Debug VDP2Viewer|Debug VDP2Viewer
 Default Dial IP|Standardwahl-IP
 Default System Language|
-Deinterlacing Bob|
-Deinterlacing Debug Bob|
-Deinterlacing OSSC Bob|
-Deinterlacing OSSC Debug Bob|
-Deinterlacing Scanline|
+Deinterlacing Bob|Deinterlacing Bob
+Deinterlacing Debug Bob|Deinterlacing Debug Bob
+Deinterlacing OSSC Bob|Deinterlacing OSSC Bob
+Deinterlacing OSSC Debug Bob|Deinterlacing OSSC Debug Bob
+Deinterlacing Scanline|Deinterlacing von Scanline
 Del|Del
 Delete|Löschen
 Description|Beschreibung
@@ -216,7 +218,7 @@ General Info|General Info
 German|Deutsch
 Goto Address|Goto Address
 GPU RBG :| GPU RGB (OpenGl 4.3)
-GPU Tesselation|			 
+GPU Tesselation|GPU-Tesselation			 
 Greater then|Größer als
 Gun|Pistole
 Gun Configuration|Pistolen-Konfiguration
@@ -266,7 +268,7 @@ Load|Laden
 Load State|Spielstand laden
 Load State As|Spielstand laden als
 Load as executable|Als ausführbar laden
-Local Coordinates|Local Coordinates
+Local Coordinates|Lokale Koordinaten
 Long|Long
 Long Write|Langes Schreiben
 Loop Track Clear|Loop Track Clear
@@ -276,7 +278,6 @@ Memory|Speicher
 Memory Breakpoints|Memory Breakpoints
 Memory Editor|
 Memory &Editor|Speicher&editierer
-Memory Editor|Speichereditierer
 Memory Search|Memory Search
 Memory Transfer|Speichertransfer
 Mesh Mode :|Meshmodus
@@ -330,6 +331,7 @@ Qt Keyboard Input Interface|Qt Tastatureingabenoberfäche
 RBG0|RBG0
 RBG0 Info|RBG0 Info
 Read|Read
+Record|Aufzeichnen
 Region|Region
 Remove Peripheral|Peripheriegerät entfernen
 Restart|Neustart
@@ -356,12 +358,13 @@ Save As WAV|Als WAV speichern
 Save Bitmap|Als Bitmap speichern
 Save Information|Informationen speichern
 Save List|Liste speichern
-Save MD0|Save MD0
-Save MD1|Save MD1
-Save MD2|Save MD2
-Save Selected|Save Selected			 
-Save Program|Save Program
-Save Slot Registers|Save Slot Registers
+Save MD0|Speichern MD0
+Save MD1|Speichern MD1
+Save MD2|Speichern MD2
+Save MD3|Speichern MD3
+Save Selected|Ausgewählte Speichern			 
+Save Program|Programm Speichern
+Save Slot Registers|Steckplatzregister Speichern
 S&ave State|S&aaten speichern
 Save States|Staaten speichern				
 Scanline filter|Scanline filter
@@ -398,7 +401,8 @@ Slot Info|Slot Info
 Slot Number:|Slot Number:
 Software OSD Interface|Software OSD Oberfläche
 Software Video Interface|Software Video Oberfläche
-Sound|Sound  
+Sound...|Klang...
+Sound|Klang
 Sound Core|Sound Kern
 Spanish|Spanisch
 ST-V cabinet Configuration|
@@ -428,6 +432,7 @@ Throttle Up|Gas hoch
 To File...|Zur Datei...
 toolBar|Werkzeugleiste
 Trace Logging|Trace-Protokollierung
+Track Inf Loop Results|Verfolgen Sie die Ergebnisse der Inf-Schleife
 Translation|Übersetzung
 Triangles using perspective correction|Dreiecke mit perspektivischer Korrektur
 Trigger|Auslösen
@@ -444,7 +449,7 @@ Unsigned 8-bit value|Unsigned 8-bit value
 Unsigned 16-bit value|Unsigned 16-bit value
 Unsigned 32-bit value|Unsigned 32-bit value	
 Up|Hoch
-Up_P2|P2 Hoch				  
+Up_P2|P2_Hoch				  
 Upload|Hochladen					  
 Upscale Filter :|Gehobener Filter :
 Use Vdp1 Cache|Verwenden Sie den Vdp1-Cache
