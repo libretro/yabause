@@ -72,6 +72,7 @@ Asia (NTSC)|Asia (NTSC)
 Asia (PAL)|Asia (PAL)
 Assembly code|Código ensamblador
 Auto-detect|Auto-detectar
+Autostart| Autoarranque
 Awaiting input for|Esperando entrada para
 Autostart|Autoiniciar		  
 Axis|Eje
@@ -137,11 +138,12 @@ Code Breakpoints|Puntos de detención de código
 COFF Program Files (*.cof *.coff)|Archivos de programa COFF (*.cof *.coff)
 Comment :|Comentario :
 Common Control Registers|Registros comunes de control
-Compatibility List|Listado de compatibilidad
 Compare Type|Comparar tipo	
+Compatibility List|Listado de compatibilidad
 Compute Shader Video Interface|Interfaz de sombreadores de cómputo
 Couldn't save state file|No se pudo guardar el archivo de estado
 Couldn't load state file|No se pudo cargar el archivo de estado
+Count|Cuenteo
 CPU Tesselation|Teselado CPU
 Data Size|Tamaño de datos
 Data Size :|Tamaño de datos :
@@ -329,6 +331,7 @@ Qt Keyboard Input Interface|Interfaz de entrada de teclado Qt
 RBG0|RBG0
 RBG0 Info|Información de RBG0
 Read|Leer
+Record|Grabar
 Region|Región
 Remove Peripheral|Quitar periférico
 Restart|Reiniciar
@@ -429,6 +432,7 @@ Throttle Up|Acelerar Arriba
 To File...|A archivo...
 toolBar|Barra de herramientas
 Trace Logging|Trazar Registro
+Track Inf Loop Results|Resultados de seguimiento de bucle inf
 Translation|Traducción
 Triangles using perspective correction|Triángulos usando corrección de perspectiva
 Trigger|Detonante
@@ -445,6 +449,7 @@ Unsigned 8-bit value|Valor de 8-bit sin signo
 Unsigned 16-bit value|Valor de 16-bit sin signo					  
 Unsigned 32-bit value|Valor de 32-bit sin signo
 Up|Arriba
+Up_P2|Arriba_P2
 Upload|Subir
 Upscale Filter :|Filtro de escalado
 Use Vdp1 Cache|Usar caché Vdp1
