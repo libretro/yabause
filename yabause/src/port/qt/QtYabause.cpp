@@ -189,6 +189,7 @@ extern "C"
 		vsnprintf(dest, 512, format, argptr);
 		va_end(argptr);
 		printf("%s", dest);
+		fflush(stdout);
 }
 
 #endif
