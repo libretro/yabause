@@ -559,7 +559,7 @@ typedef struct {
    float heightRatio;
    int drawframe;
    int readframe;
-   int vdp1On[2];
+   int shallVdp1Erase[2];
    GLuint rboid_depth;
    GLuint vdp1fbo;
    GLuint vdp1FrameBuff[4];
@@ -820,10 +820,11 @@ int Ygl_cleanupNormal(void * p, YglTextureManager *tm);
 int YglSetupWindow(YglProgram * prg);
 void Vdp2GenerateWindowInfo(Vdp2 *varVdp2Regs);
 
-void YglEraseWriteVDP1(int id);
+void clearVDP1Framebuffer(int frame);
+int YglEraseWriteVDP1(int id);
 void YglFrameChangeVDP1();
 
-void YglEraseWriteCSVDP1(int id);
+int YglEraseWriteCSVDP1(int id);
 void YglFrameChangeCSVDP1();
 
 extern void RBGGenerator_init(int width, int height);

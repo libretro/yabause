@@ -744,7 +744,7 @@ u16 FASTCALL Vdp2ReadWord(SH2_struct *context, u8* mem, u32 addr) {
          if (!(Vdp2Regs->EXTEN & 0x200))
          {
             // Latch HV counter on read
-            Vdp2Regs->HCNT = (yabsys.DecilineCount * _Ygl->rwidth / DECILINE_STEP) << 1;
+            // Vdp2Regs->HCNT = (yabsys.DecilineCount * _Ygl->rwidth / DECILINE_STEP) << 1;
             Vdp2Regs->VCNT = yabsys.LineCount;
             Vdp2Regs->TVSTAT |= 0x200;
          }
@@ -858,6 +858,11 @@ void FASTCALL Vdp2WriteWord(SH2_struct *context, u8* mem, u32 addr, u16 val) {
    {
       case 0x000:
          Vdp2Regs->TVMD = val;
+         if ((yabsys.LineCount < yabsys.VBlankLineCount) && (yabsys.LineCount < 225+(Vdp2Regs->TVMD & 0x30)) && ((Vdp2Regs->TVMD & 0x30)<(yabsys.VBlankLineCount - 225))) {
+           //Safe to change right now
+           yabsys.VBlankLineCount = 225+(Vdp2Regs->TVMD & 0x30);
+           if (yabsys.VBlankLineCount > 256) yabsys.VBlankLineCount = 256;
+         }
          return;
       case 0x002:
          Vdp2Regs->EXTEN = val;

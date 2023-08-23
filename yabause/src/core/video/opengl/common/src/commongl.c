@@ -785,7 +785,7 @@ static u32* getVDP1Framebuffer(int frame) {
 }
 
 u32* getVDP1ReadFramebuffer() {
-  return getVDP1Framebuffer(_Ygl->drawframe);
+  return getVDP1Framebuffer(_Ygl->readframe);
 }
 
 u32* getVDP1WriteFramebuffer(int frame) {
@@ -2534,7 +2534,7 @@ int YglQuadRbg0(RBGDrawInfo * rbg, YglTexture * output, YglCache * c, int rbg_ty
 }
 
 //////////////////////////////////////////////////////////////////////////////
-void YglEraseWriteVDP1(int id) {
+int YglEraseWriteVDP1(int id) {
 
   float col[4] = {0.0};
   float meshcol[4] = {0.0};
@@ -2543,7 +2543,7 @@ void YglEraseWriteVDP1(int id) {
   u32 alpha = 0;
   int status = 0;
   GLenum DrawBuffers[4]= {GL_COLOR_ATTACHMENT0,GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2,GL_COLOR_ATTACHMENT3};
-  if (_Ygl->vdp1FrameBuff[0] == 0) return;
+  if (_Ygl->vdp1FrameBuff[0] == 0) return 0;
 
   int shift = ((Vdp1Regs->TVMR & 0x1) == 1)?4:3;
   int limits[4] = {0};
@@ -2553,7 +2553,11 @@ void YglEraseWriteVDP1(int id) {
   limits[2] = (((Vdp1Regs->EWRR>>9)&0x7F)<<shift) - 1;
   limits[3] = ((Vdp1Regs->EWRR)&0x1FF); //TODO: manage double interlace
 
-  if ((limits[0]>=limits[2])||(limits[1]>limits[3])) return; //No erase write when invalid area - Should be done only for one dot but no idea of which dot it shall be
+  //Prohibited value seems to be considered as maximum values
+  if (limits[2] == -1) limits[2] = 511;
+  if (limits[3] == 0) limits[3] = 511;
+
+  if ((limits[0]>=limits[2])||(limits[1]>limits[3])) return 0; //No erase write when invalid area - Should be done only for one dot but no idea of which dot it shall be
 
   YglGenFrameBuffer();
 
@@ -2602,6 +2606,8 @@ void YglEraseWriteVDP1(int id) {
 
   glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->default_fbo);
 
+  return ((limits[2]-limits[0])*(limits[3]-limits[1]))>>(Vdp1Regs->TVMR & 0x1);
+
 }
 
 static void executeTMVDP1(int in, int out) {
@@ -2629,6 +2635,11 @@ void YglFrameChangeVDP1(){
   _Ygl->drawframe = _Ygl->readframe;
   _Ygl->readframe = current_drawframe;
   executeTMVDP1(_Ygl->readframe, _Ygl->drawframe);
+  if (_Ygl->shallVdp1Erase[_Ygl->drawframe] != 0) {
+    _Ygl->shallVdp1Erase[_Ygl->drawframe] = 0;
+    YglEraseWriteVDP1(_Ygl->drawframe);
+    clearVDP1Framebuffer(_Ygl->drawframe);
+  }
 
   FRAMELOG("YglFrameChangeVDP1: swap drawframe =%d readframe = %d (%d)\n", _Ygl->drawframe, _Ygl->readframe, yabsys.LineCount);
 }
