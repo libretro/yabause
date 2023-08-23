@@ -751,7 +751,7 @@ void UISettings::loadSettings()
 	// video
 	cbVideoCore->setCurrentIndex( cbVideoCore->findData( s->value( "Video/VideoCore", QtYabause::defaultVIDCore().id ).toInt() ) );
 	if (cbVideoCore->currentIndex() != VIDCORE_CS) {
-		cbVideoCore->setCurrentIndex(VIDCORE_CS);
+		cbVideoCore->setCurrentIndex(cbVideoCore->findData(VIDCORE_CS));
 	}
 	changeVideoMode(cbVideoCore->currentIndex());
 #if YAB_PORT_OSD
