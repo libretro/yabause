@@ -57,7 +57,6 @@
 #endif
 
 #include "vidsoft.h"
-#include "vidogl.h"
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -1863,13 +1862,6 @@ int YabLoadStateStream(const void * stream, size_t size_stream)
       MemStateRead((void *)buf, totalsize, 1, stream);
 
       YuiTimedSwapBuffers();
-
-#ifdef USE_OPENGL
-      if(VIDCore->id == VIDCORE_SOFT)
-         glRasterPos2i(0, outputheight);
-      if(VIDCore->id == VIDCORE_OGL)
-         glRasterPos2i(0, outputheight/2);
-#endif
 
       VIDCore->GetGlSize(&curroutputwidth, &curroutputheight);
 #ifdef USE_OPENGL

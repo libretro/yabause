@@ -29,7 +29,7 @@
 
 
 
-#include "vidogl.h"
+#include "vdp1.h"
 #include "vidshared.h"
 #include "debug.h"
 #include "vdp2.h"
@@ -58,6 +58,9 @@
 #define LOG_AREA
 
 extern void YglGenReset();
+
+static int isEnabled(int id, Vdp2* varVdp2Regs);
+static void VIDOGLVdp2DrawScreens(void);
 
 static int vidogl_renderer_started = 0;
 static Vdp2 baseVdp2Regs;
@@ -112,74 +115,6 @@ void OSDPushMessageDirect(char * msg) {
 
 #define WA_INSIDE (0)
 #define WA_OUTSIDE (1)
-
-int VIDOGLInit(void);
-void VIDOGLDeInit(void);
-void VIDOGLResize(int, int, unsigned int, unsigned int, int);
-void VIDOGLGetScale(float *, float *, int *, int *);
-int VIDOGLIsFullscreen(void);
-int VIDOGLVdp1Reset(void);
-void VIDOGLVdp1Draw();
-void VIDOGLVdp1NormalSpriteDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* back_framebuffer);
-void VIDOGLVdp1ScaledSpriteDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* back_framebuffer);
-void VIDOGLVdp1DistortedSpriteDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* back_framebuffer);
-void VIDOGLVdp1PolygonDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* back_framebuffer);
-void VIDOGLVdp1PolylineDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* back_framebuffer);
-void VIDOGLVdp1LineDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* back_framebuffer);
-void VIDOGLVdp1UserClipping(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs);
-void VIDOGLVdp1SystemClipping(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs);
-void VIDOGLVdp1LocalCoordinate(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs);
-void VIDOGLVdp1DrawFB(void);
-int VIDOGLVdp2Reset(void);
-void VIDOGLVdp2Draw(void);
-static void VIDOGLVdp2DrawScreens(void);
-void VIDOGLVdp2SetResolution(u16 TVMD);
-void YglGetGlSize(int *width, int *height);
-void VIDOGLGetNativeResolution(int *width, int *height, int*interlace);
-void VIDOGLSetSettingValueMode(int type, int value);
-void VIDOGLSync();
-void VIDOGLGetNativeResolution(int *width, int *height, int*interlace);
-void VIDOGLVdp2DispOff(void);
-static int isEnabled(int id, Vdp2* varVdp2Regs);
-extern int YglGenFrameBuffer();
-extern void YglComposeVdp1(void);
-
-
-VideoInterface_struct VIDOGL = {
-VIDCORE_OGL,
-"OpenGL Video Interface",
-VIDOGLInit,
-VIDOGLDeInit,
-VIDOGLResize,
-VIDOGLGetScale,
-VIDOGLIsFullscreen,
-VIDOGLVdp1Reset,
-VIDOGLVdp1Draw,
-VIDOGLVdp1NormalSpriteDraw,
-VIDOGLVdp1ScaledSpriteDraw,
-VIDOGLVdp1DistortedSpriteDraw,
-VIDOGLVdp1PolygonDraw,
-VIDOGLVdp1PolylineDraw,
-VIDOGLVdp1LineDraw,
-VIDOGLVdp1UserClipping,
-VIDOGLVdp1SystemClipping,
-VIDOGLVdp1LocalCoordinate,
-YglEraseWriteVDP1,
-YglFrameChangeVDP1,
-NULL,
-VIDOGLVdp2Reset,
-VIDOGLVdp2Draw,
-YglGetGlSize,
-VIDOGLSetSettingValueMode,
-VIDOGLSync,
-VIDOGLGetNativeResolution,
-VIDOGLVdp2DispOff,
-YglRender,
-NULL, // YglComposeVdp1,
-YglGenFrameBuffer,
-NULL,
-VIDOGLVdp1DrawFB
-};
 
 static int vdp1_interlace = 0;
 
@@ -5016,7 +4951,6 @@ static void Vdp2DrawRBG1(Vdp2 *varVdp2Regs)
   rgb->info.endLine = line;
   LOG_AREA("RBG1 Draw from %d to %d %x\n", rgb->info.startLine, rgb->info.endLine, varVdp2Regs->BGON);
   Vdp2DrawRBG1_part(rgb, &Vdp2Lines[rgb->info.startLine]);
-
 }
 
 static int isEnabled(int id, Vdp2* varVdp2Regs) {

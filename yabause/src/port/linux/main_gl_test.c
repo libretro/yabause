@@ -32,7 +32,6 @@
 #include "../sh2core.h"
 #include "../sh2int.h"
 #ifdef HAVE_LIBGL
-#include "vidogl.h"
 #include "ygl.h"
 #endif
 #include "../vidsoft.h"

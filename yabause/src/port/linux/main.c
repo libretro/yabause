@@ -32,7 +32,6 @@
 #include "../sh2core.h"
 #include "../sh2int.h"
 #ifdef HAVE_LIBGL
-#include "vidogl.h"
 #include "ygl.h"
 #endif
 #include "../vidsoft.h"
@@ -116,9 +115,6 @@ NULL
 };
 
 VideoInterface_struct *VIDCoreList[] = {
-#ifdef HAVE_LIBGL
-&VIDOGL,
-#endif
 &VIDSoft,
 NULL
 };
@@ -188,11 +184,7 @@ void YuiInit() {
         #else
 	  yinit.sh2coretype = 0;
         #endif
-#ifdef FORCE_CORE_SOFT
-  yinit.vidcoretype = VIDCORE_SOFT;
-#else
-	yinit.vidcoretype = VIDCORE_OGL; //VIDCORE_SOFT
-#endif
+	yinit.vidcoretype = VIDCORE_CS;
 #ifdef HAVE_LIBSDL
 	yinit.sndcoretype = SNDCORE_SDL;
 #else
@@ -383,18 +375,8 @@ int main(int argc, char *argv[]) {
   }
 
   if (lowres_mode == 0){
-    if (yinit.vidcoretype == VIDCORE_OGL) {
-      VIDCore->SetSettingValue(VDP_SETTING_FILTERMODE, AA_BILINEAR_FILTER);
-      VIDCore->SetSettingValue(VDP_SETTING_UPSCALMODE, UP_4XBRZ);
-      VIDCore->SetSettingValue(VDP_SETTING_SCANLINE, scanline);
-    }
     VIDCore->Resize(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 1);
   } else {
-    if (yinit.vidcoretype == VIDCORE_OGL) {
-      VIDCore->SetSettingValue(VDP_SETTING_FILTERMODE, AA_BILINEAR_FILTER);
-      VIDCore->SetSettingValue(VDP_SETTING_UPSCALMODE, UP_2XBRZ);
-      VIDCore->SetSettingValue(VDP_SETTING_SCANLINE, scanline);
-    }
     VIDCore->Resize(0, 0, WINDOW_WIDTH_LOW, WINDOW_HEIGHT_LOW, 1);
   }
 

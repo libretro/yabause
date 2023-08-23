@@ -100,26 +100,6 @@ static void MessageCallback( GLenum source,
 
 void YglGenerate();
 
-static int GLCapabilities = -1;
-int getCSUsage() {
-  if (GLCapabilities == -1) {
-    int min, maj;
-    glGetIntegerv(GL_MAJOR_VERSION, &maj);
-    glGetIntegerv(GL_MINOR_VERSION, &min);
-
-    #if defined(_OGLES3_)
-      if ((maj >=2) && (min >=0)) GLCapabilities = 0;
-      if ((maj >=3) && (min >=0)) GLCapabilities = 1;
-      if ((maj >=3) && (min >=1)) GLCapabilities = 2;
-    #else
-      if ((maj >=3) && (min >=3)) GLCapabilities = 0;
-      if ((maj >=4) && (min >=2)) GLCapabilities = 1;
-      if ((maj >=4) && (min >=3)) GLCapabilities = 2;
-    #endif
-  }
-  return GLCapabilities;
-}
-
 void YglScalef(YglMatrix *result, GLfloat sx, GLfloat sy, GLfloat sz)
 {
     result->m[0][0] *= sx;
@@ -900,7 +880,7 @@ void YglGenerate() {
 
   warning = 0;
   YglDestroy();
-  if (getCSUsage() == 2) vdp1_compute_init( _Ygl->vdp1width, _Ygl->vdp1height, _Ygl->vdp1wratio,_Ygl->vdp1hratio);
+  vdp1_compute_init( _Ygl->vdp1width, _Ygl->vdp1height, _Ygl->vdp1wratio,_Ygl->vdp1hratio);
   glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->default_fbo);
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
   glGenTextures(4, _Ygl->vdp1FrameBuff);
@@ -1337,33 +1317,19 @@ int YglInit(int width, int height, unsigned int depth) {
   glGetIntegerv(GL_MAJOR_VERSION, &maj);
   glGetIntegerv(GL_MINOR_VERSION, &min);
 
-#ifndef __LIBRETRO__
-#ifdef _OGL3_
-  if (maj*10+min < 43) {
-   YuiMsg("Your graphic card is supporting only OpenGL %d.%d, you might suffer some graphical glitches depending your options\n", maj, min);
-  }
-  if (maj*10+min < 33) {
-   YabSetError(YAB_ERR_CANNOTINIT, _("OpenGL context"));
-   YuiMsg("Your graphic card is supporting only OpenGL %d.%d, 3.3 minimum is requested\n", maj, min);
-   return -1;
-  }
-#endif
-#ifdef D_OGLES3_
-  if (maj*10+min < 30) {
-   YabSetError(YAB_ERR_CANNOTINIT, _("OpenGL ES context"));
-   YuiMsg("Getting only OpenGL %d.%d requesting 3.0 at least\n", maj, min);
-   return -1;
-  }
-#endif
-#ifdef D_OGLES31_
-  if (maj*10+min < 31) {
-   YabSetError(YAB_ERR_CANNOTINIT, _("OpenGL ES context"));
-   YuiMsg("Getting only OpenGL %d.%d requesting 3.1 at least\n", maj, min);
-   return -1;
-  }
-#endif
-#endif
-  YuiMsg("Using OpenGL %d.%d\n", maj, min);
+  #if defined(_OGLES3_)
+    YuiMsg("Your graphic card is supporting OpenGLES %d.%d\n", maj, min);
+    if (!((maj >=3) && (min >=1))){
+      YuiMsg("OpenGLES 3.1 is required!");
+       return -1;
+    }
+  #else
+    YuiMsg("Your graphic card is supporting Open %d.%d\n", maj, min);
+    if (!((maj >=4) && (min >=3))) {
+      YuiMsg("OpenGL 4.3 is required!");
+      return -1;
+    }
+  #endif
 
   if ((_Ygl = (Ygl *)malloc(sizeof(Ygl))) == NULL) {
     return -1;
@@ -1463,7 +1429,7 @@ int YglInit(int width, int height, unsigned int depth) {
   YglTM_vdp1[1] = YglTMInit(1024, 1024);
   YglTM_vdp2 = YglTMInit(1024, 1024);
 
-  if (getCSUsage() == 2) vdp1_compute_init(512.0f, 256.0f, _Ygl->vdp1wratio,_Ygl->vdp1hratio);
+  vdp1_compute_init(512.0f, 256.0f, _Ygl->vdp1wratio,_Ygl->vdp1hratio);
 
   _Ygl->vdp2buf = (u8*)malloc(512 * sizeof(int)* NB_VDP2_REG);
 

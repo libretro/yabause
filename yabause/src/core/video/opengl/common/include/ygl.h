@@ -277,8 +277,6 @@ typedef struct {
 extern YglTextureManager * YglTM_vdp1[2];
 extern YglTextureManager * YglTM_vdp2;
 
-extern int getCSUsage();
-
 YglTextureManager * YglTMInit(unsigned int, unsigned int);
 void YglTMDeInit(YglTextureManager ** tm );
 void YglTMReset( YglTextureManager * tm );

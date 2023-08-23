@@ -102,7 +102,6 @@ set(kronos_HEADERS
   core/osd/include/osdcore.h
   core/osd/include/font.h
   core/m68k/m68kcore.h
-	core/video/opengl/core/include/vidogl.h
 	core/video/opengl/common/include/vidshared.h
 	core/video/opengl/common/include/ygl.h
 	core/video/soft/vidsoft.h

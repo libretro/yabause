@@ -28,7 +28,6 @@
 #include "yabause.h"
 #include "scsp.h"
 #include "vidsoft.h"
-#include "vidogl.h"
 #include "peripheral.h"
 #include "m68kcore.h"
 #include "sh2core.h"

@@ -35,7 +35,6 @@
 #include "../sh2_kronos/sh2int_kronos.h"
 #endif
 #ifdef HAVE_LIBGL
-#include "vidogl.h"
 #include "ygl.h"
 #endif
 #include "../vidsoft.h"

@@ -30,7 +30,6 @@
 #include "cs2.h"
 
 #include "m68kcore.h"
-#include "vidogl.h"
 #include "vidcs.h"
 #include "vidsoft.h"
 #include "ygl.h"
@@ -71,7 +70,7 @@ typedef enum
     N_RES_8k = 2,
 } NATIVE_RESOLUTION_MODE;
 
-static int g_vidcoretype = VIDCORE_OGL;
+static int g_vidcoretype = VIDCORE_CS;
 static int g_sh2coretype = 8;
 static int g_skipframe = 0;
 static int g_videoformattype = -1;
@@ -669,7 +668,6 @@ SoundInterface_struct *SNDCoreList[] = {
 };
 
 VideoInterface_struct *VIDCoreList[] = {
-    &VIDOGL,
     &VIDCS,
     NULL
 };
@@ -681,7 +679,7 @@ static void set_variable_visibility(void)
    struct retro_core_option_display option_display;
 
    // Hide settings specific to OpenGL
-   option_display.visible = (g_vidcoretype == VIDCORE_OGL);
+   option_display.visible = (g_vidcoretype == VIDCORE_CS);
    option_display.key = "kronos_polygon_mode";
    environ_cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY, &option_display);
 
@@ -700,7 +698,7 @@ static void set_variable_visibility(void)
    environ_cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY, &option_display);
 
    // Hide settings specific to compute shaders
-   option_display.visible = (getCSUsage() == 2);
+   option_display.visible = 1;
    option_display.key = "kronos_videocoretype";
    environ_cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY, &option_display);
    option_display.key = "kronos_use_cs";
@@ -949,7 +947,7 @@ void check_variables(void)
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
       if (strcmp(var.value, "opengl") == 0)
-         g_vidcoretype = VIDCORE_OGL;
+         g_vidcoretype = VIDCORE_CS; //opengl is not supported anymore.
       else if (strcmp(var.value, "opengl_cs") == 0)
          g_vidcoretype = VIDCORE_CS;
    }

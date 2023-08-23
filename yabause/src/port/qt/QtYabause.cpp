@@ -113,7 +113,6 @@ NULL
 
 VideoInterface_struct *VIDCoreList[] = {
 #ifdef HAVE_LIBGL
-&VIDOGL,
 &VIDCS,
 #endif
 #ifdef USE_SOFT_RENDER
@@ -201,7 +200,7 @@ extern "C"
 
   void YuiEndOfFrame()
 	{
-		
+
 	}
 	void YuiSwapBuffers()
 	{
@@ -515,7 +514,7 @@ SoundInterface_struct QtYabause::defaultSNDCore()
 VideoInterface_struct QtYabause::defaultVIDCore()
 {
 #ifdef HAVE_LIBGL
-        return VIDCS;
+  return VIDCS;
 #else
 	return VIDSoft;
 #endif

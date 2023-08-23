@@ -426,21 +426,21 @@ void UISettings::changeFilterMode(int id)
 
 void UISettings::changeVideoMode(int id)
 {
-	if (VIDCoreList[id]->id == 1) {//OpenGL
-		//Tesselation on
-		Tesselation->setVisible(true);
-		cbPolygonGeneration->setVisible(true);
-		//Gouraud off
-		BandingMode->setVisible(false);
-		cbBandingModeFilter->setVisible(false);
-		//Wireframe off
-		Wireframe->setVisible(false);
-		cbWireframeFilter->setVisible(false);
-		//Enable RGB compute Shader on CS core
-		GPURBG->setVisible(true);
-		cbGPURBG->setVisible(true);
-	}
-	if (VIDCoreList[id]->id == 2) {//Compute Shader
+	// if (VIDCoreList[id]->id == 1) {//OpenGL
+	// 	//Tesselation on
+	// 	Tesselation->setVisible(true);
+	// 	cbPolygonGeneration->setVisible(true);
+	// 	//Gouraud off
+	// 	BandingMode->setVisible(false);
+	// 	cbBandingModeFilter->setVisible(false);
+	// 	//Wireframe off
+	// 	Wireframe->setVisible(false);
+	// 	cbWireframeFilter->setVisible(false);
+	// 	//Enable RGB compute Shader on CS core
+	// 	GPURBG->setVisible(true);
+	// 	cbGPURBG->setVisible(true);
+	// }
+	if (VIDCoreList[id]->id == VIDCORE_CS) {//Compute Shader
 		//Tesselation offcol4
 		Tesselation->setVisible(false);
 		cbPolygonGeneration->setVisible(false);
@@ -750,6 +750,9 @@ void UISettings::loadSettings()
 
 	// video
 	cbVideoCore->setCurrentIndex( cbVideoCore->findData( s->value( "Video/VideoCore", QtYabause::defaultVIDCore().id ).toInt() ) );
+	if (cbVideoCore->currentIndex() != VIDCORE_CS) {
+		cbVideoCore->setCurrentIndex(VIDCORE_CS);
+	}
 	changeVideoMode(cbVideoCore->currentIndex());
 #if YAB_PORT_OSD
 	cbOSDCore->setCurrentIndex( cbOSDCore->findData( s->value( "Video/OSDCore", QtYabause::defaultOSDCore().id ).toInt() ) );
