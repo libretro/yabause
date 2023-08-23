@@ -159,7 +159,13 @@ static void syncVideoMode(void) {
   if(nextFrameTime > now) {
     if (isAutoFrameSkip() == 0) {
       sleep = ((nextFrameTime - now)*1000000.0)/yabsys.tickfreq;
+#ifdef WIN32
+      while(YabauseGetTicks() < nextFrameTime) {
+        YabThreadYield();
+      }
+#else
       delay = YabThreadUSleep(sleep) * yabsys.tickfreq/1000000.0;
+#endif
       nextFrameTime += delay;
     }
   }
