@@ -76,10 +76,11 @@ public:
 	virtual bool eventFilter( QObject* o, QEvent* e );
 
 	int loadGameFromFile(QString const & fullFilePath);
+	YabauseThread* mYabauseThread;
 
 protected:
 	YabauseGL* mYabauseGL;
-	YabauseThread* mYabauseThread;
+
 	bool mInit;
 	bool mNeedResize;
 	QList <cheatsearch_struct> search;

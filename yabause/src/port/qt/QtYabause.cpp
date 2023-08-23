@@ -196,6 +196,7 @@ extern "C"
 
        void YuiErrorMsg(const char *error_text)
        {
+				 emit mUIYabause->mYabauseThread->error( error_text, false );
          YuiMsg("Error: %s\n", error_text);
        }
 
