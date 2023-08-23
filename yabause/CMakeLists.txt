@@ -40,5 +40,5 @@ endif ()
 
 include(CPack)
 
-add_subdirectory(doc)
+#add_subdirectory(doc)
 add_subdirectory(src)
