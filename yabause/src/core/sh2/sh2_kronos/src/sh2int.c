@@ -710,17 +710,25 @@ static void notify(SH2_struct *context, u32 start, u32 length) {
 }
 
 void SH2KronosWriteNotify(SH2_struct *context, u32 start, u32 length){
- notify(context, start & 0x1FFFFFFF, length);
- notify(context, (start & 0x1FFFFFFF)|0x20000000, length);
- //If the other core does not have the cache on, then it needs to see the modification
- if ((context->isslave != 0) && (MSH2->cacheOn == 0)) {
-   notify(MSH2, start & 0x1FFFFFFF, length);
-   notify(MSH2, (start & 0x1FFFFFFF)|0x20000000, length);
- }
- if ((context->isslave == 0) && (SSH2->cacheOn == 0)) {
-   notify(SSH2, start & 0x1FFFFFFF, length);
-   notify(SSH2, (start & 0x1FFFFFFF)|0x20000000, length);
- }
+  int id = start>>29;
+ if((id == 0x0) || (id == 0x1)) {
+   //in case of standard access
+   notify(context, start & 0x1FFFFFFF, length);
+   notify(context, (start & 0x1FFFFFFF)|0x20000000, length);
+   //If the other core does not have the cache on, then it needs to see the modification
+   if ((context->isslave != 0) && (MSH2->cacheOn == 0)) {
+     notify(MSH2, start & 0x1FFFFFFF, length);
+     notify(MSH2, (start & 0x1FFFFFFF)|0x20000000, length);
+   }
+   if ((context->isslave == 0) && (SSH2->cacheOn == 0)) {
+     notify(SSH2, start & 0x1FFFFFFF, length);
+     notify(SSH2, (start & 0x1FFFFFFF)|0x20000000, length);
+   }
+}
+else {
+  //Data Array access
+  notify(context, start, length);
+}
 //Need to add verification of cacheId in case non cacheable area is updated
 //Maybe need to fix accessing equivalent non cacheable area in any case
 }
