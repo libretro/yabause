@@ -97,8 +97,6 @@ extern void VIDOGLVdp1Draw();
 
 extern vdp2rotationparameter_struct  Vdp1ParaA;
 
-int VIDCSInit(void);
-void VIDCSSetSettingValueMode(int type, int value);
 void VIDCSVdp1Draw();
 void VIDCSVdp1NormalSpriteDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* back_framebuffer);
 void VIDCSVdp1ScaledSpriteDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* back_framebuffer);
@@ -116,7 +114,6 @@ extern void YglCSFinsihDraw(void);
 extern void VIDOGLVdp1LocalCoordinate(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs);
 extern int VIDOGLVdp2Reset(void);
 extern void VIDOGLVdp2Draw(void);
-extern void VIDOGLVdp2SetResolution(u16 TVMD);
 extern void YglGetGlSize(int *width, int *height);
 extern void VIDOGLGetNativeResolution(int *width, int *height, int*interlace);
 extern void VIDOGLSetSettingValueMode(int type, int value);
@@ -131,7 +128,7 @@ extern u32 FASTCALL Vdp1ReadPolygonColor(vdp1cmd_struct *cmd, Vdp2* varVdp2Regs)
 VideoInterface_struct VIDCS = {
 VIDCORE_CS,
 "Compute Shader Video Interface",
-VIDCSInit,
+VIDOGLInit,
 VIDOGLDeInit,
 VIDOGLResize,
 VIDOGLGetScale,
@@ -153,7 +150,7 @@ vdp1GenerateBuffer,
 VIDOGLVdp2Reset,
 VIDOGLVdp2Draw,
 YglGetGlSize,
-VIDCSSetSettingValueMode,
+VIDOGLSetSettingValueMode,
 VIDOGLSync,
 VIDOGLGetNativeResolution,
 VIDOGLVdp2DispOff,
@@ -163,18 +160,6 @@ YglGenFrameBuffer,
 YglCSFinsihDraw,
 VIDCSVdp1DrawFB
 };
-
-
-int VIDCSInit(void){
-  int ret = VIDOGLInit();
-  _Ygl->rbg_use_compute_shader = COMPUTE_RBG_ON;
-  return ret;
-}
-
-void VIDCSSetSettingValueMode(int type, int value) {
-  VIDOGLSetSettingValueMode(type, value);
-  _Ygl->rbg_use_compute_shader = COMPUTE_RBG_ON;
-}
 
 void addCSCommands(vdp1cmd_struct* cmd, int type)
 {
