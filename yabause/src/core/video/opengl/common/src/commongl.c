@@ -1318,15 +1318,13 @@ int YglInit(int width, int height, unsigned int depth) {
   glGetIntegerv(GL_MINOR_VERSION, &min);
 
   #if defined(_OGLES3_)
-    YuiMsg("Your graphic card is supporting OpenGLES %d.%d\n", maj, min);
     if (!((maj >=3) && (min >=1))){
-      YuiMsg("OpenGLES 3.1 is required!\n");
-       return -1;
+      YabErrorMsg("Your graphic card is supporting OpenGLES %d.%d. OpenGLES 3.1 is required!\n", maj, min);
+      return -1;
     }
   #else
-    YuiMsg("Your graphic card is supporting OpenGL Core %d.%d\n", maj, min);
     if (!((maj >=4) && (min >=3))) {
-      YuiMsg("OpenGL 4.3 is required!\n");
+      YabErrorMsg("Your graphic card is supporting OpenGL Core %d.%d. OpenGL Core 4.3 is required!\n", maj, min);
       return -1;
     }
   #endif
