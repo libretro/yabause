@@ -730,11 +730,6 @@ extern u8 * YglGetVDP2RegPointer();
 
 int Ygl_uniformVDP2DrawFramebuffer(float * offsetcol, int nb_screen, Vdp2* varVdp2Regs);
 
-void YglScalef(YglMatrix *result, GLfloat sx, GLfloat sy, GLfloat sz);
-void YglTranslatef(YglMatrix *result, GLfloat tx, GLfloat ty, GLfloat tz);
-void YglRotatef(YglMatrix *result, GLfloat angle, GLfloat x, GLfloat y, GLfloat z);
-void YglFrustum(YglMatrix *result, float left, float right, float bottom, float top, float nearZ, float farZ);
-void YglPerspective(YglMatrix *result, float fovy, float aspect, float nearZ, float farZ);
 void YglOrtho(YglMatrix *result, float left, float right, float bottom, float top, float nearZ, float farZ);
 void YglLoadIdentity(YglMatrix *result);
 void YglMatrixMultiply(YglMatrix *result, YglMatrix *srcA, YglMatrix *srcB);
