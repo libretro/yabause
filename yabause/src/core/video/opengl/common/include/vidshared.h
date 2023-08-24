@@ -176,9 +176,6 @@ typedef struct
    // Rotate Screen
    u32* RotWin;
    int RotWinMode;
-   vdp2rotationparameter_struct * FASTCALL (*GetKValueA)(vdp2rotationparameter_struct*,int);
-   vdp2rotationparameter_struct * FASTCALL (*GetKValueB)(vdp2rotationparameter_struct*,int);
-   Vdp2GetRParam_func GetRParam;
 
    void (*LoadLineParams)(void *, void *, int line, Vdp2* lines);
 
