@@ -82,7 +82,6 @@ static int initial_native_resolution_mode = N_RES_NO;
 static int force_downsampling = 0;
 static int numthreads = 4;
 static int use_beetle_saves = 0;
-static int use_cs = COMPUTE_RBG_OFF;
 static int wireframe_mode = 0;
 static int stv_favorite_region = STV_REGION_EU;
 static int language_id = LANGUAGE_ENGLISH;
@@ -701,8 +700,6 @@ static void set_variable_visibility(void)
    option_display.visible = 1;
    option_display.key = "kronos_videocoretype";
    environ_cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY, &option_display);
-   option_display.key = "kronos_use_cs";
-   environ_cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY, &option_display);
 }
 
 void YuiMsg(const char *format, ...)
@@ -1069,16 +1066,6 @@ void check_variables(void)
          banding_mode = ORIGINAL_BANDING;
       else if (strcmp(var.value, "enabled") == 0)
          banding_mode = IMPROVED_BANDING;
-   }
-
-   var.key = "kronos_use_cs";
-   var.value = NULL;
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
-      if (strcmp(var.value, "disabled") == 0)
-         use_cs = COMPUTE_RBG_OFF;
-      else if (strcmp(var.value, "enabled") == 0)
-         use_cs = COMPUTE_RBG_ON;
    }
 
    var.key = "kronos_wireframe_mode";
@@ -1663,7 +1650,6 @@ bool retro_load_game_common()
    yinit.buppath                 = bup_path;
    yinit.meshmode                = (force_downsampling ? IMPROVED_MESH : mesh_mode); // we want improved mesh with downsampling, otherwise it'll cause gfx glitches
    yinit.bandingmode             = banding_mode;
-   yinit.use_cs                  = use_cs;
    yinit.wireframe_mode          = wireframe_mode;
    yinit.skipframe               = g_skipframe;
    yinit.stv_favorite_region     = stv_favorite_region;
@@ -1882,7 +1868,6 @@ void retro_run(void)
       if (VIDCore) VIDCore->SetSettingValue(VDP_SETTING_POLYGON_MODE, polygon_mode);
       if (VIDCore) VIDCore->SetSettingValue(VDP_SETTING_MESH_MODE, (force_downsampling ? IMPROVED_MESH : mesh_mode)); // we want improved mesh with downsampling, otherwise it'll cause gfx glitches
       if (VIDCore) VIDCore->SetSettingValue(VDP_SETTING_BANDING_MODE, banding_mode);
-      if (VIDCore) VIDCore->SetSettingValue(VDP_SETTING_COMPUTE_SHADER, use_cs);
       if (VIDCore) VIDCore->SetSettingValue(VDP_SETTING_WIREFRAME, wireframe_mode);
       // changing video format on the fly is causing issues
       //if (g_videoformattype != -1)

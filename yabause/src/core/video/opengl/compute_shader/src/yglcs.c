@@ -287,7 +287,7 @@ void VIDCSRender(Vdp2 *varVdp2Regs) {
   int allPrio = 0;
 
   for (int i = 0; i < SPRITE; i++) {
-    if (((i == RBG0) || (i == RBG1)) && (_Ygl->rbg_use_compute_shader)) {
+    if ((i == RBG0) || (i == RBG1)) {
       glViewport(0, 0, _Ygl->width, _Ygl->height);
       glScissor(0, 0, _Ygl->width, _Ygl->height);
       glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->rbg_compute_fbo);
@@ -329,7 +329,7 @@ void VIDCSRender(Vdp2 *varVdp2Regs) {
 
   for (int j=0; j<6; j++) {
     if (drawScreen[vdp2screens[j]] != 0) {
-      if (((vdp2screens[j] == RBG0) ||(vdp2screens[j] == RBG1)) && (_Ygl->rbg_use_compute_shader)) {
+      if ((vdp2screens[j] == RBG0) ||(vdp2screens[j] == RBG1)) {
         if (vdp2screens[j] == RBG0)
         prioscreens[id] = _Ygl->rbg_compute_fbotex[0];
         else

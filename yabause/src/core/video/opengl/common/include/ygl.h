@@ -420,12 +420,6 @@ typedef enum
 
 typedef enum
 {
-    COMPUTE_RBG_OFF = 0,
-    COMPUTE_RBG_ON,
-} COMPUTESHADERMODE;
-
-typedef enum
-{
     ORIGINAL_MESH = 0,
     IMPROVED_MESH
 } MESHMODE;
@@ -623,7 +617,6 @@ typedef struct {
    int wireframe_mode;
    RATIOMODE stretch;
    RESOLUTION_MODE resolution_mode;
-   COMPUTESHADERMODE use_cs;
    GLsync sync;
    GLuint default_fbo;
    int vpd1_running;
@@ -661,7 +654,6 @@ typedef struct {
 
    int vdp1_stencil_mode;
 
-   int rbg_use_compute_shader;
    int useLineColorOffset[2];
 
    float vdp1wratio;
@@ -694,7 +686,6 @@ typedef struct {
   vdp2rotationparameter_struct  paraA;
   vdp2rotationparameter_struct  paraB;
   Vdp2 *varVdp2Regs;
-  int use_cs;
   int alpha[270];
   vdp2draw_struct info;
 } RBGDrawInfo;

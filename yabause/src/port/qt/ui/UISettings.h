@@ -68,8 +68,6 @@ protected slots:
 				void changeMeshMode(int id);
 				void changeBandingMode(int id);
 				void changePolygonMode(int id);
-				void changeCSMode(int id);
-
 private:
 	QString getCartridgePathSettingsKey(int cartridgeType = -1) const;
 	void updateVolatileSettings() const;

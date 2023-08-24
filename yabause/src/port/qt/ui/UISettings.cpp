@@ -109,10 +109,6 @@ const Items mPolygonGenerationMode = Items()
 	<< Item("1", "CPU Tesselation")
 	<< Item("2", "GPU Tesselation");
 
-	const Items mCSMode = Items()
-		<< Item("0", "Off")
-		<< Item("1", "On");
-
 const Items mResolutionMode = Items()
 	<< Item("1", "Original (original resolution of the Saturn)")
 	<< Item("2", "480p")
@@ -436,9 +432,6 @@ void UISettings::changeVideoMode(int id)
 	// 	//Wireframe off
 	// 	Wireframe->setVisible(false);
 	// 	cbWireframeFilter->setVisible(false);
-	// 	//Enable RGB compute Shader on CS core
-	// 	GPURBG->setVisible(true);
-	// 	cbGPURBG->setVisible(true);
 	// }
 	if (VIDCoreList[id]->id == VIDCORE_CS) {//Compute Shader
 		//Tesselation offcol4
@@ -450,9 +443,6 @@ void UISettings::changeVideoMode(int id)
 		//Wireframe on
 		Wireframe->setVisible(true);
 		cbWireframeFilter->setVisible(true);
-		//Disable and force RGB compute Shader on CS core
-		GPURBG->setVisible(false);
-		cbGPURBG->setVisible(false);
 	}
 }
 
@@ -464,11 +454,6 @@ void UISettings::changeUpscaleMode(int id)
 void UISettings::changePolygonMode(int id)
 {
     if (VIDCore != NULL) VIDCore->SetSettingValue(VDP_SETTING_POLYGON_MODE, (mPolygonGenerationMode.at(id).id).toInt());
-}
-
-void UISettings::changeCSMode(int id)
-{
-    if (VIDCore != NULL) VIDCore->SetSettingValue(VDP_SETTING_COMPUTE_SHADER, (mCSMode.at(id).id).toInt());
 }
 
 void UISettings::on_cbCartridge_currentIndexChanged( int id )
@@ -558,13 +543,6 @@ void UISettings::loadCores()
 		cbPolygonGeneration->addItem(QtYabause::translate(it.Name), it.id);
 
 		connect(cbPolygonGeneration, SIGNAL(currentIndexChanged(int)), this, SLOT(changePolygonMode(int)));
-
-		// Compute shader Mode
-		foreach(const Item& it, mCSMode){
-			cbGPURBG->addItem(QtYabause::translate(it.Name), it.id);
-		}
-
-		connect(cbGPURBG, SIGNAL(currentIndexChanged(int)), this, SLOT(changeCSMode(int)));
 
 	// Resolution
   foreach(const Item& it, mResolutionMode)
@@ -762,7 +740,6 @@ void UISettings::loadSettings()
 	cbFilterMode->setCurrentIndex(cbFilterMode->findData(s->value("Video/filter_type", mVideoFilterMode.at(0).id).toInt()));
         cbUpscaleMode->setCurrentIndex(cbUpscaleMode->findData(s->value("Video/upscale_type", mUpscaleFilterMode.at(0).id).toInt()));
 	cbPolygonGeneration->setCurrentIndex(cbPolygonGeneration->findData(s->value("Video/polygon_generation_mode", mPolygonGenerationMode.at(1).id).toInt()));
-  cbGPURBG->setCurrentIndex(cbGPURBG->findData(s->value("Video/compute_shader_mode", mCSMode.at(0).id).toInt()));
 	cbResolution->setCurrentIndex(cbResolution->findData(s->value("Video/resolution_mode", mResolutionMode.at(0).id).toInt()));
   cbAspectRatio->setCurrentIndex(cbAspectRatio->findData(s->value("Video/AspectRatio", mAspectRatio.at(0).id).toInt()));
 	cbWireframeFilter->setCurrentIndex(cbWireframeFilter->findData(s->value("Video/Wireframe", mWireframe.at(0).id).toInt()));
@@ -875,7 +852,6 @@ void UISettings::saveSettings()
 	s->setValue( "Video/filter_type", cbFilterMode->itemData(cbFilterMode->currentIndex()).toInt());
 	s->setValue( "Video/upscale_type", cbUpscaleMode->itemData(cbUpscaleMode->currentIndex()).toInt());
 	s->setValue( "Video/polygon_generation_mode", cbPolygonGeneration->itemData(cbPolygonGeneration->currentIndex()).toInt());
-	s->setValue( "Video/compute_shader_mode", cbGPURBG->itemData(cbGPURBG->currentIndex()).toInt());
 	s->setValue("Video/resolution_mode", cbResolution->itemData(cbResolution->currentIndex()).toInt());
 
 	s->setValue( "General/ClockSync", cbClockSync->isChecked() );

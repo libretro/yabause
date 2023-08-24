@@ -63,7 +63,6 @@ typedef struct
    int video_upscale_type;
    int polygon_generation_mode;
    int stretch;
-   int use_cs;
    int meshmode;
    int bandingmode;
    int resolution_mode;

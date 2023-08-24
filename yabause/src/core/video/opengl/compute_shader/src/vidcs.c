@@ -637,329 +637,18 @@ static void Vdp2DrawRotation_in_sync(RBGDrawInfo * rbg, Vdp2 *varVdp2Regs)
   rbg->info.cellw = rbg->hres;
   rbg->info.cellh = (rbg->vres * (info->endLine - info->startLine))/yabsys.VBlankLineCount;
 
-  if (rbg->use_cs) {
-
-    if (info->isbitmap) {
-      rbg->info.cellw = cellw;
-      rbg->info.cellh = cellh ;
-    }
-
-    YglQuadRbg0(rbg, NULL, &rbg->c, rbg->rgb_type, YglTM_vdp2, varVdp2Regs);
-
-   //Not optimal. Should be 0 if there is no offset used.
-    _Ygl->useLineColorOffset[0] = ((varVdp2Regs->KTCTL & 0x1010)!=0)?_Ygl->linecolorcoef_tex[0]:0;
-    _Ygl->useLineColorOffset[1] = ((varVdp2Regs->KTCTL & 0x1010)!=0)?_Ygl->linecolorcoef_tex[1]:0;
-	  return;
+  if (info->isbitmap) {
+    rbg->info.cellw = cellw;
+    rbg->info.cellh = cellh ;
   }
 
-  colpoint = YglGetLineColorOffsetPointer(info->idScreen - RBG0, vstart, vres);
-  addr = (varVdp2Regs->LCTA.all & 0x7FFFF)<<1;
-  u16 LineColorRamAdress = Vdp2RamReadWord(NULL, Vdp2Ram, addr);
-  for (k = vstart; k < vstart+vres; k++)
-  {
-    alpha = rbg->info.alpha_per_line[k] | NONE;
-    info->draw_line = k;
-    if (rgb_type == 0) {
-      rbg->paraA.Xsp = rbg->paraA.A * ((rbg->paraA.Xst + rbg->paraA.deltaXst * k) - rbg->paraA.Px) +
-        rbg->paraA.B * ((rbg->paraA.Yst + rbg->paraA.deltaYst * k) - rbg->paraA.Py) +
-        rbg->paraA.C * (rbg->paraA.Zst - rbg->paraA.Pz);
+  YglQuadRbg0(rbg, NULL, &rbg->c, rbg->rgb_type, YglTM_vdp2, varVdp2Regs);
 
-      rbg->paraA.Ysp = rbg->paraA.D * ((rbg->paraA.Xst + rbg->paraA.deltaXst *k) - rbg->paraA.Px) +
-        rbg->paraA.E * ((rbg->paraA.Yst + rbg->paraA.deltaYst * k) - rbg->paraA.Py) +
-        rbg->paraA.F * (rbg->paraA.Zst - rbg->paraA.Pz);
-
-      rbg->paraA.KtablV = rbg->paraA.deltaKAst* k;
-    }
-    if (rbg->useb)
-    {
-      rbg->paraB.Xsp = rbg->paraB.A * ((rbg->paraB.Xst + rbg->paraB.deltaXst * k) - rbg->paraB.Px) +
-        rbg->paraB.B * ((rbg->paraB.Yst + rbg->paraB.deltaYst * k) - rbg->paraB.Py) +
-        rbg->paraB.C * (rbg->paraB.Zst - rbg->paraB.Pz);
-
-      rbg->paraB.Ysp = rbg->paraB.D * ((rbg->paraB.Xst + rbg->paraB.deltaXst * k) - rbg->paraB.Px) +
-        rbg->paraB.E * ((rbg->paraB.Yst + rbg->paraB.deltaYst * k) - rbg->paraB.Py) +
-        rbg->paraB.F * (rbg->paraB.Zst - rbg->paraB.Pz);
-
-      rbg->paraB.KtablV = rbg->paraB.deltaKAst * k;
-   }
-    for (l = 0; l < hres; l++)
-    {
-      switch (varVdp2Regs->RPMD | rgb_type ) {
-      case 0:
-        parameter = &rbg->paraA;
-        if (parameter->coefenab) {
-
-          if (vdp2rGetKValue(parameter, l) == 0) {
-            *(texture->textdata++) = 0x00000000;
-            continue;
-          }
-        }
-        break;
-      case 1:
-        parameter = &rbg->paraB;
-        if (parameter->coefenab) {
-          if (vdp2rGetKValue(parameter, l) == 0) {
-            *(texture->textdata++) = 0x00000000;
-            continue;
-          }
-        }
-        break;
-      case 2:
-        parameter = &rbg->paraA;
-        if (rbg->paraA.coefenab) {
-          if (rbg->paraB.coefenab) {
-            if (vdp2rGetKValue(parameter, l) == 0) {
-              parameter = &rbg->paraB;
-              if( vdp2rGetKValue(parameter, l) == 0) {
-                *(texture->textdata++) = 0x00000000;
-                continue;
-              }
-            }
-          }
-          else {
-            if (vdp2rGetKValue(parameter, l) == 0) {
-              rbg->paraB.lineaddr = rbg->paraA.lineaddr;
-              parameter = &rbg->paraB;
-            }
-          }
-        }
-        break;
-      default:
-        parameter = info->GetRParam(rbg, l, k, varVdp2Regs);
-        break;
-      }
-      if (parameter == NULL)
-      {
-        *(texture->textdata++) = 0x00000000;
-        continue;
-      }
-      if (parameter->linecoefenab) {
-        if ((info->idScreen == RBG0) && ((varVdp2Regs->LNCLEN & 0x10)!=0)) {
-          _Ygl->useLineColorOffset[0] = 1;
-        }
-        if ((info->idScreen == RBG1) && ((varVdp2Regs->LNCLEN & 0x1)!=0)) {
-          _Ygl->useLineColorOffset[1] = 1;
-        }
-      }
-      h = floor(parameter->kx * (parameter->Xsp + parameter->dx * l) + parameter->Xp);
-      v = floor(parameter->ky * (parameter->Ysp + parameter->dy * l) + parameter->Yp);
-      if (info->isbitmap)
-      {
-        switch (parameter->screenover) {
-        case OVERMODE_REPEAT:
-          h &= cellw - 1;
-          v &= cellh - 1;
-          break;
-        case OVERMODE_SELPATNAME:
-          VDP2LOG("Screen-over mode 1 not implemented");
-          h &= cellw - 1;
-          v &= cellh - 1;
-          break;
-        case OVERMODE_TRANSE:
-          if ((h < 0) || (h >= cellw) || (v < 0) || (v >= cellh)) {
-            *(texture->textdata++) = 0x00;
-            continue;
-          }
-          break;
-        case OVERMODE_512:
-          if ((h < 0) || (h > 512) || (v < 0) || (v > 512)) {
-            *(texture->textdata++) = 0x00;
-            continue;
-          }
-        }
-        // Fetch Pixel
-        info->charaddr = parameter->charaddr;
-        color = Vdp2RotationFetchPixel(info, h, v, cellw);
-      }
-      else
-      {
-        // Tile
-        int planenum;
-        switch (parameter->screenover) {
-        case OVERMODE_TRANSE:
-          if ((h < 0) || (h >= parameter->MaxH) || (v < 0) || (v >= parameter->MaxV)) {
-            *(texture->textdata++) = 0x00;
-            continue;
-          }
-          x = h;
-          y = v;
-          if ((x >> rbg->patternshift) != oldcellx || (y >> rbg->patternshift) != oldcelly) {
-            oldcellx = x >> rbg->patternshift;
-            oldcelly = y >> rbg->patternshift;
-
-            // Calculate which plane we're dealing with
-            planenum = (x >> parameter->ShiftPaneX) + ((y >> parameter->ShiftPaneY) << 2);
-            x &= parameter->MskH;
-            y &= parameter->MskV;
-            info->addr = parameter->PlaneAddrv[planenum];
-
-            // Figure out which page it's on(if plane size is not 1x1)
-            info->addr += (((y >> 9) * rbg->pagesize * info->planew) +
-              ((x >> 9) * rbg->pagesize) +
-              (((y & 511) >> rbg->patternshift) * info->pagewh) +
-              ((x & 511) >> rbg->patternshift)) << info->patterndatasize;
-
-            Vdp2PatternAddr(info, varVdp2Regs); // Heh, this could be optimized
-          }
-          break;
-        case OVERMODE_512:
-          if ((h < 0) || (h > 512) || (v < 0) || (v > 512)) {
-            *(texture->textdata++) = 0x00;
-            continue;
-          }
-          x = h;
-          y = v;
-          if ((x >> rbg->patternshift) != oldcellx || (y >> rbg->patternshift) != oldcelly) {
-              oldcellx = x >> rbg->patternshift;
-              oldcelly = y >> rbg->patternshift;
-
-              // Calculate which plane we're dealing with
-              planenum = (x >> parameter->ShiftPaneX) + ((y >> parameter->ShiftPaneY) << 2);
-              x &= parameter->MskH;
-              y &= parameter->MskV;
-              info->addr = parameter->PlaneAddrv[planenum];
-
-              // Figure out which page it's on(if plane size is not 1x1)
-              info->addr += (((y >> 9) * rbg->pagesize * info->planew) +
-                ((x >> 9) * rbg->pagesize) +
-                (((y & 511) >> rbg->patternshift) * info->pagewh) +
-                ((x & 511) >> rbg->patternshift)) << info->patterndatasize;
-
-              Vdp2PatternAddr(info, varVdp2Regs); // Heh, this could be optimized
-          }
-          break;
-        case OVERMODE_REPEAT: {
-          h &= (parameter->MaxH - 1);
-          v &= (parameter->MaxV - 1);
-          x = h;
-          y = v;
-          if ((x >> rbg->patternshift) != oldcellx || (y >> rbg->patternshift) != oldcelly) {
-              oldcellx = x >> rbg->patternshift;
-              oldcelly = y >> rbg->patternshift;
-
-              // Calculate which plane we're dealing with
-              planenum = (x >> parameter->ShiftPaneX) + ((y >> parameter->ShiftPaneY) << 2);
-              x &= parameter->MskH;
-              y &= parameter->MskV;
-              info->addr = parameter->PlaneAddrv[planenum];
-
-              // Figure out which page it's on(if plane size is not 1x1)
-              info->addr += (((y >> 9) * rbg->pagesize * info->planew) +
-                ((x >> 9) * rbg->pagesize) +
-                (((y & 511) >> rbg->patternshift) * info->pagewh) +
-                ((x & 511) >> rbg->patternshift)) << info->patterndatasize;
-
-              Vdp2PatternAddr(info, varVdp2Regs); // Heh, this could be optimized
-            }
-          }
-          break;
-        case OVERMODE_SELPATNAME: {
-            x = h;
-            y = v;
-            if ((x >> rbg->patternshift) != oldcellx || (y >> rbg->patternshift) != oldcelly) {
-              oldcellx = x >> rbg->patternshift;
-              oldcelly = y >> rbg->patternshift;
-
-              if ((h < 0) || (h >= parameter->MaxH) || (v < 0) || (v >= parameter->MaxV)) {
-                x &= parameter->MskH;
-                y &= parameter->MskV;
-                Vdp2PatternAddrUsingPatternname(info, parameter->over_pattern_name, varVdp2Regs);
-              }
-              else {
-                planenum = (x >> parameter->ShiftPaneX) + ((y >> parameter->ShiftPaneY) << 2);
-                x &= parameter->MskH;
-                y &= parameter->MskV;
-                info->addr = parameter->PlaneAddrv[planenum];
-                // Figure out which page it's on(if plane size is not 1x1)
-                info->addr += (((y >> 9) * rbg->pagesize * info->planew) +
-                  ((x >> 9) * rbg->pagesize) +
-                  (((y & 511) >> rbg->patternshift) * info->pagewh) +
-                  ((x & 511) >> rbg->patternshift)) << info->patterndatasize;
-                  Vdp2PatternAddr(info, varVdp2Regs); // Heh, this could be optimized
-              }
-            }
-          }
-          break;
-        }
-
-        // Figure out which pixel in the tile we want
-        if (info->patternwh == 1)
-        {
-          x &= 8 - 1;
-          y &= 8 - 1;
-
-          // vertical flip
-          if (info->flipfunction & 0x2)
-            y = 8 - 1 - y;
-
-          // horizontal flip
-          if (info->flipfunction & 0x1)
-            x = 8 - 1 - x;
-        }
-        else
-        {
-          if (info->flipfunction)
-          {
-            y &= 16 - 1;
-            if (info->flipfunction & 0x2)
-            {
-              if (!(y & 8))
-                y = 8 - 1 - y + 16;
-              else
-                y = 16 - 1 - y;
-            }
-            else if (y & 8)
-              y += 8;
-
-            if (info->flipfunction & 0x1)
-            {
-              if (!(x & 8))
-                y += 8;
-
-              x &= 8 - 1;
-              x = 8 - 1 - x;
-            }
-            else if (x & 8)
-            {
-              y += 8;
-              x &= 8 - 1;
-            }
-            else
-              x &= 8 - 1;
-          }
-          else
-          {
-            y &= 16 - 1;
-            if (y & 8)
-              y += 8;
-            if (x & 8)
-              y += 8;
-            x &= 8 - 1;
-          }
-        }
-
-        // Fetch pixel
-        color = Vdp2RotationFetchPixel(info, x, y, 8);
-      }
-      *(texture->textdata++) = color; //Already in VDP2 format due to Vdp2RotationFetchPixel
-      if (colpoint != NULL) {
-        u32 val = Vdp2ColorRamGetLineColorOffset(LineColorRamAdress, alpha, (parameter->lineaddr));
-        *(colpoint++) = val;
-      }
-    }
-    addr += lineInc;
-    if (colpoint != NULL) colpoint+=_Ygl->rwidth-hres;
-    texture->textdata += texture->w;
-    }
-    if (_Ygl->useLineColorOffset[info->idScreen - RBG0] != 0) {
-      _Ygl->useLineColorOffset[info->idScreen - RBG0] = _Ygl->linecolorcoef_tex[info->idScreen - RBG0];
-    }
-    YglSetLineColorOffset(colpoint, vstart, vres,info->idScreen - RBG0);
-
-    rbg->info.flipfunction = 0;
-
-    LOG_AREA("%d %d\n", rbg->info.cellw, rbg->info.cellh);
-  }
+ //Not optimal. Should be 0 if there is no offset used.
+  _Ygl->useLineColorOffset[0] = ((varVdp2Regs->KTCTL & 0x1010)!=0)?_Ygl->linecolorcoef_tex[0]:0;
+  _Ygl->useLineColorOffset[1] = ((varVdp2Regs->KTCTL & 0x1010)!=0)?_Ygl->linecolorcoef_tex[1]:0;
+  return;
+}
 
   /*------------------------------------------------------------------------------
    Rotate Screen drawing
@@ -981,12 +670,10 @@ static void Vdp2DrawRotation_in_sync(RBGDrawInfo * rbg, Vdp2 *varVdp2Regs)
       if (_Ygl->rheight >= 448) rbg->vres = (_Ygl->rheight >> 1); else rbg->vres = _Ygl->rheight;
       if (_Ygl->rwidth >= 640) rbg->hres = (_Ygl->rwidth >> 1); else rbg->hres = _Ygl->rwidth;
 
-    if (rbg->use_cs) {
-      rbg->hres *= _Ygl->widthRatio;
-      rbg->vres *= _Ygl->heightRatio;
+    rbg->hres *= _Ygl->widthRatio;
+    rbg->vres *= _Ygl->heightRatio;
 
-      RBGGenerator_init(_Ygl->width, _Ygl->height);
-    }
+    RBGGenerator_init(_Ygl->width, _Ygl->height);
 
     info->vertices[0] = 0;
     info->vertices[1] = (screenHeight * info->startLine)/yabsys.VBlankLineCount;
@@ -1026,25 +713,10 @@ static void Vdp2DrawRotation_in_sync(RBGDrawInfo * rbg, Vdp2 *varVdp2Regs)
       u64 cacheaddr = 0x90000000BAD;
 
       rbg->vdp2_sync_flg = -1;
-      if (!rbg->use_cs) {
-        YglTMAllocate(YglTM_vdp2, &rbg->texture, info->cellw, info->cellh, (unsigned int*)&x, (unsigned int*)&y);
-        rbg->c.x = x;
-        rbg->c.y = y;
-        YglCacheAdd(YglTM_vdp2, cacheaddr, &rbg->c);
-      }
       info->cellw = cellw;
       info->cellh = cellh;
 
-  #ifdef RGB_ASYNC
-    if ((rgb_type == 0x0) && (rbg->use_cs == 0)) Vdp2DrawRotation_in(rbg, varVdp2Regs);
-    else
-  #endif
-    {
       Vdp2DrawRotation_in_sync(rbg, varVdp2Regs);
-      if (!rbg->use_cs) {
-        YglQuadRbg0(rbg, NULL, &rbg->c, rbg->rgb_type, YglTM_vdp2, NULL);
-      }
-    }
   }
 
 void* Vdp2DrawRotation_in_async(void *p)
@@ -2518,7 +2190,7 @@ static void Vdp2DrawRBG0_part( RBGDrawInfo *rgb, Vdp2* varVdp2Regs)
 
   if (info->isbitmap)
   {
-    // rgb->use_cs = 0;
+
     // Bitmap Mode
     ReadBitmapSize(info, varVdp2Regs->CHCTLB >> 10, 0x1);
     if (info->rotatenum == 0)
@@ -2619,7 +2291,6 @@ static void Vdp2DrawRBG0(Vdp2* varVdp2Regs)
     if (!sameVDP2Reg(RBG0, &Vdp2Lines[line-1], &Vdp2Lines[line])) {
       rgb = (RBGDrawInfo *)calloc(1, sizeof(RBGDrawInfo));
       rgb->rgb_type = 0x0;
-      rgb->use_cs = _Ygl->rbg_use_compute_shader;
       rgb->info.startLine = lastLine;
       rgb->info.endLine = line;
       lastLine = line;
@@ -2629,7 +2300,6 @@ static void Vdp2DrawRBG0(Vdp2* varVdp2Regs)
   }
   rgb = (RBGDrawInfo *)calloc(1, sizeof(RBGDrawInfo));
   rgb->rgb_type = 0x0;
-  rgb->use_cs = _Ygl->rbg_use_compute_shader;
   rgb->info.startLine = lastLine;
   rgb->info.endLine = line;
   LOG_AREA("RBG0 Draw from %d to %d %x\n", rgb->info.startLine, rgb->info.endLine, varVdp2Regs->BGON);
@@ -3421,26 +3091,6 @@ void VIDCSSetSettingValueMode(int type, int value) {
 
       _Ygl->polygonmode = (POLYGONMODE)value;
     }
-  break;
-  case VDP_SETTING_COMPUTE_SHADER:
-    if (value == COMPUTE_RBG_ON && _Ygl->rbg_use_compute_shader != COMPUTE_RBG_ON) {
-      int maj, min;
-      glGetIntegerv(GL_MAJOR_VERSION, &maj);
-      glGetIntegerv(GL_MINOR_VERSION, &min);
-#if defined(_OGLES3_)
-      if ((maj >=3) && (min >=1)) {
-#else
-      if ((maj >=4) && (min >=3)) {
-#endif
-          _Ygl->rbg_use_compute_shader = value;
-      } else {
-        YuiMsg("Compute shader usage is not possible - disabling\n");
-        _Ygl->rbg_use_compute_shader = COMPUTE_RBG_OFF;
-      }
-    } else {
-        _Ygl->rbg_use_compute_shader = value;
-    }
-    YglChangeResolution(_Ygl->rwidth, _Ygl->rheight);
   break;
   case VDP_SETTING_ASPECT_RATIO:
     _Ygl->stretch = (RATIOMODE)value;
@@ -5264,7 +4914,6 @@ static void Vdp2DrawRBG1_part(RBGDrawInfo *rgb, Vdp2* varVdp2Regs)
     if ((info->isbitmap = varVdp2Regs->CHCTLA & 0x2) != 0)
     {
       // Bitmap Mode
-      // rgb->use_cs = 0;
 
       ReadBitmapSize(info, varVdp2Regs->CHCTLA >> 2, 0x3);
       if (vdp2_interlace) info->cellh *= 2;
@@ -5469,7 +5118,6 @@ static void Vdp2DrawRBG1(Vdp2 *varVdp2Regs)
     if (!sameVDP2Reg(RBG1, &Vdp2Lines[line-1], &Vdp2Lines[line])) {
       rgb = (RBGDrawInfo *)calloc(1, sizeof(RBGDrawInfo));
       rgb->rgb_type = 0x04;
-      rgb->use_cs = _Ygl->rbg_use_compute_shader;
       rgb->info.startLine = lastLine;
       rgb->info.endLine = line;
       lastLine = line;
@@ -5479,7 +5127,6 @@ static void Vdp2DrawRBG1(Vdp2 *varVdp2Regs)
   }
   rgb = (RBGDrawInfo *)calloc(1, sizeof(RBGDrawInfo));
   rgb->rgb_type = 0x04;
-  rgb->use_cs = _Ygl->rbg_use_compute_shader;
   rgb->info.startLine = lastLine;
   rgb->info.endLine = line;
   LOG_AREA("RBG1 Draw from %d to %d %x\n", rgb->info.startLine, rgb->info.endLine, varVdp2Regs->BGON);

@@ -415,7 +415,6 @@ void YabauseThread::reloadSettings()
 	mYabauseConf.video_upscale_type = vs->value("Video/upscale_type", mYabauseConf.video_upscale_type).toInt();
 	mYabauseConf.polygon_generation_mode = vs->value("Video/polygon_generation_mode", mYabauseConf.polygon_generation_mode).toInt();
 	mYabauseConf.resolution_mode = vs->value("Video/resolution_mode", mYabauseConf.resolution_mode).toInt();
-	mYabauseConf.use_cs = vs->value("Video/compute_shader_mode", mYabauseConf.use_cs).toInt();
 	mYabauseConf.stretch = vs->value("Video/AspectRatio", mYabauseConf.stretch).toInt();
 	mYabauseConf.wireframe_mode = vs->value("Video/Wireframe", mYabauseConf.wireframe_mode).toInt();
 	mYabauseConf.meshmode = vs->value("Video/MeshMode", mYabauseConf.meshmode).toInt();
@@ -485,7 +484,6 @@ void YabauseThread::resetYabauseConf()
 	mYabauseConf.video_filter_type = 0;
 	mYabauseConf.video_upscale_type = 0;
 	mYabauseConf.polygon_generation_mode = 0;
-	mYabauseConf.use_cs = 0;
         mYabauseConf.resolution_mode = 1;
         mYabauseConf.stretch = 0;
 }

@@ -429,25 +429,6 @@
          </property>
         </widget>
        </item>
-       <item row="26" column="0">
-        <widget class="QLabel" name="GPURBG">
-         <property name="font">
-          <font>
-           <weight>75</weight>
-           <bold>true</bold>
-          </font>
-         </property>
-         <property name="text">
-          <string>GPU RBG :</string>
-         </property>
-         <property name="textFormat">
-          <enum>Qt::PlainText</enum>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-         </property>
-        </widget>
-       </item>
        <item row="19" column="0">
         <widget class="QLabel" name="UpscaleFilter">
          <property name="font">
@@ -549,9 +530,6 @@
           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
          </property>
         </widget>
-       </item>
-       <item row="26" column="1">
-        <widget class="QComboBox" name="cbGPURBG"/>
        </item>
        <item row="29" column="1">
         <spacer name="verticalSpacer">

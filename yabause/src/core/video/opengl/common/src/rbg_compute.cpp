@@ -2434,39 +2434,30 @@ RBGGenerator * RBGGenerator::instance_ = nullptr;
 
 extern "C" {
   void RBGGenerator_init(int width, int height) {
-    if (_Ygl->rbg_use_compute_shader == 0) return;
 
     RBGGenerator * instance = RBGGenerator::getInstance();
     instance->init( width, height);
   }
   void RBGGenerator_resize(int width, int height) {
-    if (_Ygl->rbg_use_compute_shader == 0) return;
     YGLDEBUG("RBGGenerator_resize\n");
 	  RBGGenerator * instance = RBGGenerator::getInstance();
 	  instance->resize(width, height);
   }
   void RBGGenerator_update(RBGDrawInfo * rbg, Vdp2 *varVdp2Regs ) {
-    if (_Ygl->rbg_use_compute_shader == 0) return;
     RBGGenerator * instance = RBGGenerator::getInstance();
     instance->update(rbg, varVdp2Regs);
   }
   GLuint RBGGenerator_getTexture( int id ) {
-    if (_Ygl->rbg_use_compute_shader == 0) return 0;
-
     RBGGenerator * instance = RBGGenerator::getInstance();
     return instance->getTexture( id );
   }
 
 	GLuint RBGGenerator_getLnclTexture( int id ) {
-		if (_Ygl->rbg_use_compute_shader == 0) return 0;
-
 		RBGGenerator * instance = RBGGenerator::getInstance();
 		return instance->getLnclTexture( id );
 	}
 
   void RBGGenerator_onFinish() {
-
-    if (_Ygl->rbg_use_compute_shader == 0) return;
     RBGGenerator * instance = RBGGenerator::getInstance();
     instance->onFinish();
   }

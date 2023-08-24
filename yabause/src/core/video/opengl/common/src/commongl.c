@@ -1312,7 +1312,6 @@ int YglInit(int width, int height, unsigned int depth) {
   _Ygl->widthRatio = 1.0f;
   _Ygl->heightRatio = 1.0f;
   _Ygl->resolution_mode = RES_ORIGINAL;
-  _Ygl->rbg_use_compute_shader = 0;
 
   _Ygl->vdp1IsNotEmpty[0] = -1;
   _Ygl->vdp1IsNotEmpty[1] = -1;
@@ -1791,7 +1790,6 @@ int YglQuadRbg0(RBGDrawInfo * rbg, YglTexture * output, YglCache * c, int rbg_ty
   // vtxa = (program->vertexAttribute + (program->currentQuad * 2));
   // memset(vtxa,0,sizeof(float)*24);
 
-  if (rbg->use_cs) {
 // printf("(%f %f) (%f %f) (%f %f) (%f %f)\n", input->vertices[0],input->vertices[1],input->vertices[2],input->vertices[3],input->vertices[4],input->vertices[5],input->vertices[6],input->vertices[7]);
     if (varVdp2Regs == NULL) {
       printf("varVdp2Regs is NULL %d\n", __LINE__);
@@ -1823,30 +1821,7 @@ int YglQuadRbg0(RBGDrawInfo * rbg, YglTexture * output, YglCache * c, int rbg_ty
     // glBindTexture(GL_TEXTURE_2D, RBGGenerator_getTexture(program->interuput_texture));
 
     RBGGenerator_update(rbg, varVdp2Regs);
-  }
-  else {
 
-    program->interuput_texture = 0;
-
-    tmp = (texturecoordinate_struct *)(program->textcoords + (program->currentQuad * 2));
-    program->currentQuad += 12;
-    x = c->x;
-    y = c->y;
-
-    /*
-    0 +---+ 1
-      |   |
-      +---+ 2
-    3 +---+
-      |   |
-    5 +---+ 4
-              */
-
-    tmp[0].s = tmp[3].s = tmp[5].s = (float)(x)+ATLAS_BIAS;
-    tmp[1].s = tmp[2].s = tmp[4].s = (float)(x + input->cellw) - ATLAS_BIAS;
-    tmp[0].t = tmp[1].t = tmp[3].t = (float)(y)+ATLAS_BIAS;
-    tmp[2].t = tmp[4].t = tmp[5].t = (float)(y + input->cellh) - ATLAS_BIAS;
-  }
     tmp[0].r = tmp[1].r = tmp[2].r = tmp[3].r = tmp[4].r = tmp[5].r = 0;
     tmp[0].q = tmp[1].q = tmp[2].q = tmp[3].q = tmp[4].q = tmp[5].q = 0;
   return 0;
@@ -2347,7 +2322,7 @@ void YglRender(Vdp2 *varVdp2Regs) {
   int allPrio = 0;
 
   for (int i = 0; i < SPRITE; i++) {
-    if (((i == RBG0) || (i == RBG1)) && (_Ygl->rbg_use_compute_shader)) {
+    if ((i == RBG0) || (i == RBG1)) {
       glViewport(0, 0, _Ygl->width, _Ygl->height);
       glScissor(0, 0, _Ygl->width, _Ygl->height);
       glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->rbg_compute_fbo);
@@ -2389,7 +2364,7 @@ void YglRender(Vdp2 *varVdp2Regs) {
 
   for (int j=0; j<6; j++) {
     if (drawScreen[vdp2screens[j]] != 0) {
-      if (((vdp2screens[j] == RBG0) ||(vdp2screens[j] == RBG1)) && (_Ygl->rbg_use_compute_shader)) {
+      if ((vdp2screens[j] == RBG0) ||(vdp2screens[j] == RBG1)) {
         if (vdp2screens[j] == RBG0)
         prioscreens[id] = _Ygl->rbg_compute_fbotex[0];
         else
