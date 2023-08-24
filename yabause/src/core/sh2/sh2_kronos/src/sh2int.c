@@ -778,8 +778,10 @@ void SH2KronosWriteNotify(SH2_struct *context, u32 start, u32 length){
    }
 }
 else {
-  //Data Array access
-  notify(context, start, length);
+  if (id == 0x6) {
+    //Data Array access
+    notify(context, start, length);
+  }
 }
 //Need to add verification of cacheId in case non cacheable area is updated
 //Maybe need to fix accessing equivalent non cacheable area in any case
