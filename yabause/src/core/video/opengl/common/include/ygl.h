@@ -233,7 +233,6 @@ typedef struct {
 	int priority;
 	int dst;
   int uclipmode;
-  int blendmode;
   s32 cor;
   s32 cog;
   s32 cob;
@@ -274,7 +273,6 @@ typedef struct {
 	GLuint pixelBufferID;
 } YglTextureManager;
 
-extern YglTextureManager * YglTM_vdp1[2];
 extern YglTextureManager * YglTM_vdp2;
 
 YglTextureManager * YglTMInit(unsigned int, unsigned int);
@@ -284,7 +282,6 @@ void YglTMReserve(YglTextureManager * tm, unsigned int w, unsigned int h);
 void YglTMAllocate(YglTextureManager * tm, YglTexture *, unsigned int, unsigned int, unsigned int *, unsigned int *);
 void YglTmPush(YglTextureManager * tm);
 void YglTmPull(YglTextureManager * tm, u32 flg);
-void YglTMCheck();
 
 void YglCacheInit(YglTextureManager * tm);
 void YglCacheDeInit(YglTextureManager * tm);
@@ -295,30 +292,18 @@ void setupMaxSize();
 
 void YglCheckFBSwitch(int sync);
 
-#define VDP2_CC_NONE 0x00
-
 #define BLIT_TEXTURE_NB_PROG (16*2*4*14*5*4)
 
 enum
 {
-   //VDP1 Programs
-   //From 0 to 2*3*2*7*2
-
-   PG_VDP1_START = 1,
-   PG_VDP1_VDP2 = (2*2*3*2*2*14)+1,
-
-   PG_VDP1_STARTUSERCLIP=800,
-   PG_VDP1_ENDUSERCLIP=801,
-
-
-   PG_VDP2_NORMAL=803,
-   PG_VDP2_MOSAIC=804,
-   PG_VDP2_NORMAL_CRAM=805,
-   PG_VDP2_MOSAIC_CRAM=806,
+   PG_VDP2_NORMAL=1,
+   PG_VDP2_MOSAIC=2,
+   PG_VDP2_NORMAL_CRAM=3,
+   PG_VDP2_MOSAIC_CRAM=4,
 
 
 
-   PG_VDP2_DRAWFRAMEBUFF_NONE=1024,
+   PG_VDP2_DRAWFRAMEBUFF_NONE=8,
    PG_VDP2_DRAWFRAMEBUFF_LESS_NONE=(PG_VDP2_DRAWFRAMEBUFF_NONE+1),
    PG_VDP2_DRAWFRAMEBUFF_EUQAL_NONE=(PG_VDP2_DRAWFRAMEBUFF_NONE+2),
    PG_VDP2_DRAWFRAMEBUFF_MORE_NONE=(PG_VDP2_DRAWFRAMEBUFF_NONE+3),
@@ -331,8 +316,6 @@ enum
 
 typedef struct {
     GLint  sprite;
-    GLint  tessLevelInner;
-    GLint  tessLevelOuter;
     GLint  fbo;
     GLint  texsize;
     GLuint mtxModelView;
@@ -343,11 +326,6 @@ typedef struct {
     GLint vertexp;
     GLint texcoordp;
 } YglVdp1CommonParam;
-
-#define TESS_COUNT (8)
-void Ygl_Vdp1CommonGetUniformId(GLuint pgid, YglVdp1CommonParam * param);
-int Ygl_uniformVdp1CommonParam(void * p, YglTextureManager *tm, Vdp2 *varVdp2Regs, int id);
-int Ygl_cleanupVdp1CommonParam(void * p, YglTextureManager *tm);
 
 // std140
 typedef struct  {
@@ -377,8 +355,6 @@ typedef struct {
    int vaid;
    char uClipMode;
    short ux1,uy1,ux2,uy2;
-   int blendmode;
-   int preblendmode;
    GLuint vertexp;
    GLuint texcoordp;
    GLuint mtxModelView;
@@ -407,7 +383,6 @@ typedef struct {
    int prgcurrent;
    int uclipcurrent;
    short ux1,uy1,ux2,uy2;
-   int blendmode;
    YglProgram * prg;
 } YglLevel;
 
@@ -614,7 +589,6 @@ typedef struct {
 
    YglProgram windowpg;
 
-   YglLevel * vdp1levels;
    YglLevel * vdp2levels;
 
    // Thread
@@ -749,16 +723,13 @@ void YglDirtyColorRamWord(void);
 void YglUpdateColorRam();
 void updateVdp2ColorRam(int line);
 void syncColorRam(void);
-int YglInitShader(int id, const GLchar * vertex[], int vcount, const GLchar * frag[], int fcount, const GLchar * tc[], const GLchar * te[], const GLchar * g[] );
+int YglInitShader(int id, const GLchar * vertex[], int vcount, const GLchar * frag[], int fcount);
 
 int YglTriangleGrowShading(YglSprite * input, YglTexture * output, float * colors, YglCache * c, YglTextureManager *tm);
 void YglCacheTriangleGrowShading(YglSprite * input, float * colors, YglCache * cache, YglTextureManager *tm);
 
 u32 * YglGetPerlineBuf(void);
 void YglSetPerlineBuf(u32 * pbuf);
-
-// 0.. no belnd, 1.. Alpha, 2.. Add
-int YglSetLevelBlendmode( int pri, int mode );
 
 extern int YglBlitSimple(int texture, int blend);
 extern int YglBlitTexture(int* prioscreens, int* modescreens, int* isRGB, int * isBlur, int* isPerline, int* isShadow, int* lncl, GetFBFunc vdp1fb, int win_s, int win_s_mode, int Win0, int Win0_mode, int Win1, int Win1_mode, int Win_op, int* use_lncl_off, Vdp2 *varVdp2Regs);
@@ -790,7 +761,6 @@ int YglBlitVDP1(u32 srcTexture, float w, float h, int flip);
 int YglBlitFramebuffer(u32 srcTexture, float w, float h, float dispw, float disph);
 int YglUpscaleFramebuffer(u32 srcTexture, u32 targetFbo, float w, float h, float texw, float texh);
 
-void YglRenderVDP1(void);
 u32 * YglGetLineColorScreenPointer();
 void YglSetLineColorScreen(u32 * pbuf, int size);
 
@@ -819,11 +789,9 @@ int YglSetupWindow(YglProgram * prg);
 void Vdp2GenerateWindowInfo(Vdp2 *varVdp2Regs);
 
 void clearVDP1Framebuffer(int frame);
-int YglEraseWriteVDP1(int id);
-void YglFrameChangeVDP1();
 
-int YglEraseWriteCSVDP1(int id);
-void YglFrameChangeCSVDP1();
+int VIDCSEraseWriteVdp1(int id);
+void VIDCSFrameChangeVdp1();
 
 extern void RBGGenerator_init(int width, int height);
 extern void RBGGenerator_resize(int width, int height);

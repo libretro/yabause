@@ -60,8 +60,6 @@ static int YglDestroyScreenBuffer();
 static int YglGenerateOriginalBuffer();
 static int YglDestroyOriginalBuffer();
 
-static void executeTMVDP1(int in, int out);
-
 extern int WinS[enBGMAX+1];
 extern int WinS_mode[enBGMAX+1];
 
@@ -287,7 +285,6 @@ void YglLoadIdentity(YglMatrix *result)
 
 
 YglTextureManager * YglTM_vdp2 = NULL;
-YglTextureManager * YglTM_vdp1[2] = { NULL, NULL };
 Ygl * _Ygl;
 
 typedef struct
@@ -579,9 +576,7 @@ void YglTMReset(YglTextureManager * tm  ) {
 
 void YglTmPush(YglTextureManager * tm){
 #ifdef VDP1_TEXTURE_ASYNC
-  if ((tm == YglTM_vdp1[0]) || (tm == YglTM_vdp1[1]))
-    waitVdp1Textures(1);
-  else WaitVdp2Async(1);
+  WaitVdp2Async(1);
 #endif
   YabThreadLock(tm->mtx);
   glActiveTexture(GL_TEXTURE0);
@@ -625,9 +620,7 @@ static void YglTMRealloc(YglTextureManager * tm, unsigned int width, unsigned in
   int dh;
 
 #ifdef VDP1_TEXTURE_ASYNC
-  if ((tm == YglTM_vdp1[0]) || (tm == YglTM_vdp1[1]))
-    waitVdp1Textures(1);
-  else WaitVdp2Async(1);
+  WaitVdp2Async(1);
 #endif
 
   if (tm->texture != NULL) {
@@ -679,15 +672,6 @@ static void YglTMRealloc(YglTextureManager * tm, unsigned int width, unsigned in
   return;
 }
 
-void YglTMCheck()
-{
-  YglTextureManager * tm = YglTM_vdp1[_Ygl->drawframe];
-  if ((tm->width > 2048) || (tm->height > 2048)) {
-    executeTMVDP1(_Ygl->drawframe,_Ygl->drawframe);
-    YglTMRealloc(tm, 1024, 1024);
-  }
-}
-
 //////////////////////////////////////////////////////////////////////////////
 static void YglTMAllocate_in(YglTextureManager * tm, YglTexture * output, unsigned int w, unsigned int h, unsigned int * x, unsigned int * y) {
   if( tm->width < w ){
@@ -730,10 +714,6 @@ void releaseCurrentOpenGLContext() {
   YabThreadUnLock(_Ygl->mutex);
 }
 
-void YglComposeVdp1(void) {
-  executeTMVDP1(_Ygl->drawframe, _Ygl->drawframe);
-}
-
 void YglTMAllocate(YglTextureManager * tm, YglTexture * output, unsigned int w, unsigned int h, unsigned int * x, unsigned int * y) {
   YabThreadLock(tm->mtx);
   YglTMAllocate_in(tm, output, w, h, x, y);
@@ -751,15 +731,9 @@ static u32* getVDP1Framebuffer(int frame) {
   if (_Ygl->vdp1fb_read_buf[frame] == NULL) {
     //Pas bien ca
     //A faire par core video
-    if (VIDCore->id == 2) {
       vdp1_compute();
       glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT|GL_TEXTURE_UPDATE_BARRIER_BIT);
       _Ygl->vdp1fb_read_buf[frame] = vdp1_read(frame);
-    }
-    else {
-      YglComposeVdp1();
-      _Ygl->vdp1fb_read_buf[frame] = vdp1_read_gl(frame);
-    }
   }
   return _Ygl->vdp1fb_read_buf[frame];
 }
@@ -957,7 +931,7 @@ void YglGenerate() {
   YglGenerateBackBuffer();
   YglGenerateWindowBuffer();
   YglGenerateScreenBuffer();
-  YGLDEBUG("YglGenFrameBuffer OK\n");
+  YGLDEBUG("VIDCSGenFrameBuffer OK\n");
   glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->default_fbo);
   glBindTexture(GL_TEXTURE_2D, 0);
   rebuild_frame_buffer = 0;
@@ -968,14 +942,12 @@ void YglGenReset() {
   YglDestroy();
   _Ygl->sync = 0;
   if (YglTM_vdp2!= NULL) YglTMDeInit(&YglTM_vdp2);
-  if (YglTM_vdp1[0] != NULL) YglTMDeInit(&YglTM_vdp1[0]);
-  if (YglTM_vdp1[1] != NULL) YglTMDeInit(&YglTM_vdp1[1]);
   rebuild_frame_buffer = 1;
   _Ygl->default_fbo = -1;
   Ygl_prog_Destroy();
 }
 //////////////////////////////////////////////////////////////////////////////
-int YglGenFrameBuffer() {
+int VIDCSGenFrameBuffer() {
     u32* vdp1_framebuffer[2];
   if (rebuild_frame_buffer == 0){
     return 0;
@@ -983,8 +955,6 @@ int YglGenFrameBuffer() {
   vdp1_framebuffer[0] = (u32*)malloc(0x20000*4);
   vdp1_framebuffer[1] = (u32*)malloc(0x20000*4);
   if (_Ygl->default_fbo == -1) _Ygl->default_fbo = YuiGetFB();
-  if (YglTM_vdp1[0] == NULL) YglTM_vdp1[0]= YglTMInit(1024, 1024);
-  if (YglTM_vdp1[1] == NULL) YglTM_vdp1[1]= YglTMInit(1024, 1024);
   if (YglTM_vdp2 == NULL) YglTM_vdp2= YglTMInit(1024, 1024);
 
   for (int j = 0; j<2; j++) {
@@ -1348,7 +1318,6 @@ int YglInit(int width, int height, unsigned int depth) {
   _Ygl->vdp1IsNotEmpty[1] = -1;
 
   initLevels(&_Ygl->vdp2levels, SPRITE);
-  initLevels(&_Ygl->vdp1levels, 2);
 
   if( _Ygl->mutex == NULL){
     _Ygl->mutex = YabThreadCreateMutex();
@@ -1423,8 +1392,6 @@ int YglInit(int width, int height, unsigned int depth) {
   glPixelStorei(GL_PACK_ALIGNMENT, 1);
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-  YglTM_vdp1[0] = YglTMInit(1024, 1024);
-  YglTM_vdp1[1] = YglTMInit(1024, 1024);
   YglTM_vdp2 = YglTMInit(1024, 1024);
 
   vdp1_compute_init(512.0f, 256.0f, _Ygl->vdp1wratio,_Ygl->vdp1hratio);
@@ -1473,8 +1440,6 @@ int YglInit(int width, int height, unsigned int depth) {
 void YglDeInit(void) {
    unsigned int i,j;
 
-   if (YglTM_vdp1[0] != NULL) YglTMDeInit(&YglTM_vdp1[0]);
-   if (YglTM_vdp1[1] != NULL) YglTMDeInit(&YglTM_vdp1[1]);
    if (YglTM_vdp2 != NULL)    YglTMDeInit(&YglTM_vdp2);
 
 
@@ -1485,8 +1450,6 @@ void YglDeInit(void) {
 
       if (_Ygl->vdp2levels)
       deinitLevels(_Ygl->vdp2levels, SPRITE);
-      if (_Ygl->vdp1levels)
-      deinitLevels(_Ygl->vdp1levels, 2);
 
       free(_Ygl);
    }
@@ -1503,639 +1466,33 @@ YglProgram * YglGetProgram( YglSprite * input, int prg, YglTextureManager *tm, i
    YglLevel   *level;
    YglProgram *program;
 
-   if (input->priority > 8) {
-      VDP1LOG("sprite with priority %d\n", input->priority);
-      return NULL;
-   }
+   level = &_Ygl->vdp2levels[input->idScreen];
 
-   if(tm == YglTM_vdp1[_Ygl->drawframe]){
-     level = &_Ygl->vdp1levels[_Ygl->drawframe];
-   } else {
-     level = &_Ygl->vdp2levels[input->idScreen];
-   }
-
+   level->prgcurrent++;
     if (progNew == 0){
       YglProgramChange(level, prg);
       progNew = 1;
     }
 
-    program = &level->prg[level->prgcurrent];
-
-  // level->blendmode |= (input->blendmode&0x03);
-   if( input->uclipmode != level->uclipcurrent ||
-     (input->uclipmode !=0 &&
-    (level->ux1 != Vdp1Regs->userclipX1 || level->uy1 != Vdp1Regs->userclipY1 ||
-    level->ux2 != Vdp1Regs->userclipX2 || level->uy2 != Vdp1Regs->userclipY2) )
-     )
-   {
-      if( input->uclipmode == 0x02 || input->uclipmode == 0x03 )
-      {
-         YglProgramChange(level,PG_VDP1_STARTUSERCLIP);
-         program = &level->prg[level->prgcurrent];
-         program->uClipMode = input->uclipmode;
-         program->ux1=Vdp1Regs->userclipX1;
-         program->uy1=Vdp1Regs->userclipY1;
-         program->ux2=Vdp1Regs->userclipX2;
-         program->uy2=Vdp1Regs->userclipY2;
-         level->ux1=Vdp1Regs->userclipX1;
-         level->uy1=Vdp1Regs->userclipY1;
-         level->ux2=Vdp1Regs->userclipX2;
-         level->uy2=Vdp1Regs->userclipY2;
-      }else{
-         YglProgramChange(level,PG_VDP1_ENDUSERCLIP);
-         program = &level->prg[level->prgcurrent];
-         program->uClipMode = input->uclipmode;
-      }
-      level->uclipcurrent = input->uclipmode;
-   }
-
    if( level->prg[level->prgcurrent].prgid != prg ) {
       YglProgramChange(level,prg);
-    level->prg[level->prgcurrent].id = input->idScreen;
-    level->prg[level->prgcurrent].blendmode = input->blendmode;
-   }
-   else if (level->prg[level->prgcurrent].blendmode != input->blendmode){
-     YglProgramChange(level, prg);
-     level->prg[level->prgcurrent].id = input->idScreen;
-     level->prg[level->prgcurrent].blendmode = input->blendmode;
+      level->prg[level->prgcurrent].prgid = prg;
    }
    else if (input->idScreen != level->prg[level->prgcurrent].id ){
      YglProgramChange(level, prg);
      level->prg[level->prgcurrent].id = input->idScreen;
-     level->prg[level->prgcurrent].blendmode = input->blendmode;
-   }
-   else if ((level->prg[level->prgcurrent].systemClipX2 != Vdp1Regs->systemclipX2) || (level->prg[level->prgcurrent].systemClipY2 != Vdp1Regs->systemclipY2)) {
-     YglProgramChange(level, prg);
-     level->prg[level->prgcurrent].id = input->idScreen;
-     level->prg[level->prgcurrent].blendmode = input->blendmode;
    }
    program = &level->prg[level->prgcurrent];
 
    if ((program->currentQuad + YGL_MAX_NEED_BUFFER) >= program->maxQuad) {
      program->maxQuad += YGL_MAX_NEED_BUFFER*32;
-    program->quads = (float *)realloc(program->quads, program->maxQuad * sizeof(float));
+     program->quads = (float *)realloc(program->quads, program->maxQuad * sizeof(float));
       program->textcoords = (float *) realloc(program->textcoords, program->maxQuad * sizeof(float) * 2);
       program->vertexAttribute = (float *) realloc(program->vertexAttribute, program->maxQuad * sizeof(float)*2);
-    YglCacheReset(tm);
+      YglCacheReset(tm);
    }
    return program;
 }
-
-
-
-//////////////////////////////////////////////////////////////////////////////
-
-static int YglCheckTriangle( const float * point ){
-  if ((point[2 * 0 + 0] == point[2 * 1 + 0]) && (point[2 * 0 + 1] == point[2 * 1 + 1])) {
-    return 1;
-  }
-  else if ((point[2 * 1 + 0] == point[2 * 2 + 0]) && (point[2 * 1 + 1] == point[2 * 2 + 1]))  {
-    return 1;
-  }
-  else if ((point[2 * 2 + 0] == point[2 * 3 + 0]) && (point[2 * 2 + 1] == point[2 * 3 + 1]))  {
-    return 1;
-  }
-  else if ((point[2 * 3 + 0] == point[2 * 0 + 0]) && (point[2 * 3 + 1] == point[2 * 0 + 1])) {
-    return 1;
-  }
-  return 0;
-}
-
-static int YglTriangleGrowShading_in(YglSprite * input, YglTexture * output, float * colors, YglCache * c, int cash_flg, YglTextureManager *tm);
-static int YglQuadGrowShading_in(YglSprite * input, YglTexture * output, float * colors, YglCache * c, int cash_flg, YglTextureManager *tm);
-static int YglQuadGrowShading_tesselation_in(YglSprite * input, YglTexture * output, float * colors, YglCache * c, int cash_flg, YglTextureManager *tm);
-
-void YglCacheQuadGrowShading(YglSprite * input, float * colors, YglCache * cache, YglTextureManager *tm){
-    _Ygl->needVdp1Render = 1;
-    if ((Vdp1Regs->TVMR & 0x1) == 1) colors = NULL;
-    if (_Ygl->polygonmode == GPU_TESSERATION) {
-      YglQuadGrowShading_tesselation_in(input, NULL, colors, cache, 0, tm);
-    }
-    else if (_Ygl->polygonmode == CPU_TESSERATION) {
-      YglTriangleGrowShading_in(input, NULL, colors, cache, 0, tm);
-    }
-    else if (_Ygl->polygonmode == PERSPECTIVE_CORRECTION) {
-      if (YglCheckTriangle(input->vertices)){
-        YglTriangleGrowShading_in(input, NULL, colors, cache, 0, tm);
-      }
-      else{
-        YglQuadGrowShading_in(input, NULL, colors, cache, 0, tm);
-      }
-    }
-}
-
-int YglQuadGrowShading(YglSprite * input, YglTexture * output, float * colors, YglCache * c, YglTextureManager *tm){
-  _Ygl->needVdp1Render = 1;
-  if ((Vdp1Regs->TVMR & 0x1) == 1) colors = NULL;
-  if (_Ygl->polygonmode == GPU_TESSERATION) {
-    return YglQuadGrowShading_tesselation_in(input, output, colors, c, 1, tm);
-  }
-  else if (_Ygl->polygonmode == CPU_TESSERATION) {
-    return YglTriangleGrowShading_in(input, output, colors, c, 1, tm);
-  }
-  else if (_Ygl->polygonmode == PERSPECTIVE_CORRECTION) {
-    if (YglCheckTriangle(input->vertices)){
-       return YglTriangleGrowShading_in(input, output, colors, c, 1, tm);
-    }
-    return YglQuadGrowShading_in(input, output, colors, c, 1,tm);
-  }
-  return 0;
-}
-
-int YglTriangleGrowShading_in(YglSprite * input, YglTexture * output, float * colors, YglCache * c, int cash_flg, YglTextureManager *tm ) {
-  unsigned int x, y;
-  YglProgram *program;
-  int prg = -1;
-  float * pos;
-  int u, v;
-  float *colv;
-  texturecoordinate_struct texv[6];
-  texturecoordinate_struct * tpos;
-  // Select Program
-  prg = input->blendmode;
-
-  program = YglGetProgram(input, prg, tm, input->priority);
-  if (program == NULL || program->quads == NULL) return -1;
-
-  pos = program->quads + program->currentQuad;
-  colv = (program->vertexAttribute + (program->currentQuad * 2));
-  tpos = (texturecoordinate_struct *)(program->textcoords + (program->currentQuad * 2));
-
-  if (output != NULL){
-    YglTMAllocate(tm, output, input->w, input->h, &x, &y);
-  }
-  else{
-    x = c->x;
-    y = c->y;
-  }
-
-  texv[0].r = texv[1].r = texv[2].r = texv[3].r = texv[4].r = texv[5].r = 0; // these can stay at 0
-  texv[0].q = texv[1].q = texv[2].q = texv[3].q = texv[4].q = texv[5].q = 1.0f; // these can stay at 0
-
-  if (input->flip & 0x1) {
-    texv[0].s = texv[3].s = texv[5].s = (float)((x + input->w) - ATLAS_BIAS);
-    texv[1].s = texv[2].s = texv[4].s = (float)((x)+ATLAS_BIAS);
-  }
-  else {
-    texv[0].s = texv[3].s = texv[5].s = (float)((x)+ATLAS_BIAS);
-    texv[1].s = texv[2].s = texv[4].s = (float)((x + input->w) - ATLAS_BIAS);
-  }
-  if (input->flip & 0x2) {
-    texv[0].t = texv[1].t = texv[3].t = (float)((y + input->h) - ATLAS_BIAS);
-    texv[2].t = texv[4].t = texv[5].t = (float)((y)+ATLAS_BIAS);
-  }
-  else {
-    texv[0].t = texv[1].t = texv[3].t = (float)((y)+ATLAS_BIAS);
-    texv[2].t = texv[4].t = texv[5].t = (float)((y + input->h) - ATLAS_BIAS);
-  }
-
-  if (c != NULL && cash_flg == 1)
-  {
-    switch (input->flip) {
-    case 0:
-      c->x = texv[0].s; //  *(program->textcoords + ((program->currentQuad + 12 - 12) * 2));
-      c->y = texv[0].t; // *(program->textcoords + ((program->currentQuad + 12 - 12) * 2) + 1);
-      break;
-    case 1:
-      c->x = texv[1].s; // *(program->textcoords + ((program->currentQuad + 12 - 10) * 2));
-      c->y = texv[0].t; // (program->textcoords + ((program->currentQuad + 12 - 10) * 2) + 1);
-      break;
-    case 2:
-      c->x = texv[0].s; //*(program->textcoords + ((program->currentQuad + 12 - 2) * 2));
-      c->y = texv[2].t; // *(program->textcoords + ((program->currentQuad + 12 - 2) * 2) + 1);
-      break;
-    case 3:
-      c->x = texv[1].s; //  *(program->textcoords + ((program->currentQuad + 12 - 4) * 2));
-      c->y = texv[2].t; //*(program->textcoords + ((program->currentQuad + 12 - 4) * 2) + 1);
-      break;
-    }
-  }
-
-  {
-  int tess_count = YGL_TESS_COUNT;
-  float s_step = (float)(texv[2].s-texv[0].s)/(float)tess_count;
-  float t_step = (float)(texv[2].t-texv[0].t)/(float)tess_count;
-
-  float vec_ad_x = input->vertices[6] - input->vertices[0];
-  float vec_ad_y = input->vertices[7] - input->vertices[1];
-  float vec_ad_xs = vec_ad_x / tess_count;
-  float vec_ad_ys = vec_ad_y / tess_count;
-
-  float vec_bc_x = input->vertices[4] - input->vertices[2];
-  float vec_bc_y = input->vertices[5] - input->vertices[3];
-  float vec_bc_xs = vec_bc_x / tess_count;
-  float vec_bc_ys = vec_bc_y / tess_count;
-
-  for (v = 0; v < tess_count ; v++){
-
-    // Top Line for current row
-    float ax = input->vertices[0] + vec_ad_xs * v;
-    float ay = input->vertices[1] + vec_ad_ys * v;
-    float bx = input->vertices[2] + vec_bc_xs * v;
-    float by = input->vertices[3] + vec_bc_ys * v;
-    float ab_step_x = (bx - ax) / tess_count;
-    float ab_step_y = (by - ay) / tess_count;
-
-    // botton Line for current row
-    float cx = input->vertices[2] + vec_bc_xs * (v + 1);
-    float cy = input->vertices[3] + vec_bc_ys * (v + 1);
-    float dx = input->vertices[0] + vec_ad_xs * (v + 1);
-    float dy = input->vertices[1] + vec_ad_ys * (v + 1);
-
-    float dc_step_x = (cx - dx) / tess_count;
-    float dc_step_y = (cy - dy) / tess_count;
-
-    for (u = 0; u < tess_count ; u++){
-
-      float * cpos = &pos[12*(u + tess_count*v) ];
-      texturecoordinate_struct * ctpos = &tpos[6 * (u + tess_count*v)];
-      float * vtxa = &colv[24 * (u + tess_count*v)];
-
-      /*
-        A+--+B
-         |  |
-        D+--+C
-      */
-      float dax = ax + ab_step_x * u;
-      float day = ay + ab_step_y * u;
-      float dbx = dax + ab_step_x;
-      float dby = day + ab_step_y;
-      float ddx = dx + dc_step_x * u;
-      float ddy = dy + dc_step_y * u;
-      float dcx = ddx + dc_step_x;
-      float dcy = ddy + dc_step_y;
-
-      cpos[0] = dax;
-      cpos[1] = day;
-      cpos[2] = dbx;
-      cpos[3] = dby;
-      cpos[4] = dcx;
-      cpos[5] = dcy;
-
-      cpos[6] = dax;
-      cpos[7] = day;
-      cpos[8] = dcx;
-      cpos[9] = dcy;
-      cpos[10] = ddx;
-      cpos[11] = ddy;
-
-      ctpos[0].s = texv[0].s + s_step * u;
-      ctpos[0].t = texv[0].t + t_step * v;
-      ctpos[1].s = ctpos[0].s + s_step;
-      ctpos[1].t = ctpos[0].t;
-      ctpos[2].s = ctpos[0].s + s_step;
-      ctpos[2].t = ctpos[0].t + t_step;
-
-      ctpos[3].s = ctpos[0].s;
-      ctpos[3].t = ctpos[0].t;
-      ctpos[4].s = ctpos[2].s;
-      ctpos[4].t = ctpos[2].t;
-      ctpos[5].s = ctpos[0].s;
-      ctpos[5].t = ctpos[0].t + t_step;
-      ctpos[0].r = ctpos[1].r = ctpos[2].r = ctpos[3].r = ctpos[4].r = ctpos[5].r = 0; // these can stay at 0
-      ctpos[0].q = ctpos[1].q = ctpos[2].q = ctpos[3].q = ctpos[4].q = ctpos[5].q = 1.0f; // these can stay at 0
-
-      // ToDo: color interpolation
-      if (colors == NULL) {
-        memset(vtxa, 0, sizeof(float) * 24);
-      }
-      else {
-
-        int uindex = u;
-        int vindex = v;
-        vtxa[0] = (colors[0] * (tess_count - uindex) + colors[4] * uindex) / (float)tess_count * (tess_count - vindex) + (colors[12] * (tess_count - u) + colors[8] * uindex) / (float)tess_count * vindex;
-        vtxa[1] = (colors[1] * (tess_count - uindex) + colors[5] * uindex) / (float)tess_count * (tess_count - vindex) + (colors[13] * (tess_count - u) + colors[9] * uindex) / (float)tess_count * vindex;
-        vtxa[2] = (colors[2] * (tess_count - uindex) + colors[6] * uindex) / (float)tess_count * (tess_count - vindex) + (colors[14] * (tess_count - u) + colors[10] * uindex) / (float)tess_count * vindex;
-        vtxa[3] = (colors[3] * (tess_count - uindex) + colors[7] * uindex) / (float)tess_count * (tess_count - vindex) + (colors[15] * (tess_count - u) + colors[11] * uindex) / (float)tess_count * vindex;
-        vtxa[0] /= (float)tess_count;
-        vtxa[1] /= (float)tess_count;
-        vtxa[2] /= (float)tess_count;
-        vtxa[3] /= (float)tess_count;
-
-        uindex = u + 1;
-        vindex = v;
-        vtxa[4] = (colors[0] * (tess_count - uindex) + colors[4] * uindex) / (float)tess_count * (tess_count - vindex) + (colors[12] * (tess_count - u) + colors[8] * uindex) / (float)tess_count * vindex;
-        vtxa[5] = (colors[1] * (tess_count - uindex) + colors[5] * uindex) / (float)tess_count * (tess_count - vindex) + (colors[13] * (tess_count - u) + colors[9] * uindex) / (float)tess_count * vindex;
-        vtxa[6] = (colors[2] * (tess_count - uindex) + colors[6] * uindex) / (float)tess_count * (tess_count - vindex) + (colors[14] * (tess_count - u) + colors[10] * uindex) / (float)tess_count * vindex;
-        vtxa[7] = (colors[3] * (tess_count - uindex) + colors[7] * uindex) / (float)tess_count * (tess_count - vindex) + (colors[15] * (tess_count - u) + colors[11] * uindex) / (float)tess_count * vindex;
-        vtxa[4] /= (float)tess_count;
-        vtxa[5] /= (float)tess_count;
-        vtxa[6] /= (float)tess_count;
-        vtxa[7] /= (float)tess_count;
-
-        uindex = u + 1;
-        vindex = v + 1;
-        vtxa[8] = (colors[0] * (tess_count - uindex) + colors[4] * uindex) / (float)tess_count * (tess_count - vindex) + (colors[12] * (tess_count - u) + colors[8] * uindex) / (float)tess_count * vindex;
-        vtxa[9] = (colors[1] * (tess_count - uindex) + colors[5] * uindex) / (float)tess_count * (tess_count - vindex) + (colors[13] * (tess_count - u) + colors[9] * uindex) / (float)tess_count * vindex;
-        vtxa[10] = (colors[2] * (tess_count - uindex) + colors[6] * uindex) / (float)tess_count * (tess_count - vindex) + (colors[14] * (tess_count - u) + colors[10] * uindex) / (float)tess_count * vindex;
-        vtxa[11] = (colors[3] * (tess_count - uindex) + colors[7] * uindex) / (float)tess_count * (tess_count - vindex) + (colors[15] * (tess_count - u) + colors[11] * uindex) / (float)tess_count * vindex;
-        vtxa[8] /= (float)tess_count;
-        vtxa[9] /= (float)tess_count;
-        vtxa[10] /= (float)tess_count;
-        vtxa[11] /= (float)tess_count;
-
-        vtxa[12] = vtxa[0];
-        vtxa[13] = vtxa[1];
-        vtxa[14] = vtxa[2];
-        vtxa[15] = vtxa[3];
-
-        vtxa[16] = vtxa[8];
-        vtxa[17] = vtxa[9];
-        vtxa[18] = vtxa[10];
-        vtxa[19] = vtxa[11];
-
-        uindex = u;
-        vindex = v + 1;
-        vtxa[20] = (colors[0] * (tess_count - uindex) + colors[4] * uindex) / (float)tess_count * (tess_count - vindex) + (colors[12] * (tess_count - u) + colors[8] * uindex) / (float)tess_count * vindex;
-        vtxa[21] = (colors[1] * (tess_count - uindex) + colors[5] * uindex) / (float)tess_count * (tess_count - vindex) + (colors[13] * (tess_count - u) + colors[9] * uindex) / (float)tess_count * vindex;
-        vtxa[22] = (colors[2] * (tess_count - uindex) + colors[6] * uindex) / (float)tess_count * (tess_count - vindex) + (colors[14] * (tess_count - u) + colors[10] * uindex) / (float)tess_count * vindex;
-        vtxa[23] = (colors[3] * (tess_count - uindex) + colors[7] * uindex) / (float)tess_count * (tess_count - vindex) + (colors[15] * (tess_count - u) + colors[11] * uindex) / (float)tess_count * vindex;
-        vtxa[20] /= (float)tess_count;
-        vtxa[21] /= (float)tess_count;
-        vtxa[22] /= (float)tess_count;
-        vtxa[23] /= (float)tess_count;
-      }
-
-    }
-  }
-  program->currentQuad = program->currentQuad + (12*tess_count*tess_count);
-  }
-  return 0;
-}
-
-int YglQuadGrowShading_in(YglSprite * input, YglTexture * output, float * colors, YglCache * c, int cash_flg, YglTextureManager *tm) {
-   unsigned int x, y;
-   YglProgram *program;
-   texturecoordinate_struct *tmp;
-   float * vtxa;
-   float q[4];
-   int prg = -1;
-   float * pos;
-
-   prg = input->blendmode;
-
-   program = YglGetProgram(input,prg,tm,input->priority);
-   if( program == NULL ) return -1;
-   //YGLLOG( "program->quads = %X,%X,%d/%d\n",program->quads,program->vertexBuffer,program->currentQuad,program->maxQuad );
-   if( program->quads == NULL ) {
-       int a=0;
-   }
-
-   if (output != NULL){
-     YglTMAllocate(tm, output, input->w, input->h, &x, &y);
-   }
-   else{
-     x = c->x;
-     y = c->y;
-   }
-
-   // Vertex
-   pos = program->quads + program->currentQuad;
-
-   pos[0] = input->vertices[0];
-   pos[1] = input->vertices[1];
-   pos[2] = input->vertices[2];
-   pos[3] = input->vertices[3];
-   pos[4] = input->vertices[4];
-   pos[5] = input->vertices[5];
-   pos[6] = input->vertices[0];
-   pos[7] = input->vertices[1];
-   pos[8] = input->vertices[4];
-   pos[9] = input->vertices[5];
-   pos[10] = input->vertices[6];
-   pos[11] = input->vertices[7];
-
-
-   // Color
-   vtxa = (program->vertexAttribute + (program->currentQuad * 2));
-   if( colors == NULL ) {
-      memset(vtxa,0,sizeof(float)*24);
-   } else {
-     vtxa[0] = colors[0];
-     vtxa[1] = colors[1];
-     vtxa[2] = colors[2];
-     vtxa[3] = colors[3];
-
-     vtxa[4] = colors[4];
-     vtxa[5] = colors[5];
-     vtxa[6] = colors[6];
-     vtxa[7] = colors[7];
-
-     vtxa[8] = colors[8];
-     vtxa[9] = colors[9];
-     vtxa[10] = colors[10];
-     vtxa[11] = colors[11];
-
-     vtxa[12] = colors[0];
-     vtxa[13] = colors[1];
-     vtxa[14] = colors[2];
-     vtxa[15] = colors[3];
-
-     vtxa[16] = colors[8];
-     vtxa[17] = colors[9];
-     vtxa[18] = colors[10];
-     vtxa[19] = colors[11];
-
-     vtxa[20] = colors[12];
-     vtxa[21] = colors[13];
-     vtxa[22] = colors[14];
-     vtxa[23] = colors[15];
-   }
-
-   // texture
-   tmp = (texturecoordinate_struct *)(program->textcoords + (program->currentQuad * 2));
-
-   program->currentQuad += 12;
-
-   tmp[0].r = tmp[1].r = tmp[2].r = tmp[3].r = tmp[4].r = tmp[5].r = 0; // these can stay at 0
-   if (input->flip & 0x1) {
-     tmp[0].s = tmp[3].s = tmp[5].s = (float)((x + input->w) - ATLAS_BIAS) ;
-     tmp[1].s = tmp[2].s = tmp[4].s = (float)((x)+ATLAS_BIAS) ;
-   } else {
-     tmp[0].s = tmp[3].s = tmp[5].s = (float)((x)+ATLAS_BIAS) ;
-     tmp[1].s = tmp[2].s = tmp[4].s = (float)((x + input->w) - ATLAS_BIAS);
-   }
-   if (input->flip & 0x2) {
-     tmp[0].t = tmp[1].t = tmp[3].t = (float)((y + input->h) - ATLAS_BIAS);
-     tmp[2].t = tmp[4].t = tmp[5].t = (float)((y)+ATLAS_BIAS);
-   } else {
-     tmp[0].t = tmp[1].t = tmp[3].t = (float)((y)+ATLAS_BIAS);
-     tmp[2].t = tmp[4].t = tmp[5].t = (float)((y + input->h) - ATLAS_BIAS);
-   }
-
-   if (c != NULL && cash_flg == 1)
-   {
-      switch(input->flip) {
-        case 0:
-          c->x = *(program->textcoords + ((program->currentQuad - 12) * 2));   // upper left coordinates(0)
-          c->y = *(program->textcoords + ((program->currentQuad - 12) * 2)+1); // upper left coordinates(0)
-          break;
-        case 1:
-          c->x = *(program->textcoords + ((program->currentQuad - 10) * 2));   // upper left coordinates(0)
-          c->y = *(program->textcoords + ((program->currentQuad - 10) * 2)+1); // upper left coordinates(0)
-          break;
-       case 2:
-          c->x = *(program->textcoords + ((program->currentQuad - 2) * 2));   // upper left coordinates(0)
-          c->y = *(program->textcoords + ((program->currentQuad - 2) * 2)+1); // upper left coordinates(0)
-          break;
-       case 3:
-          c->x = *(program->textcoords + ((program->currentQuad - 4) * 2));   // upper left coordinates(0)
-          c->y = *(program->textcoords + ((program->currentQuad - 4) * 2)+1); // upper left coordinates(0)
-          break;
-      }
-   }
-
-   if( input->dst == 1 )
-   {
-      YglCalcTextureQ(input->vertices,q);
-
-      tmp[0].s *= q[0];
-      tmp[0].t *= q[0];
-      tmp[1].s *= q[1];
-      tmp[1].t *= q[1];
-      tmp[2].s *= q[2];
-      tmp[2].t *= q[2];
-      tmp[3].s *= q[0];
-      tmp[3].t *= q[0];
-      tmp[4].s *= q[2];
-      tmp[4].t *= q[2];
-      tmp[5].s *= q[3];
-      tmp[5].t *= q[3];
-
-      tmp[0].q = q[0];
-      tmp[1].q = q[1];
-      tmp[2].q = q[2];
-      tmp[3].q = q[0];
-      tmp[4].q = q[2];
-      tmp[5].q = q[3];
-   }else{
-      tmp[0].q = 1.0f;
-      tmp[1].q = 1.0f;
-      tmp[2].q = 1.0f;
-      tmp[3].q = 1.0f;
-      tmp[4].q = 1.0f;
-      tmp[5].q = 1.0f;
-   }
-
-   return 0;
-}
-
-int YglQuadGrowShading_tesselation_in(YglSprite * input, YglTexture * output, float * colors, YglCache * c, int cash_flg, YglTextureManager *tm) {
-  unsigned int x, y;
-  YglProgram *program;
-  texturecoordinate_struct *tmp;
-  float * vtxa;
-  int prg = -1;;
-  float * pos;
-
-  prg = input->blendmode;
-
-  program = YglGetProgram(input, prg, tm,input->priority);
-  if (program == NULL) return -1;
-  //YGLLOG( "program->quads = %X,%X,%d/%d\n",program->quads,program->vertexBuffer,program->currentQuad,program->maxQuad );
-  if (program->quads == NULL) {
-    int a = 0;
-  }
-
-  if (output != NULL){
-    YglTMAllocate(tm, output, input->w, input->h, &x, &y);
-  }
-  else{
-    x = c->x;
-    y = c->y;
-  }
-
-  // Vertex
-  pos = program->quads + program->currentQuad;
-
-  pos[0] = input->vertices[0];
-  pos[1] = input->vertices[1];
-  pos[2] = input->vertices[2];
-  pos[3] = input->vertices[3];
-  pos[4] = input->vertices[4];
-  pos[5] = input->vertices[5];
-  pos[6] = input->vertices[6];
-  pos[7] = input->vertices[7];
-
-
-  // Color
-  vtxa = (program->vertexAttribute + (program->currentQuad * 2));
-  if (colors == NULL) {
-    memset(vtxa, 0, sizeof(float) * 24);
-  }
-  else {
-    vtxa[0] = colors[0];
-    vtxa[1] = colors[1];
-    vtxa[2] = colors[2];
-    vtxa[3] = colors[3];
-
-    vtxa[4] = colors[4];
-    vtxa[5] = colors[5];
-    vtxa[6] = colors[6];
-    vtxa[7] = colors[7];
-
-    vtxa[8] = colors[8];
-    vtxa[9] = colors[9];
-    vtxa[10] = colors[10];
-    vtxa[11] = colors[11];
-
-    vtxa[12] = colors[12];
-    vtxa[13] = colors[13];
-    vtxa[14] = colors[14];
-    vtxa[15] = colors[15];
-  }
-
-  // texture
-  tmp = (texturecoordinate_struct *)(program->textcoords + (program->currentQuad * 2));
-
-  program->currentQuad += 8;
-
-  tmp[0].r = tmp[1].r = tmp[2].r = tmp[3].r = 0.0f; // these can stay at 0.0
-  tmp[0].q = tmp[1].q = tmp[2].q = tmp[3].q = 1.0f; // these can stay at 1.0
-
-  if ( input->flip & 0x1) {
-    tmp[0].s = tmp[3].s = (float)((x + input->w) - ATLAS_BIAS);
-    tmp[1].s = tmp[2].s = (float)((x)+ATLAS_BIAS);
-  }
-  else {
-    tmp[0].s = tmp[3].s = (float)((x)+ATLAS_BIAS);
-    tmp[1].s = tmp[2].s = (float)((x + input->w) - ATLAS_BIAS);
-  }
-  if( input->flip & 0x2) {
-    tmp[0].t = tmp[1].t = (float)((y + input->h) - ATLAS_BIAS);
-    tmp[2].t = tmp[3].t = (float)((y)+ATLAS_BIAS);
-  }
-  else {
-    tmp[0].t = tmp[1].t = (float)((y)+ATLAS_BIAS);
-    tmp[2].t = tmp[3].t = (float)((y + input->h) - ATLAS_BIAS);
-  }
-
-  if (c != NULL && cash_flg == 1)
-  {
-    switch (input->flip) {
-    case 0:
-      c->x = tmp[0].s;
-      c->y = tmp[0].t;
-      break;
-    case 1:
-      c->x = tmp[1].s;
-      c->y = tmp[0].t;
-      break;
-    case 2:
-      c->x = tmp[0].s;
-      c->y = tmp[2].t;
-      break;
-    case 3:
-      c->x = tmp[1].s;
-      c->y = tmp[2].t;
-      break;
-    }
-  }
-
-
-  return 0;
-}
-
 
 static void YglQuadOffset_in(vdp2draw_struct * input, YglTexture * output, YglCache * c, int cx, int cy, float sx, float sy, int cash_flg, YglTextureManager *tm);
 
@@ -2289,7 +1646,6 @@ int YglQuad_in(vdp2draw_struct * input, YglTexture * output, YglCache * c, int c
   if (program == NULL) return -1;
 
   program->colornumber = input->colornumber;
-  program->blendmode = input->blendmode;
 
   program->mosaic[0] = input->mosaicxmask;
   program->mosaic[1] = input->mosaicymask;
@@ -2414,7 +1770,6 @@ int YglQuadRbg0(RBGDrawInfo * rbg, YglTexture * output, YglCache * c, int rbg_ty
   if (program == NULL) return -1;
 
   program->colornumber = input->colornumber;
-  program->blendmode = input->blendmode;
 
   program->mosaic[0] = input->mosaicxmask;
   program->mosaic[1] = input->mosaicymask;
@@ -2495,242 +1850,6 @@ int YglQuadRbg0(RBGDrawInfo * rbg, YglTexture * output, YglCache * c, int rbg_ty
     tmp[0].r = tmp[1].r = tmp[2].r = tmp[3].r = tmp[4].r = tmp[5].r = 0;
     tmp[0].q = tmp[1].q = tmp[2].q = tmp[3].q = tmp[4].q = tmp[5].q = 0;
   return 0;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-int YglEraseWriteVDP1(int id) {
-
-  float col[4] = {0.0};
-  float meshcol[4] = {0.0};
-  u16 color;
-  int priority;
-  u32 alpha = 0;
-  int status = 0;
-  GLenum DrawBuffers[4]= {GL_COLOR_ATTACHMENT0,GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2,GL_COLOR_ATTACHMENT3};
-  if (_Ygl->vdp1FrameBuff[0] == 0) return 0;
-
-  int shift = ((Vdp1Regs->TVMR & 0x1) == 1)?4:3;
-  int limits[4] = {0};
-  limits[0] = ((Vdp1Regs->EWLR>>9)&0x3F)<<shift;
-  limits[1] = ((Vdp1Regs->EWLR)&0x1FF); //TODO: manage double interlace
-
-  limits[2] = (((Vdp1Regs->EWRR>>9)&0x7F)<<shift) - 1;
-  limits[3] = ((Vdp1Regs->EWRR)&0x1FF); //TODO: manage double interlace
-
-  //Prohibited value seems to be considered as maximum values
-  if (limits[2] == -1) limits[2] = 511;
-  if (limits[3] == 0) limits[3] = 511;
-
-  if ((limits[0]>=limits[2])||(limits[1]>limits[3])) return 0; //No erase write when invalid area - Should be done only for one dot but no idea of which dot it shall be
-
-  YglGenFrameBuffer();
-
-  glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->vdp1fbo);
-  int drawBuf[2] = {0};
-  glGetIntegerv(GL_DRAW_BUFFER0, &drawBuf[0]);
-  glGetIntegerv(GL_DRAW_BUFFER1, &drawBuf[1]);
-  glDrawBuffers(2, (const GLenum*)&DrawBuffers[id*2]);
-
-  _Ygl->vdp1_stencil_mode = 0;
-
-  _Ygl->vdp1levels[id].ux1 = 0;
-  _Ygl->vdp1levels[id].uy1 = 0;
-  _Ygl->vdp1levels[id].ux2 = 0;
-  _Ygl->vdp1levels[id].uy2 = 0;
-  _Ygl->vdp1levels[id].uclipcurrent = 0;
-  _Ygl->vdp1levels[id].blendmode = 0;
-
-  color = Vdp1Regs->EWDR;
-
-  col[0] = (color & 0xFF) / 255.0f;
-  col[1] = ((color >> 8) & 0xFF) / 255.0f;
-
-  if (color != 0x0) {
-    if (((Vdp1Regs->TVMR & 0x1) == 1) && (col[0] != col[1])){
-      YuiMsg("Unsupported clear process\n\tin 8 bits upper part of EWDR is for even coordinates and lower part for odd coordinates\n");
-    }
-  }
-
-  limits[0] = limits[0]*_Ygl->vdp1width/512;
-	limits[1] = _Ygl->vdp1height - (limits[1]*_Ygl->vdp1height/256) - 1 ;
-	limits[2] = limits[2]*_Ygl->vdp1width/512;
-	limits[3] = _Ygl->vdp1height - (limits[3]*_Ygl->vdp1height/256) - 1;
-
-  FRAMELOG("Clear %d %d %d %d\n", limits[0],limits[3], limits[2]-limits[0]+1, limits[1]-limits[3]+1);
-
-  glEnable(GL_SCISSOR_TEST);
-  glScissor(limits[0],limits[3], limits[2]-limits[0]+1, limits[1]-limits[3]+1);
-  glClearBufferfv(GL_COLOR, 0, col);
-  glClearBufferfv(GL_COLOR, 1, meshcol);
-  glClearBufferfi(GL_DEPTH_STENCIL, 0, 0, 0);
-  glDisable(GL_SCISSOR_TEST);
-  FRAMELOG("YglEraseWriteVDP1xx: clear %d\n", id);
-  //Get back to drawframe
-  glDrawBuffers(2, (const GLenum*)&drawBuf[0]);
-
-  glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->default_fbo);
-
-  return ((limits[2]-limits[0])*(limits[3]-limits[1]))>>(Vdp1Regs->TVMR & 0x1);
-
-}
-
-static void executeTMVDP1(int in, int out) {
-  int switchTM = 0;
-  if (_Ygl->needVdp1Render != 0){
-    switchTM = 1;
-    YglTmPush(YglTM_vdp1[in]);
-    _Ygl->needVdp1Render = 0;
-    //YuiUseOGLOnThisThread();
-    YglRenderVDP1();
-    //YuiRevokeOGLOnThisThread();
-    YglReset(_Ygl->vdp1levels[out]);
-    YglTmPull(YglTM_vdp1[out], 0);
-  }
-  if ((in != out) && (switchTM==0)) {
-    YglTmPush(YglTM_vdp1[in]);
-    YglTmPull(YglTM_vdp1[out], 0);
-  }
-}
-
-//////////////////////////////////////////////////////////////////////////////
-void YglFrameChangeVDP1(){
-  u32 current_drawframe = 0;
-  current_drawframe = _Ygl->drawframe;
-  _Ygl->drawframe = _Ygl->readframe;
-  _Ygl->readframe = current_drawframe;
-  executeTMVDP1(_Ygl->readframe, _Ygl->drawframe);
-  if (_Ygl->shallVdp1Erase[_Ygl->drawframe] != 0) {
-    _Ygl->shallVdp1Erase[_Ygl->drawframe] = 0;
-    YglEraseWriteVDP1(_Ygl->drawframe);
-    clearVDP1Framebuffer(_Ygl->drawframe);
-  }
-
-  FRAMELOG("YglFrameChangeVDP1: swap drawframe =%d readframe = %d (%d)\n", _Ygl->drawframe, _Ygl->readframe, yabsys.LineCount);
-}
-//////////////////////////////////////////////////////////////////////////////
-static int renderVDP1Level( YglLevel * level, int j, int* cprg, YglMatrix *mat, Vdp2 *varVdp2Regs) {
-    int ret = 0;
-    if( level->prg[j].prgid != *cprg ) {
-      *cprg = level->prg[j].prgid;
-      if (*cprg == 0) return 0; //prgid 0 has no meaning
-//printf("USe prg %d\n", *cprg);
-      glUseProgram(level->prg[j].prg);
-    }
-
-    if(level->prg[j].setupUniform) {
-      level->prg[j].setupUniform((void*)&level->prg[j], YglTM_vdp1[_Ygl->drawframe], varVdp2Regs, SPRITE);
-    }
-    if( level->prg[j].currentQuad != 0 ) {
-      ret = 1;
-      if(level->prg[j].mtxModelView >= 0) glUniformMatrix4fv(level->prg[j].mtxModelView, 1, GL_FALSE, (GLfloat*)&mat->m[0][0]);
-      glBindBuffer(GL_ARRAY_BUFFER, _Ygl->quads_buf);
-      glBufferData(GL_ARRAY_BUFFER, level->prg[j].currentQuad * sizeof(float), level->prg[j].quads, GL_STREAM_DRAW);
-      glVertexAttribPointer(level->prg[j].vertexp, 2, GL_FLOAT, GL_FALSE, 0, 0);
-      glEnableVertexAttribArray(level->prg[j].vertexp);
-      glBindBuffer(GL_ARRAY_BUFFER, _Ygl->textcoords_buf);
-      glBufferData(GL_ARRAY_BUFFER, level->prg[j].currentQuad * sizeof(float) * 2, level->prg[j].textcoords, GL_STREAM_DRAW);
-      glVertexAttribPointer(level->prg[j].texcoordp,4,GL_FLOAT,GL_FALSE,0,0);
-      glEnableVertexAttribArray(level->prg[j].texcoordp);
-      if( level->prg[j].vaid > 0 ) {
-        glBindBuffer(GL_ARRAY_BUFFER, _Ygl->vertexAttribute_buf);
-        glBufferData(GL_ARRAY_BUFFER, level->prg[j].currentQuad * sizeof(float) * 2, level->prg[j].vertexAttribute, GL_STREAM_DRAW);
-        glVertexAttribPointer(level->prg[j].vaid,4, GL_FLOAT, GL_FALSE, 0, 0);
-        glEnableVertexAttribArray(level->prg[j].vaid);
-      }
-      if ( level->prg[j].prgid >= (PG_VDP1_VDP2>>1) ) {
-#if defined(_OGL3_)
-        if (glPatchParameteri) glPatchParameteri(GL_PATCH_VERTICES, 4);
-        glDrawArrays(GL_PATCHES, 0, level->prg[j].currentQuad / 2);
-      }else{
-#endif
-        glDrawArrays(GL_TRIANGLES, 0, level->prg[j].currentQuad / 2);
-      }
-    }
-    if( level->prg[j].cleanupUniform ){
-      level->prg[j].cleanupUniform((void*)&level->prg[j], YglTM_vdp1[_Ygl->drawframe]);
-    }
-  _Ygl->min_fb_x = 1024;
-  _Ygl->max_fb_x = 0;
-  _Ygl->min_fb_y = 1024;
-  _Ygl->max_fb_y = 0;
-    return ret;
-}
-
-void YglRenderVDP1(void) {
-  YglLevel * level;
-  GLuint cprg=0;
-  int i,j;
-  int status;
-  Vdp2 *varVdp2Regs = &Vdp2Lines[yabsys.LineCount];
-  GLenum DrawBuffers[4]= {GL_COLOR_ATTACHMENT0,GL_COLOR_ATTACHMENT1,GL_COLOR_ATTACHMENT2,GL_COLOR_ATTACHMENT3};
-  //YabThreadLock(_Ygl->mutex);
-  YglMatrix m, *mat;
-  mat = &_Ygl->mtxModelView;
-
-  glBindVertexArray(_Ygl->vao);
-
-  FRAMELOG("YglRenderVDP1: drawframe =%d", _Ygl->drawframe);
-
-  YGLLOG("YglRenderVDP1 %d, PTMR = %d\n", _Ygl->drawframe, Vdp1Regs->PTMR);
-
-  level = &(_Ygl->vdp1levels[_Ygl->drawframe]);
-    if( level == NULL ) {
-        //YabThreadUnLock(_Ygl->mutex);
-        return;
-    }
-  cprg = -1;
-
-  YglGenFrameBuffer();
-
-  glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->vdp1fbo);
-  glDrawBuffers(2, (const GLenum*)&DrawBuffers[_Ygl->drawframe*2]);
-
-  glDisable(GL_DEPTH_TEST);
-  glDisable(GL_BLEND);
-  glCullFace(GL_FRONT_AND_BACK);
-  glDisable(GL_CULL_FACE);
-
-  //Y a-t-il un seul system clipping call par commande de dessin?
-  glViewport(0, 0, _Ygl->vdp1width, _Ygl->vdp1height);
-  glScissor(0, 0, _Ygl->vdp1width, _Ygl->vdp1height);
-
-  glEnable(GL_SCISSOR_TEST);
-
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, YglTM_vdp1[_Ygl->drawframe]->textureID);
-
-  if (_Ygl->vdp1_stencil_mode != 0) {
-    glEnable(GL_STENCIL_TEST);
-    glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP);
-    if( _Ygl->vdp1_stencil_mode == 1 )
-    {
-       glStencilFunc(GL_EQUAL,0x1,0xFF);
-    }else if( _Ygl->vdp1_stencil_mode == 2 )
-    {
-       glStencilFunc(GL_EQUAL,0x0,0xFF);
-    }else{
-       glStencilFunc(GL_ALWAYS,0,0xFF);
-    }
-  }
-  else
-    glDisable(GL_STENCIL_TEST);
-
-  for( j=0;j<(level->prgcurrent+1); j++ ) {
-    renderVDP1Level(level, j, (int*)&cprg, mat, varVdp2Regs);
-    level->prg[j].currentQuad = 0;
-  }
-
-  level->prgcurrent = 0;
-
-  glDisable(GL_STENCIL_TEST);
-  glDisable(GL_SCISSOR_TEST);
-  //YabThreadUnLock(_Ygl->mutex);
-  glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->default_fbo);
-  //glEnable(GL_DEPTH_TEST);
-}
-
-//////////////////////////////////////////////////////////////////////////////
-void YglDmyRenderVDP1(void) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -3184,7 +2303,7 @@ void YglRender(Vdp2 *varVdp2Regs) {
    glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->default_fbo);
    glClearBufferfv(GL_COLOR, 0, col);
 
-   YglGenFrameBuffer();
+   VIDCSGenFrameBuffer();
 
   glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->original_fbo);
   glDrawBuffers(NB_RENDER_LAYER, (const GLenum*)&DrawBuffers[0]);
@@ -3366,7 +2485,6 @@ void YglRender(Vdp2 *varVdp2Regs) {
 
 void YglReset(YglLevel level) {
   unsigned int i,j;
-  level.blendmode  = 0;
   level.prgcurrent = 0;
   level.uclipcurrent = 0;
   level.ux1 = 0;
@@ -3756,7 +2874,7 @@ void YglChangeResolution(int w, int h) {
   YglOrtho(&_Ygl->rbgModelView, 0.0f, (float)_Ygl->rwidth, (float)_Ygl->rheight, 0.0f, 10.0f, 0.0f);
 }
 
-void VIDOGLSync(){
+void VIDCSSync(){
 }
 
 ///////////////////////////////////////////////////////////////////////////////

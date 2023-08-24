@@ -65,83 +65,6 @@ static void Ygl_printShaderError( GLuint shader )
     }
   }
 }
-
-// void Ygl_Vdp1CommonGetUniformId(GLuint pgid, YglProgram* param){
-//
-//   param->texsize = glGetUniformLocation(pgid, (const GLchar *)"u_texsize");
-//   param->sprite = glGetUniformLocation(pgid, (const GLchar *)"u_sprite");
-//   param->tessLevelInner = glGetUniformLocation(pgid, (const GLchar *)"TessLevelInner");
-//   param->tessLevelOuter = glGetUniformLocation(pgid, (const GLchar *)"TessLevelOuter");
-//   param->fbo = glGetUniformLocation(pgid, (const GLchar *)"u_fbo");
-//   param->mtxModelView = glGetUniformLocation(pgid, (const GLchar *)"u_mvpMatrix");
-//   param->mtxTexture = glGetUniformLocation(pgid, (const GLchar *)"u_texMatrix");
-//   param->tex0 = glGetUniformLocation(pgid, (const GLchar *)"s_texture");
-//
-// }
-
-int Ygl_uniformVdp1CommonParam(void * p, YglTextureManager *tm, Vdp2 *varVdp2Regs, int id){
-  YglProgram * prg;
-//  YglVdp1CommonParam * param;
-
-  prg = (YglProgram*)p;
-  glEnableVertexAttribArray(prg->vertexp);
-  glEnableVertexAttribArray(prg->texcoordp);
-  if (prg->vaid > 0) {
-    if (prg->vertexAttribute != NULL)
-    {
-      glEnableVertexAttribArray(prg->vaid);
-    }
-    else{
-      glDisableVertexAttribArray(prg->vaid);
-    }
-  }
-
-  glUniform2f(prg->ids->texsize, YglTM_vdp1[_Ygl->drawframe]->width, YglTM_vdp1[_Ygl->drawframe]->height);
-  glUniform3i(prg->ids->sysclip, (int)(prg->systemClipX2 * _Ygl->vdp1wratio), (int)(prg->systemClipY2 * _Ygl->vdp1hratio), _Ygl->vdp1height);
-
-  if (prg->ids->sprite != -1){
-    glUniform1i(prg->ids->sprite, 0);
-  }
-
-  if (prg->ids->tessLevelInner != -1) {
-    glUniform1f(prg->ids->tessLevelInner, (float)TESS_COUNT);
-  }
-
-  if (prg->ids->tessLevelOuter != -1) {
-    glUniform1f(prg->ids->tessLevelOuter, (float)TESS_COUNT);
-  }
-
-  if (prg->ids->fbo != -1){
-    glUniform1i(prg->ids->fbo, 1);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, _Ygl->vdp1FrameBuff[_Ygl->drawframe*2]);
-    #if defined(_OGL3_)
-        if (glTextureBarrier) glTextureBarrier();
-        else if (glTextureBarrierNV) glTextureBarrierNV();
-    #else
-        if( glMemoryBarrier ){
-          glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT|GL_TEXTURE_UPDATE_BARRIER_BIT|GL_TEXTURE_FETCH_BARRIER_BIT);
-        }else{
-          //glFinish();
-        }
-    #endif
-  }
-  return 0;
-}
-
-int Ygl_cleanupVdp1CommonParam(void * p, YglTextureManager *tm){
-  YglProgram * prg;
-  prg = (YglProgram*)p;
-  if (prg->vaid > 0) {
-    glDisableVertexAttribArray(prg->vaid);
-  }
-  glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_2D, 0);
-  glActiveTexture(GL_TEXTURE2);
-  glBindTexture(GL_TEXTURE_2D, 0);
-  return 0;
-}
-
 /*------------------------------------------------------------------------------------
  *  Normal Draw
  * ----------------------------------------------------------------------------------*/
@@ -438,26 +361,6 @@ int Ygl_cleanupMosaic(void * p, YglTextureManager *tm)
   return 0;
 }
 
-/*------------------------------------------------------------------------------------
- *  UserClip Operation
- * ----------------------------------------------------------------------------------*/
-const GLchar Yglprg_userclip_v[] =
-      "uniform mat4 u_mvpMatrix;    \n"
-      "layout (location = 0) in vec4 a_position;               \n"
-      "void main()                  \n"
-      "{                            \n"
-      "   gl_Position = a_position*u_mvpMatrix; \n"
-      "}\n";
-
-const GLchar Yglprg_userclip_f[] =
-      "#ifdef GL_ES\n"
-      "precision highp float;                            \n"
-      "#endif\n"
-      "out vec4 fragColor;            \n"
-      "out vec4 fragMesh; \n"
-      "void main()                                         \n"
-      "{ \n"
-      "  vec4 outColor = vec4( 0.0 );\n";
 
 #define MESH_PROCESS \
 "if( (int(gl_FragCoord.y) & 0x01) == 0 ){ \n \
@@ -547,92 +450,7 @@ int MSBhl = (col"Stringify(A)" & 0x8000) >> 8;\n \
 #define TAGZERO(A) \
 "if (tag"Stringify(A)" != 0) discard;\n"
 
-/*------------------------------------------------------------------------------------
-*  VDP1 Operation with tessellation
-* ----------------------------------------------------------------------------------*/
-const GLchar Yglprg_gouraud_tess_c[] =
-SHADER_VERSION_TESS
-"layout(vertices = 4) out; //<???? what does it means? \n"
-"in vec3 v_position[];  \n"
-"in vec4 v_texcoord[]; \n"
-"in vec4 v_vtxcolor[]; \n"
-"out vec3 tcPosition[]; \n"
-"out vec4 tcTexCoord[]; \n"
-"out vec4 tcColor[]; \n"
-"uniform float TessLevelInner; \n"
-"uniform float TessLevelOuter; \n"
-" \n"
-"#define ID gl_InvocationID \n"
-" \n"
-"void main()  \n"
-"{  \n"
-"	tcPosition[ID] = v_position[ID];  \n"
-"	tcTexCoord[ID] = v_texcoord[ID];  \n"
-"	tcColor[ID] = v_vtxcolor[ID];  \n"
-" \n"
-"	if (ID == 0) {  \n"
-"		gl_TessLevelInner[0] = TessLevelInner;  \n"
-"		gl_TessLevelInner[1] = TessLevelInner;  \n"
-"		gl_TessLevelOuter[0] = TessLevelOuter;  \n"
-"		gl_TessLevelOuter[1] = TessLevelOuter; \n"
-"		gl_TessLevelOuter[2] = TessLevelOuter; \n"
-"		gl_TessLevelOuter[3] = TessLevelOuter; \n"
-"	} \n"
-"} \n";
 
-const GLchar Yglprg_gouraud_tess_e[] =
-SHADER_VERSION_TESS
-"layout(quads, equal_spacing, ccw) in; \n"
-"in vec3 tcPosition[]; \n"
-"in vec4 tcTexCoord[]; \n"
-"in vec4 tcColor[]; \n"
-"out vec4 teTexCoord; \n"
-"out vec4 teColor; \n"
-"uniform mat4 u_mvpMatrix; \n"
-" \n"
-"void main() \n"
-"{ \n"
-"	float u = gl_TessCoord.x, v = gl_TessCoord.y; \n"
-"	vec3 tePosition; \n"
-"	vec3 a = mix(tcPosition[0], tcPosition[3], u); \n"
-"	vec3 b = mix(tcPosition[1], tcPosition[2], u); \n"
-"	tePosition = mix(a, b, v); \n"
-"	gl_Position = vec4(tePosition, 1)*u_mvpMatrix; \n"
-"	vec4 ta = mix(tcTexCoord[0], tcTexCoord[3], u); \n"
-"	vec4 tb = mix(tcTexCoord[1], tcTexCoord[2], u); \n"
-"	teTexCoord = mix(ta, tb, v); \n"
-"	vec4 ca = mix(tcColor[0], tcColor[3], u); \n"
-"	vec4 cb = mix(tcColor[1], tcColor[2], u); \n"
-"	teColor = mix(ca, cb, v); \n"
-"} \n";
-
-const GLchar Yglprg_gouraud_tess_g[] =
-SHADER_VERSION_TESS
-"uniform mat4 Modelview; \n"
-"uniform mat3 NormalMatrix; \n"
-"layout(triangles) in; \n"
-"layout(triangle_strip, max_vertices = 3) out; \n"
-"in vec4 teTexCoord[3]; \n"
-"in vec4 teColor[3]; \n"
-"out vec4 v_texcoord; \n"
-"out vec4 v_vtxcolor; \n"
-" \n"
-"void main() \n"
-"{ \n"
-"	v_texcoord = teTexCoord[0]; \n"
-"	v_vtxcolor = teColor[0]; \n"
-"	gl_Position = gl_in[0].gl_Position; EmitVertex(); \n"
-" \n"
-"	v_texcoord = teTexCoord[1]; \n"
-"	v_vtxcolor = teColor[1]; \n"
-"	gl_Position = gl_in[1].gl_Position; EmitVertex(); \n"
-" \n"
-"	v_texcoord = teTexCoord[2]; \n"
-"	v_vtxcolor = teColor[2]; \n"
-"	gl_Position = gl_in[2].gl_Position; EmitVertex(); \n"
-" \n"
-"	EndPrimitive(); \n"
-"} \n";
 /*------------------------------------------------------------------------------------
  *  VDP1 UserClip Operation
  * ----------------------------------------------------------------------------------*/
@@ -733,224 +551,6 @@ const GLchar version_core_4_2[] = {
 SHADER_VERSION_TESS
 };
 
-const GLchar* vdp1drawversion[2]= {
-  version_core_3_3,
-  version_core_4_2
-};
-const GLchar vdp1drawstart_no_mesh[] = {
-  "#ifdef GL_ES\n"
-  "precision highp float;\n"
-  "#endif\n"
-  "uniform sampler2D u_sprite;\n"
-  "uniform sampler2D u_fbo;\n"
-  "uniform ivec3 sysClip;\n"
-  "in vec4 v_texcoord;\n"
-  "in vec4 v_vtxcolor; \n"
-  "out vec4 fragColor; \n"
-  "out vec4 fragMesh; \n"
-  "void main() {\n"
-  "  vec4 outColor = vec4(0.0);\n"
-  "  vec4 meshColor = vec4(0.0);\n"
-  "  if (any(greaterThan(ivec2(gl_FragCoord.x, sysClip.z - gl_FragCoord.y), sysClip.xy))) discard;\n"
-  "  ivec2 addr = ivec2(vec2(textureSize(u_sprite, 0)) * v_texcoord.st / v_texcoord.q); \n"
-  "  vec4 spriteColor = texelFetch(u_sprite,addr,0);\n"
-  COLINDEX(spriteColor)
-};
-
-const GLchar vdp1drawstart_mesh[] = {
-  "#ifdef GL_ES\n"
-  "precision highp float;\n"
-  "#endif\n"
-  "uniform sampler2D u_sprite;\n"
-  "uniform sampler2D u_fbo;\n"
-  "uniform ivec3 sysClip;\n"
-  "in vec4 v_texcoord;\n"
-  "in vec4 v_vtxcolor; \n"
-  "out vec4 fragColor; \n"
-  "out vec4 fragMesh; \n"
-  "void main() {\n"
-  "  vec4 outColor = vec4(0.0);\n"
-  "  vec4 meshColor = vec4(0.0);\n"
-  "  if (any(greaterThan(ivec2(gl_FragCoord.x, sysClip.z - gl_FragCoord.y), sysClip.xy))) discard;\n"
-  "  ivec2 addr = ivec2(vec2(textureSize(u_sprite, 0)) * v_texcoord.st / v_texcoord.q); \n"
-  "  vec4 spriteColor = texelFetch(u_sprite,addr,0);\n"
-  COLINDEX(spriteColor)
-};
-
-const GLchar* vdp1drawstart[3]= {
-  vdp1drawstart_no_mesh,
-  vdp1drawstart_no_mesh,
-  vdp1drawstart_mesh
-};
-
-//SPD Mode handling
-const GLchar spd_on[] = {
-COLZERO(spriteColor)
-};
-
-const GLchar spd_off[] =
-{"//No Spd\n"};
-
-const GLchar* vdp1drawcheck[2]= {
-  spd_on,
-  spd_off
-};
-
-//END Mode handling
-const GLchar end_on[] = {
-TAGINDEX(spriteColor)
-TAGZERO(spriteColor)
-};
-
-const GLchar end_off[] =
-{"//No End\n"};
-
-const GLchar* vdp1drawcheckend[2]= {
-  end_on,
-  end_off
-};
-
-//Mesh Mode handling
-const GLchar no_mesh[] =
-{"//No mesh\n"};
-
-const GLchar mesh[] = {
-MESH_PROCESS
-};
-
-const GLchar improved_mesh[] = {
-"vec4 curColor = texelFetch(u_fbo,ivec2(gl_FragCoord.xy),0);\n"
-MESH_IMPROVED_PROCESS(outColor, curColor)
-};
-
-const GLchar* vdp1drawmesh[3]= {
-  no_mesh,
-  mesh,
-  improved_mesh
-};
-
-//MSB process
-const GLchar no_msb[] =
-{"//No MSB\n"};
-
-const GLchar msb[] = {
-  "  vec4 currentColor = texelFetch(u_fbo,ivec2(gl_FragCoord.xy),0);\n"
-  "  currentColor.g = float(int(currentColor.g * 255.0)|0x80)/255.0;\n"
-  "  fragColor = currentColor;\n"
-  "  fragMesh = meshColor;\n"
-  "  return;\n"
-};
-
-const GLchar* vdp1drawmsb[2]= {
-  no_msb,
-  msb
-};
-
-//Color calculation mode
-const GLchar replace_mode[] = {
-  "outColor = spriteColor;\n"
-};
-
-const GLchar shadow_mode[] = {
-  "vec4 fboColor    = texelFetch(u_fbo,ivec2(gl_FragCoord.xy),0);\n"
-  COLINDEX(fboColor)
-  SHADOW(fboColor)
-    "outColor = fboColor;\n"
-};
-
-const GLchar half_luminance_mode[] = {
-  HALF_LUMINANCE(spriteColor)
-  "outColor = spriteColor;\n"
-};
-
-const GLchar half_trans_mode[] = {
-  "vec4 fboColor    = texelFetch(u_fbo,ivec2(gl_FragCoord.xy),0);\n"
-  COLINDEX(fboColor)
-  HALF_TRANPARENT_MIX(spriteColor, fboColor)
-  "outColor = spriteColor;\n"
-};
-
-const GLchar gouraud_mode[] = {
-  GOURAUD_PROCESS(spriteColor)
-  "outColor = spriteColor;\n"
-};
-
-const GLchar gouraud_mode_improved[] = {
-  GOURAUD_PROCESS_IMPROVED(spriteColor)
-  "outColor = spriteColor;\n"
-};
-
-const GLchar gouraud_half_luminance_mode[] = {
-  GOURAUD_PROCESS(spriteColor)
-  RECOLINDEX(spriteColor)
-  HALF_LUMINANCE(spriteColor)
-  "outColor = spriteColor;\n"
-};
-
-const GLchar gouraud_half_luminance_mode_improved[] = {
-  GOURAUD_PROCESS_IMPROVED(spriteColor)
-  RECOLINDEX(spriteColor)
-  HALF_LUMINANCE(spriteColor)
-  "outColor = spriteColor;\n"
-};
-
-
-const GLchar gouraud_half_trans_mode[] = {
-  GOURAUD_PROCESS(spriteColor)
-  RECOLINDEX(spriteColor)
-  "vec4 fboColor    = texelFetch(u_fbo,ivec2(gl_FragCoord.xy),0);\n"
-  COLINDEX(fboColor)
-  HALF_TRANPARENT_MIX(spriteColor, fboColor)
-  "outColor = spriteColor;\n"
-};
-
-const GLchar gouraud_half_trans_mode_improved[] = {
-  GOURAUD_PROCESS_IMPROVED(spriteColor)
-  RECOLINDEX(spriteColor)
-  "vec4 fboColor    = texelFetch(u_fbo,ivec2(gl_FragCoord.xy),0);\n"
-  COLINDEX(fboColor)
-  HALF_TRANPARENT_MIX(spriteColor, fboColor)
-  "outColor = spriteColor;\n"
-};
-
-const GLchar nothing_mode[] =
-{"//No CC mode\n"};
-
-const GLchar* vdp1drawmode[15]= {
-  replace_mode,
-  shadow_mode,
-  half_luminance_mode,
-  half_trans_mode,
-  gouraud_mode,
-  gouraud_half_luminance_mode,
-  gouraud_half_trans_mode,
-  replace_mode,
-  shadow_mode,
-  half_luminance_mode,
-  half_trans_mode,
-  gouraud_mode_improved,
-  gouraud_half_luminance_mode_improved,
-  gouraud_half_trans_mode_improved,
-  nothing_mode,
-};
-
-//ENd of shaders
-const GLchar vdp1drawend_no_mesh[] = {
-  "  fragColor.rgba = outColor;\n"
-  "  fragMesh = vec4(0.0);\n"
-  "}\n"
-};
-const GLchar vdp1drawend_mesh[] = {
-  "  fragColor = outColor;\n"
-  "  fragMesh = meshColor;\n"
-  "}\n"
-};
-
-const GLchar* vdp1drawend[3]= {
-  vdp1drawend_no_mesh,
-  vdp1drawend_no_mesh,
-  vdp1drawend_mesh
-};
 
 //Common Vertex shader
 const GLchar vdp1drawvertex_normal[] = {
@@ -1235,9 +835,6 @@ static const GLchar vdp2blit_gl_final_f[] =
 
 const GLchar * prg_input_f[PG_MAX][9];
 const GLchar * prg_input_v[PG_MAX][3];
-const GLchar * prg_input_c[PG_MAX][2];
-const GLchar * prg_input_e[PG_MAX][2];
-const GLchar * prg_input_g[PG_MAX][2];
 
 void initDrawShaderCode() {
   int nbMode = 2;
@@ -1264,87 +861,12 @@ void initDrawShaderCode() {
             for (int l = 0; l<14; l++) {
               //7 color calculation mode
               int index = l+14*(k1+2*(k+2*(j+3*(i+2*m))));
-              prg_input_f[index][0] = vdp1drawversion[m];
-              prg_input_f[index][1] = vdp1drawstart[j];
-              prg_input_f[index][2] = vdp1drawcheckend[k1];
-              prg_input_f[index][3] = vdp1drawcheck[k];
-              prg_input_f[index][4] = vdp1drawmode[l];
-              prg_input_f[index][5] = vdp1drawmesh[j];
-              prg_input_f[index][6] = vdp1drawmsb[i];
-              prg_input_f[index][7] = vdp1drawend[j];
-              prg_input_f[index][8] =  NULL;
-
-              prg_input_v[index][0] = vdp1drawversion[m];
-              prg_input_v[index][1] = vdp1drawvertex[m];
-              prg_input_v[index][2] = NULL;
-
-              if(m!=1) {
-                prg_input_c[index][0] = NULL;
-                prg_input_c[index][1] = NULL;
-                prg_input_e[index][0] = NULL;
-                prg_input_e[index][1] = NULL;
-                prg_input_g[index][0] = NULL;
-                prg_input_g[index][1] = NULL;
-              } else {
-                prg_input_c[index][0] = Yglprg_gouraud_tess_c;
-                prg_input_c[index][1] = NULL;
-                prg_input_e[index][0] = Yglprg_gouraud_tess_e;
-                prg_input_e[index][1] = NULL;
-                prg_input_g[index][0] = Yglprg_gouraud_tess_g;
-                prg_input_g[index][1] = NULL;
-              }
             }
           }
         }
       }
     }
   }
-  //Handle start and end user clip
-
-  //Start user clip
-  prg_input_f[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][0] = vdp1drawversion[0];
-  prg_input_f[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][1] = Yglprg_userclip_f;
-  prg_input_f[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][2] = vdp1drawcheckend[1];
-  prg_input_f[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][3] = vdp1drawcheck[1];
-  prg_input_f[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][4] = vdp1drawmesh[0];
-  prg_input_f[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][5] = vdp1drawmsb[0];
-  prg_input_f[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][6] = vdp1drawmode[14];
-  prg_input_f[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][7] = vdp1drawend[0];
-  prg_input_f[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][8] = NULL;
-
-  prg_input_v[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][0] = vdp1drawversion[0];
-  prg_input_v[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][1] = Yglprg_userclip_v;
-  prg_input_v[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][2] = NULL;
-
-  prg_input_c[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][0] = NULL;
-  prg_input_c[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][1] = NULL;
-  prg_input_e[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][0] = NULL;
-  prg_input_e[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][1] = NULL;
-  prg_input_g[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][0] = NULL;
-  prg_input_g[PG_VDP1_STARTUSERCLIP - PG_VDP1_START][1] = NULL;
-
-  //End user clip
-  prg_input_f[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][0] = vdp1drawversion[0];
-  prg_input_f[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][1] = Yglprg_userclip_f;
-  prg_input_f[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][2] = vdp1drawcheckend[1];
-  prg_input_f[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][3] = vdp1drawcheck[1];
-  prg_input_f[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][4] = vdp1drawmesh[0];
-  prg_input_f[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][5] = vdp1drawmsb[0];
-  prg_input_f[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][6] = vdp1drawmode[14];
-  prg_input_f[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][7] = vdp1drawend[0];
-  prg_input_f[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][8] = NULL;
-
-  prg_input_v[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][0] = vdp1drawversion[0];
-  prg_input_v[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][1] = Yglprg_userclip_v;
-  prg_input_v[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][2] = NULL;
-
-  prg_input_c[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][0] = NULL;
-  prg_input_c[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][1] = NULL;
-  prg_input_e[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][0] = NULL;
-  prg_input_e[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][1] = NULL;
-  prg_input_g[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][0] = NULL;
-  prg_input_g[PG_VDP1_ENDUSERCLIP - PG_VDP1_START][1] = NULL;
-
 }
 
 int YglInitDrawFrameBufferShaders(int id, int CS) {
@@ -1421,7 +943,7 @@ int YglProgramInit()
 
    initDrawShaderCode();
    //
-   if (YglInitShader(PG_VDP2_NORMAL, pYglprg_vdp2_normal_v, 1, pYglprg_vdp2_normal_f, 1, NULL, NULL, NULL) != 0)
+   if (YglInitShader(PG_VDP2_NORMAL, pYglprg_vdp2_normal_v, 1, pYglprg_vdp2_normal_f, 1) != 0)
       return -1;
 //vdp2 normal looks not to be setup as it should
   id_normal_s_texture = glGetUniformLocation(_prgid[PG_VDP2_NORMAL], (const GLchar *)"s_texture");
@@ -1429,7 +951,7 @@ int YglProgramInit()
 
    YGLLOG("PG_VDP2_NORMAL_CRAM\n");
 
-  if (YglInitShader(PG_VDP2_NORMAL_CRAM, pYglprg_vdp2_normal_v, 1, pYglprg_normal_cram_f, 1, NULL, NULL, NULL) != 0)
+  if (YglInitShader(PG_VDP2_NORMAL_CRAM, pYglprg_vdp2_normal_v, 1, pYglprg_normal_cram_f, 1) != 0)
     return -1;
 
   id_normal_cram_s_texture = glGetUniformLocation(_prgid[PG_VDP2_NORMAL_CRAM], (const GLchar *)"s_texture");
@@ -1443,7 +965,7 @@ int YglProgramInit()
 
 #if 0
   YGLLOG("PG_VDP2_MOSAIC\n");
-  if (YglInitShader(PG_VDP2_MOSAIC, pYglprg_vdp1_replace_v, 1, pYglprg_mosaic_f, NULL, NULL, NULL) != 0)
+  if (YglInitShader(PG_VDP2_MOSAIC, pYglprg_vdp1_replace_v, 1, pYglprg_mosaic_f) != 0)
     return -1;
   id_mosaic_s_texture = glGetUniformLocation(_prgid[PG_VDP2_MOSAIC], (const GLchar *)"s_texture");
   id_mosaic = glGetUniformLocation(_prgid[PG_VDP2_MOSAIC], (const GLchar *)"u_mosaic");
@@ -1463,9 +985,9 @@ void initVDPProg(YglProgram* prog, int id) {
   prog->id = 0;
 
   if (_prgid[id] == 0) {
-    YGLLOG("Compile program %d\n",id);
+    YuiMsg("Compile program %d\n",id);
     init = 1;
-    YglInitShader(id, prg_input_v[id-PG_VDP1_START], 2, prg_input_f[id-PG_VDP1_START], 8, prg_input_c[id-PG_VDP1_START],prg_input_e[id-PG_VDP1_START],prg_input_g[id-PG_VDP1_START]);
+    YglInitShader(id, prg_input_v[id], 2, prg_input_f[id], 8);
   }
   if (_prgid[id] == 0) {
     YuiMsg("Prog %d is not able to compile\n", id);
@@ -1473,8 +995,6 @@ void initVDPProg(YglProgram* prog, int id) {
   }
   if (init == 1) {
     _ids[id].sprite = glGetUniformLocation(_prgid[id], (const GLchar *)"u_sprite");
-    _ids[id].tessLevelInner = glGetUniformLocation(_prgid[id], (const GLchar *)"TessLevelInner");
-    _ids[id].tessLevelOuter = glGetUniformLocation(_prgid[id], (const GLchar *)"TessLevelOuter");
     _ids[id].fbo = glGetUniformLocation(_prgid[id], (const GLchar *)"u_fbo");
     _ids[id].texsize = glGetUniformLocation(_prgid[id], (const GLchar *)"u_texsize");
     _ids[id].mtxModelView = glGetUniformLocation(_prgid[id], (const GLchar *)"u_mvpMatrix");
@@ -1489,16 +1009,7 @@ void initVDPProg(YglProgram* prog, int id) {
   prog->vaid = _ids[id].vaid;
   prog->mtxModelView = _ids[id].mtxModelView;
   switch(id) {
-    case PG_VDP1_STARTUSERCLIP:
-    case PG_VDP1_ENDUSERCLIP:
-      prog->setupUniform = Ygl_uniformStartUserClip;
-      prog->cleanupUniform = Ygl_cleanupStartUserClip;
-      prog->vertexp = 0;//glGetUniformLocation(_prgid[id], (const GLchar *)"a_position");
-      prog->texcoordp = -1;//glGetUniformLocation(_prgid[id], (const GLchar *)"a_texcoord");
-    break;
     default:
-      prog->setupUniform = Ygl_uniformVdp1CommonParam;
-      prog->cleanupUniform = Ygl_cleanupVdp1CommonParam;
       prog->vertexp = _ids[id].vertexp;
       prog->texcoordp = _ids[id].texcoordp;
   }
@@ -1510,11 +1021,6 @@ int YglProgramChange( YglLevel * level, int prgid )
 {
    YglProgram* tmp;
    YglProgram* current;
-#if  USEVBO
-   int maxsize;
-#endif
-
-   level->prgcurrent++;
 
    if( level->prgcurrent >= level->prgcount)
    {
@@ -1527,20 +1033,7 @@ int YglProgramChange( YglLevel * level, int prgid )
       level->prg = tmp;
 
       level->prg[level->prgcurrent].currentQuad = 0;
-#if  USEVBO
-       level->prg[level->prgcurrent].maxQuad = 14692;
-      maxsize = level->prg[level->prgcurrent].maxQuad;
-      if( YglGetVertexBuffer(maxsize,
-  (void**)&level->prg[level->prgcurrent].quads,
-  (void**)&level->prg[level->prgcurrent].textcoords,
-  (void**)&level->prg[level->prgcurrent].vertexAttribute  ) != 0 ) {
-          return -1;
-      }
-      if( level->prg[level->prgcurrent].quads == 0 )
-      {
-          int a=0;
-      }
-#else
+
       level->prg[level->prgcurrent].maxQuad = 12*64;
       if ((level->prg[level->prgcurrent].quads = (float *) malloc(level->prg[level->prgcurrent].maxQuad * sizeof(float))) == NULL)
          return -1;
@@ -1550,7 +1043,6 @@ int YglProgramChange( YglLevel * level, int prgid )
 
        if ((level->prg[level->prgcurrent].vertexAttribute = (float *) malloc(level->prg[level->prgcurrent].maxQuad * sizeof(float)*2)) == NULL)
          return -1;
-#endif
    }
    current = &level->prg[level->prgcurrent];
    current->systemClipX2 = Vdp1Regs->systemclipX2;

@@ -2760,9 +2760,7 @@ void Vdp1HBlankIN(void)
       }
     }
   }
-  #if defined(HAVE_LIBGL) || defined(__ANDROID__) || defined(IOS)
-    if (VIDCore != NULL && VIDCore->id != VIDCORE_SOFT) YglTMCheck();
-  #endif
+
 int cyclesPerLine  = getVdp1CyclesPerLine();
   if (vdp1_clock > 0) vdp1_clock = 0;
   vdp1_clock += cyclesPerLine;

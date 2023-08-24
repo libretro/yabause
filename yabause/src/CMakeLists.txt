@@ -428,7 +428,6 @@ if (YAB_WANT_OPENGL AND (YAB_RGB STREQUAL ""))
 				${kronos_SOURCES}
 			core/video/opengl/common/src/commongl.c
 			core/video/opengl/core/src/yglcache.c
-			core/video/opengl/core/src/vidogl.c
 			core/video/opengl/common/src/ogl_shader.c
 			core/video/opengl/common/src/rbg_compute.cpp
 			core/video/opengl/common/src/common_glshader.c

@@ -310,7 +310,7 @@ static int generateComputeBuffer(int w, int h) {
 
 u8 cmdBuffer[2][0x80000];
 
-void vdp1GenerateBuffer_sync(vdp1cmd_struct* cmd, int id) {
+void VIDCSGenerateBufferVdp1_sync(vdp1cmd_struct* cmd, int id) {
 	int endcnt;
 	u32 dot;
 	int pos = (cmd->CMDSRCA * 8) & 0x7FFFF;
@@ -406,35 +406,35 @@ void vdp1GenerateBuffer_sync(vdp1cmd_struct* cmd, int id) {
 	  }
 }
 #ifdef VDP1RAM_CS_ASYNC
-void* vdp1GenerateBuffer_async_0(void *p){
+void* VIDCSGenerateBufferVdp1_async_0(void *p){
 	while(vdp1_generate_run != 0){
 		vdp1cmd_struct* cmd = (vdp1cmd_struct*)YabWaitEventQueue(cmdq[0]);
 		if (cmd != NULL){
-			vdp1GenerateBuffer_sync(cmd, 0);
+			VIDCSGenerateBufferVdp1_sync(cmd, 0);
 			free(cmd);
 		}
 	}
 	return NULL;
 }
-void* vdp1GenerateBuffer_async_1(void *p){
+void* VIDCSGenerateBufferVdp1_async_1(void *p){
 	while(vdp1_generate_run != 0){
 		vdp1cmd_struct* cmd = (vdp1cmd_struct*)YabWaitEventQueue(cmdq[1]);
 		if (cmd != NULL){
-			vdp1GenerateBuffer_sync(cmd, 1);
+			VIDCSGenerateBufferVdp1_sync(cmd, 1);
 			free(cmd);
 		}
 	}
 	return NULL;
 }
 
-void vdp1GenerateBuffer(vdp1cmd_struct* cmd){
+void VIDCSGenerateBufferVdp1(vdp1cmd_struct* cmd){
 	vdp1cmd_struct* cmdToSent = (vdp1cmd_struct*)malloc(sizeof(vdp1cmd_struct));
 	memcpy(cmdToSent, cmd, sizeof(vdp1cmd_struct));
 	YabAddEventQueue(cmdq[_Ygl->drawframe], cmdToSent);
 }
 #else
-void vdp1GenerateBuffer(vdp1cmd_struct* cmd){
-	vdp1GenerateBuffer_sync(cmd, _Ygl->drawframe);
+void VIDCSGenerateBufferVdp1(vdp1cmd_struct* cmd){
+	VIDCSGenerateBufferVdp1_sync(cmd, _Ygl->drawframe);
 }
 #endif
 
@@ -483,7 +483,7 @@ int vdp1_add(vdp1cmd_struct* cmd, int clipcmd) {
 		}
 	}
 	if (clipcmd == 0) {
-		if (cmd->type != FB_WRITE) vdp1GenerateBuffer(cmd);
+		if (cmd->type != FB_WRITE) VIDCSGenerateBufferVdp1(cmd);
 		else {
 			requireCompute = 1;
 		}
@@ -656,8 +656,8 @@ void vdp1_compute_init(int width, int height, float ratiow, float ratioh)
 		vdp1_generate_run = 1;
 		cmdq[0] = YabThreadCreateQueue(512);
 		cmdq[1] = YabThreadCreateQueue(512);
-		YabThreadStart(YAB_THREAD_CS_CMD_0, vdp1GenerateBuffer_async_0, NULL);
-		YabThreadStart(YAB_THREAD_CS_CMD_1, vdp1GenerateBuffer_async_1, NULL);
+		YabThreadStart(YAB_THREAD_CS_CMD_0, VIDCSGenerateBufferVdp1_async_0, NULL);
+		YabThreadStart(YAB_THREAD_CS_CMD_1, VIDCSGenerateBufferVdp1_async_1, NULL);
 	}
 #endif
   work_groups_x = _Ygl->vdp1width / local_size_x;

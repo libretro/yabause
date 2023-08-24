@@ -47,7 +47,7 @@ extern int setupBlur(Vdp2 *varVdp2Regs, int layer);
 extern int YglDrawBackScreen();
 
 //////////////////////////////////////////////////////////////////////////////
-int YglEraseWriteCSVDP1(int id) {
+int VIDCSEraseWriteVdp1(int id) {
 
   float col[4] = {0.0};
   u16 color;
@@ -57,13 +57,6 @@ int YglEraseWriteCSVDP1(int id) {
   if (_Ygl->vdp1_pbo[0] == 0) return 0;
 
   _Ygl->vdp1_stencil_mode = 0;
-
-  _Ygl->vdp1levels[id].ux1 = 0;
-  _Ygl->vdp1levels[id].uy1 = 0;
-  _Ygl->vdp1levels[id].ux2 = 0;
-  _Ygl->vdp1levels[id].uy2 = 0;
-  _Ygl->vdp1levels[id].uclipcurrent = 0;
-  _Ygl->vdp1levels[id].blendmode = 0;
 
   color = Vdp1Regs->EWDR;
 
@@ -105,31 +98,31 @@ int YglEraseWriteCSVDP1(int id) {
   return ((limits[2]-limits[0])*(limits[3]-limits[1]))>>(Vdp1Regs->TVMR & 0x1);
 }
 
-void YglCSFinsihDraw(void) {
+void VIDCSFinsihDraw(void) {
   vdp1_wait_regenerate();
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-void YglCSRenderVDP1(void) {
-  TRACE_RENDER("YglCSRenderVDP1");
-  FRAMELOG("YglCSRenderVDP1: drawframe =%d %d\n", _Ygl->drawframe, yabsys.LineCount);
+void VIDCSRenderVDP1(void) {
+  TRACE_RENDER("VIDCSRenderVDP1");
+  FRAMELOG("VIDCSRenderVDP1: drawframe =%d %d\n", _Ygl->drawframe, yabsys.LineCount);
   vdp1_compute();
 }
 
-void YglFrameChangeCSVDP1(){
+void VIDCSFrameChangeVdp1(){
   u32 current_drawframe = 0;
-  YglCSRenderVDP1();
+  VIDCSRenderVDP1();
   current_drawframe = _Ygl->drawframe;
   _Ygl->drawframe = _Ygl->readframe;
   _Ygl->readframe = current_drawframe;
   if (_Ygl->shallVdp1Erase[_Ygl->drawframe] != 0) {
     _Ygl->shallVdp1Erase[_Ygl->drawframe] = 0;
-    YglEraseWriteCSVDP1(_Ygl->drawframe);
+    VIDCSEraseWriteVdp1(_Ygl->drawframe);
     clearVDP1Framebuffer(_Ygl->drawframe);
   }
 
-  FRAMELOG("YglFrameChangeVDP1: swap drawframe =%d readframe = %d (%d)\n", _Ygl->drawframe, _Ygl->readframe, yabsys.LineCount);
+  FRAMELOG("VIDCSFrameChangeVdp1: swap drawframe =%d readframe = %d (%d)\n", _Ygl->drawframe, _Ygl->readframe, yabsys.LineCount);
 }
 
 extern int WinS[enBGMAX+1];
@@ -163,8 +156,8 @@ void finishCSRender() {
   _Ygl->sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE,0);
 }
 
-void YglCSRender(Vdp2 *varVdp2Regs) {
-   TRACE_RENDER("YglCSRender");
+void VIDCSRender(Vdp2 *varVdp2Regs) {
+   TRACE_RENDER("VIDCSRender");
 
    GLuint cprg=0;
    GLuint srcTexture;

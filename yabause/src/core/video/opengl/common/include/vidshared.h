@@ -113,7 +113,6 @@ typedef struct
    int priority;
    int dst;
    int uclipmode;
-   int blendmode;
    s32 cor;
    s32 cog;
    s32 cob;

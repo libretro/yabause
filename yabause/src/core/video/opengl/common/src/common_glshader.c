@@ -1847,7 +1847,7 @@ static void YglCommon_printShaderError( GLuint shader )
   }
 }
 
-int YglInitShader(int id, const GLchar * vertex[], int vcount, const GLchar * frag[], int fcount, const GLchar * tc[], const GLchar * te[], const GLchar * g[] )
+int YglInitShader(int id, const GLchar * vertex[], int vcount, const GLchar * frag[], int fcount)
 {
     GLint compiled,linked;
     GLuint vshader;
@@ -1880,62 +1880,7 @@ int YglInitShader(int id, const GLchar * vertex[], int vcount, const GLchar * fr
      }
     glAttachShader(_prgid[id], vshader);
     glAttachShader(_prgid[id], fshader);
-#if defined(_OGL3_)
-  if (tc != NULL){
-    if (tc[0] != NULL){
-      tcsHandle = glCreateShader(GL_TESS_CONTROL_SHADER);
-      if (tcsHandle == 0){
-        YGLLOG("GL_TESS_CONTROL_SHADER is not supported\n");
-      }
-      glShaderSource(tcsHandle, 1, tc, NULL);
-      glCompileShader(tcsHandle);
-      glGetShaderiv(tcsHandle, GL_COMPILE_STATUS, &compiled);
-      if (compiled == GL_FALSE) {
-        YGLLOG("Compile error in GL_TESS_CONTROL_SHADER shader.\n");
-        YglCommon_printShaderError(tcsHandle);
-        _prgid[id] = 0;
-        return -1;
-      }
-      glAttachShader(_prgid[id], tcsHandle);
-    }
-  }
-  if (te != NULL){
-    if (te[0] != NULL){
-      tesHandle = glCreateShader(GL_TESS_EVALUATION_SHADER);
-      if (tesHandle == 0){
-        YGLLOG("GL_TESS_EVALUATION_SHADER is not supported\n");
-      }
-      glShaderSource(tesHandle, 1, te, NULL);
-      glCompileShader(tesHandle);
-      glGetShaderiv(tesHandle, GL_COMPILE_STATUS, &compiled);
-      if (compiled == GL_FALSE) {
-        YGLLOG("Compile error in GL_TESS_EVALUATION_SHADER shader.\n");
-        YglCommon_printShaderError(tesHandle);
-        _prgid[id] = 0;
-        return -1;
-      }
-      glAttachShader(_prgid[id], tesHandle);
-    }
-  }
-  if (g != NULL){
-    if (g[0] != NULL){
-      gsHandle = glCreateShader(GL_GEOMETRY_SHADER);
-      if (gsHandle == 0){
-        YGLLOG("GL_GEOMETRY_SHADER is not supported\n");
-      }
-      glShaderSource(gsHandle, 1, g, NULL);
-      glCompileShader(gsHandle);
-      glGetShaderiv(gsHandle, GL_COMPILE_STATUS, &compiled);
-      if (compiled == GL_FALSE) {
-        YGLLOG("Compile error in GL_TESS_EVALUATION_SHADER shader.\n");
-        YglCommon_printShaderError(gsHandle);
-        _prgid[id] = 0;
-        return -1;
-      }
-      glAttachShader(_prgid[id], gsHandle);
-    }
-  }
-#endif
+
     glLinkProgram(_prgid[id]);
     glGetProgramiv(_prgid[id], GL_LINK_STATUS, &linked);
     if (linked == GL_FALSE) {
@@ -2027,7 +1972,7 @@ void compileVDP2Prog(int id, const GLchar **v, int CS){
   YGLLOG("PG_VDP2_DRAWFRAMEBUFF_NONE --START [%d]--\n", arrayid);
   LOG_SHADER("%d %d %d\n", id, PG_VDP2_DRAWFRAMEBUFF_NONE, id-PG_VDP2_DRAWFRAMEBUFF_NONE);
   if (CS == 0) {
-    if (YglInitShader(id, v, 1, pYglprg_vdp2_blit_f[id-PG_VDP2_DRAWFRAMEBUFF_NONE], 17, NULL, NULL, NULL) != 0) { YuiMsg("Error init prog %d\n",id); abort(); }
+    if (YglInitShader(id, v, 1, pYglprg_vdp2_blit_f[id-PG_VDP2_DRAWFRAMEBUFF_NONE], 17) != 0) { YuiMsg("Error init prog %d\n",id); abort(); }
   } else {
     if (createCSProgram(id, 17, pYglprg_vdp2_blit_f[id-PG_VDP2_DRAWFRAMEBUFF_NONE])!= 0) { YuiMsg("Error init prog %d\n",id); abort(); }
   }
