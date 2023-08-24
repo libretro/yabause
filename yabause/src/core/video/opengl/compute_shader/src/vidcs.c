@@ -79,7 +79,6 @@ static void Vdp2DrawPatternPos(vdp2draw_struct *info, YglTexture *texture, int x
 static INLINE void ReadVdp2ColorOffset(Vdp2 * regs, vdp2draw_struct *info, int mask);
 static INLINE u16 Vdp2ColorRamGetColorRaw(u32 colorindex);
 static void FASTCALL Vdp2DrawRotation(RBGDrawInfo * rbg, Vdp2 *varVdp2Regs);
-static void Vdp2DrawRotation_in(RBGDrawInfo * rbg, Vdp2 *varVdp2Regs);
 static void Vdp2DrawRotation_in_sync(RBGDrawInfo * rbg, Vdp2 *varVdp2Regs);
 
 
@@ -197,61 +196,6 @@ static void FASTCALL Vdp2DrawCell_in_sync(vdp2draw_struct *info, YglTexture *tex
 
 #define CELL_SINGLE 0x1
 #define CELL_QUAD   0x2
-
-#ifdef RGB_ASYNC
-static YabEventQueue *rotq = NULL;
-static YabEventQueue *rotq_end = NULL;
-static YabEventQueue *rotq_end_task = NULL;
-static int rotation_run = 0;
-
-typedef struct {
-  RBGDrawInfo *rbg;
-  Vdp2 *varVdp2Regs;
-} rotationTask;
-
-static INLINE int vdp2rGetKValue(vdp2rotationparameter_struct * parameter, int i) {
-  float kval;
-  int   kdata;
-  int h = ceilf(parameter->KtablV + (parameter->deltaKAx * i));
-  if (parameter->coefdatasize == 2) {
-    if (parameter->k_mem_type == 0) { // vram
-      kdata = Vdp2RamReadWord(NULL, Vdp2Ram, (parameter->coeftbladdr + (h << 1)));
-    } else { // cram
-      if (Vdp2Internal.ColorMode != 2)
-        kdata = Vdp2ColorRamReadWord(NULL, Vdp2ColorRam,(parameter->coeftbladdr + (int)(h << 1)) | 0x800);
-      else
-        kdata = Vdp2ColorRamReadWord(NULL, Vdp2ColorRam,(parameter->coeftbladdr + (int)(h << 1)));
-    }
-    if (kdata & 0x8000) { return 0; }
-    kval = (float)(signed)((kdata & 0x7FFF) | (kdata & 0x4000 ? 0x8000 : 0x0000)) / 1024.0f;
-    switch (parameter->coefmode) {
-    case 0:  parameter->kx = kval; parameter->ky = kval; break;
-    case 1:  parameter->kx = kval; break;
-    case 2:  parameter->ky = kval; break;
-    case 3:  /*ToDo*/  break;
-    }
-  }
-  else {
-    if (parameter->k_mem_type == 0) { // vram
-      kdata = Vdp2RamReadLong(NULL, Vdp2Ram, (parameter->coeftbladdr + (h << 2)) & 0x7FFFF);
-    } else { // cram
-      if (Vdp2Internal.ColorMode != 2)
-        kdata = Vdp2ColorRamReadLong(NULL, Vdp2ColorRam, (parameter->coeftbladdr + (int)(h << 2)) | 0x800);
-      else
-        kdata = Vdp2ColorRamReadLong(NULL, Vdp2ColorRam, (parameter->coeftbladdr + (int)(h << 2)));
-    }
-    parameter->lineaddr = (kdata >> 24) & 0x7F;
-    if (kdata & 0x80000000) { return 0; }
-    kval = (float)(int)((kdata & 0x00FFFFFF) | (kdata & 0x00800000 ? 0xFF800000 : 0x00000000)) / 65536.0f;
-    switch (parameter->coefmode) {
-    case 0:  parameter->kx = kval; parameter->ky = kval; break;
-    case 1:  parameter->kx = kval; break;
-    case 2:  parameter->ky = kval; break;
-    case 3:  /*ToDo*/  break;
-    }
-  }
-  return 1;
-}
 
 static void Vdp2DrawPatternPos(vdp2draw_struct *info, YglTexture *texture, int x, int y, int cx, int cy, int lines, Vdp2 *varVdp2Regs)
 {
@@ -701,43 +645,6 @@ static void Vdp2DrawRotation_in_sync(RBGDrawInfo * rbg, Vdp2 *varVdp2Regs)
       Vdp2DrawRotation_in_sync(rbg, varVdp2Regs);
   }
 
-void* Vdp2DrawRotation_in_async(void *p)
-{
-   while(rotation_run != 0){
-     rotationTask *task = (rotationTask *)YabWaitEventQueue(rotq);
-     if (task != NULL) {
-       Vdp2DrawRotation_in_sync(task->rbg, task->varVdp2Regs);
-       YabAddEventQueue(rotq_end_task, task->rbg);
-       free(task->varVdp2Regs);
-       free(task);
-     }
-     YabWaitEventQueue(rotq_end);
-   }
-   return NULL;
-}
-
-static void Vdp2DrawRotation_in(RBGDrawInfo * rbg, Vdp2 *varVdp2Regs) {
-   rotationTask *task = (rotationTask*)malloc(sizeof(rotationTask));
-
-   task->rbg = (RBGDrawInfo*)malloc(sizeof(RBGDrawInfo));
-   memcpy(task->rbg, rbg, sizeof(RBGDrawInfo));
-
-   task->varVdp2Regs = (Vdp2*)malloc(sizeof(Vdp2));
-   memcpy(task->varVdp2Regs, varVdp2Regs, sizeof(Vdp2));
-
-   if (rotation_run == 0) {
-     rotation_run = 1;
-     rotq = YabThreadCreateQueue(32);
-     rotq_end = YabThreadCreateQueue(32);
-     rotq_end_task = YabThreadCreateQueue(32);
-     YabThreadStart(YAB_THREAD_VDP2_RBG1, Vdp2DrawRotation_in_async, 0);
-   }
-   YabAddEventQueue(rotq_end, NULL);
-   YabAddEventQueue(rotq, task);
-   YabThreadYield();
-}
-#endif
-
 #ifdef CELL_ASYNC
 
 static void executeDrawCell();
@@ -911,14 +818,6 @@ void VIDCSDeInit(void)
     YabThreadWait(YAB_THREAD_VDP2_NBG3);
   }
 #endif
-#ifdef RGB_ASYNC
-  if (rotation_run == 1) {
-    rotation_run = 0;
-    YabAddEventQueue(rotq_end, NULL);
-    YabAddEventQueue(rotq, NULL);
-    YabThreadWait(YAB_THREAD_VDP2_RBG1);
-  }
-#endif
   YglGenReset();
   YglDeInit();
 
@@ -928,17 +827,6 @@ void VIDCSDeInit(void)
 int WaitVdp2Async(int sync) {
   int empty = 0;
   if (vdp2busy == 1) {
-#ifdef RGB_ASYNC
-    if (rotq_end != NULL) {
-      empty = 1;
-      while (((empty = YaGetQueueSize(rotq_end))!=0) && (sync == 1))
-      {
-        YabThreadYield();
-      }
-      finishRbgQueue();
-      if (empty != 0) return empty;
-    }
-#endif
 #ifdef CELL_ASYNC
     if (cellq_end != NULL) {
       empty = 1;
@@ -2195,25 +2083,6 @@ static void Vdp2DrawRBG0(Vdp2* varVdp2Regs)
   Vdp2DrawRBG0_part(rgb, &Vdp2Lines[rgb->info.startLine]);
 
 }
-
-
-#define RBG_IDLE -1
-#define RBG_REQ_RENDER 0
-#define RBG_FINIESED 1
-#define RBG_TEXTURE_SYNCED 2
-
-
-
-#ifdef RGB_ASYNC
-static void finishRbgQueue() {
-  while (YaGetQueueSize(rotq_end_task)!=0)
-  {
-    RBGDrawInfo *rbg = (RBGDrawInfo *) YabWaitEventQueue(rotq_end_task);
-    YglQuadRbg0(rbg, NULL, &rbg->c, rbg->rgb_type, YglTM_vdp2, NULL);
-    free(rbg);
-  }
-}
-#endif
 
 #define ceilf(a) ((a)+0.99999f)
 
