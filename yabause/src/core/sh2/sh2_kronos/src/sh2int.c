@@ -43,6 +43,24 @@ extern void SH2undecoded(SH2_struct * sh);
 
 static void insertInterruptHandling(SH2_struct *context);
 
+//////////////////////////////////////////////////////////////////////////////
+
+static void showCPUState(SH2_struct *context)
+{
+  int i;
+
+  YuiMsg("=================== %s ===================\n", (context == MSH2)?"MSH2":"SSH2");
+  YuiMsg("PC = 0x%x\n", context->regs.PC);
+  YuiMsg("PR = 0x%x\n", context->regs.PR);
+  YuiMsg("SR = 0x%x\n", context->regs.SR);
+  YuiMsg("GBR = 0x%x\n", context->regs.GBR);
+  YuiMsg("VBR = 0x%x\n", context->regs.VBR);
+  YuiMsg("MACH = 0x%x\n", context->regs.MACH);
+  YuiMsg("MACL = 0x%x\n", context->regs.MACL);
+  for (int i = 0; i<16; i++)
+    YuiMsg("R[%d] = 0x%x\n", i, context->regs.R[i]);
+}
+
 void SH2KronosIOnFrame(SH2_struct *context) {
 }
 
@@ -268,41 +286,6 @@ static INLINE void SH2UBCInterrupt(SH2_struct *context, u32 flag)
    }
    context->onchip.BRCR |= flag;
 }
-
-//////////////////////////////////////////////////////////////////////////////
-
-#if 0
-static void showCPUState(SH2_struct *context)
-{
-  int i;
-
-  printf("=================== %s ===================\n", (context == MSH2)?"MSH2":"SSH2");
-  printf("PC = 0x%x\n", context->regs.PC);
-  printf("PR = 0x%x\n", context->regs.PR);
-  printf("SR = 0x%x\n", context->regs.SR);
-  printf("GBR = 0x%x\n", context->regs.GBR);
-  printf("VBR = 0x%x\n", context->regs.VBR);
-  printf("MACH = 0x%x\n", context->regs.MACH);
-  printf("MACL = 0x%x\n", context->regs.MACL);
-  for (int i = 0; i<16; i++)
-    printf("R[%d] = 0x%x\n", i, context->regs.R[i]);
-
-   printf("Cs2Area HIRQ = 0%x\n",  Cs2Area->reg.HIRQ);
-   printf("Cs2Area Disc Changed = %d\n", Cs2Area->isdiskchanged);
-   printf("Cs2Area CR1 = 0x%x\n", Cs2Area->reg.CR1);
-   printf("Cs2Area CR2 = 0x%x\n", Cs2Area->reg.CR2);
-   printf("Cs2Area CR3 = 0x%x\n", Cs2Area->reg.CR3);
-   printf("Cs2Area CR4 = 0x%x\n", Cs2Area->reg.CR4);
-   printf("Cs2Area satauth = 0x%x\n", Cs2Area->satauth);
-
-   printf("============Prog=============\n");
-   for (i=0; i<0x100000; i+=4) {
-     u32 addr = 0x6000000 + i;
-     printf("@0x%x : 0x%x\n", addr, MappedMemoryReadLong(MSH2, addr));
-   }
-   printf("===========================================\n");
-}
-#endif
 
 u8 execInterrupt = 0;
 
