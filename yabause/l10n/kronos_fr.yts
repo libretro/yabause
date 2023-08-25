@@ -255,7 +255,7 @@ Load5|Chargement5
 Load6|Chargement6
 Load7|Chargement7
 Load8|Chargement8
-Load9|Chargement9	
+Load9|Chargement9
 L&oad State|&Charger un Etat
 Left|Gauche
 Left_P2|Gauche Joueur 2
@@ -384,8 +384,8 @@ Select your iso/cue/bin/zip/chd file|Choisissez votre fichier ISO/CUE/BIN/ZIP/CH
 Set PC to Start Address|Sélection PC vers l'Adresse de Démarrage
 Settings|Paramètres
 SH2 Debugger Interpreter|Interpréteur de Débugeur SH2
-SH2 Interpreter|Interpréteur SH2
-SH2 Kronos Interpreter|Interpréteur SH2 Kronos
+SH2 Interpreter|
+SH2 Performance|
 SH2 Registers|Registres SH2 :
 Shortcuts|Raccourcis
 Show FPS|Afficher les FPS

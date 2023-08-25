@@ -40,7 +40,7 @@
 16 Mbit ROM|ROM de 16 Mbit
 32-bit|32-bit
 32 Mbit Backup Ram|RAM de respaldo de 32 Mbit
-32 Mbit Dram|Dram de 32 Mbit		 
+32 Mbit Dram|Dram de 32 Mbit
 3D Control Pad|Controlador Analógico 3D
 4 Mbit Backup Ram|RAM de respaldo de 4 Mbit
 503/512 blocks free|503/512 bloques libres
@@ -62,7 +62,7 @@ Address|Dirección
 Address :|Dirección :
 Advanced|Avanzado
 All Files|Todos los ficheros
-All Files;|Todos los ficheros		   
+All Files;|Todos los ficheros
 All Files (*)|Todos los ficheros (*)
 Always|Siempre
 An error occured while writing file.|Ha ocurrido un error mientras se escribía el archivo.
@@ -74,7 +74,7 @@ Assembly code|Código ensamblador
 Auto-detect|Auto-detectar
 Autostart| Autoarranque
 Awaiting input for|Esperando entrada para
-Autostart|Autoiniciar		  
+Autostart|Autoiniciar
 Axis|Eje
 Axis Throttle|Acelerar Eje
 Axis X|Eje X
@@ -86,7 +86,7 @@ BiCubic|Bicúbico
 Bilinear|Bilinear
 Bilinear Filtering (Restart required)|Filtro bilinear (Requiere reinicio)
 Binary Files (*.bin)|Archivos binarios (*.bin)
-Binary Files (*.bin);;COFF Program Files (*.cof *.coff);;ELF Program Files (*.elf);;All Files (*)|Archivos binarios (*.bin);;Archivos de programa COFF (*.cof *.coff);;Archivos de programa ELF (*.elf);;Todos los ficheros (*) 													
+Binary Files (*.bin);;COFF Program Files (*.cof *.coff);;ELF Program Files (*.elf);;All Files (*)|Archivos binarios (*.bin);;Archivos de programa COFF (*.cof *.coff);;Archivos de programa ELF (*.elf);;Todos los ficheros (*)
 Bios|Bios
 Bios file path|Ruta del archivo de Bios
 Bios Settings|Opciones de Bios
@@ -138,7 +138,7 @@ Code Breakpoints|Puntos de detención de código
 COFF Program Files (*.cof *.coff)|Archivos de programa COFF (*.cof *.coff)
 Comment :|Comentario :
 Common Control Registers|Registros comunes de control
-Compare Type|Comparar tipo	
+Compare Type|Comparar tipo
 Compatibility List|Listado de compatibilidad
 Compute Shader Video Interface|Interfaz de sombreadores de cómputo
 Couldn't save state file|No se pudo guardar el archivo de estado
@@ -172,11 +172,11 @@ Device List|Lista de Dispositivos
 Directory|Directorio
 DirectX Input Interface|Interfaz de entrada de DirectX
 DirectX Sound Interface|Interfaz de Sonido de DirectX
-Disabled|Deshabilitado		 
+Disabled|Deshabilitado
 Disassembled Code|Código desensamblado
 Display on Hover|Habilitar video al pasar por encima
 Double Mission Stick|Stick doble mando de avión
-Double Mission Stick Configuration|	Configuración de stick doble mando de avión							   
+Double Mission Stick Configuration|	Configuración de stick doble mando de avión
 Down|Abajo
 Down_P2|P2 Abajo
 Download|Descargar
@@ -192,7 +192,7 @@ Edit configuration|Editar configuración
 Eject/Load ISO...|Ejecutar/Cargar ISO...
 ELF Program Files (*elf)|Archivos de programa ELF (*elf)
 End Address:|Dirección final:
-English|Inglés			 
+English|Inglés
 Embellishment filter :|Filtro de mejora visual
 Enable|Activar
 Enable Bios Emulation|Habilitar Emulación de Bios
@@ -244,10 +244,10 @@ Japanese Modem|Modem japonés
 Korea (NTSC)|Korea (NTSC)
 Kronos Cheat Files (*.yct);;All Files (*)|Archivos de trucos para Kronos (*.yct);;Todos los archivos (*)
 Kronos Qt GUI|Interfaz gráfica Qt
-Kronos Qt Gui<br />Based on Yabause %1<br /><a href="http://yabause.org">http://yabause.org</a><br />The Yabause Team<br /><a href="mailto:pasnox@gmail.com">Filipe AZEVEDO</a>|Kronos Qt Gui<br />Basada en Yabause %1<br /><a href="http://yabause.org">http://yabause.org</a><br />El Equipo Yabause<br /><a href="mailto:pasnox@gmail.com">Filipe AZEVEDO</a>										  
+Kronos Qt Gui<br />Based on Yabause %1<br /><a href="http://yabause.org">http://yabause.org</a><br />The Yabause Team<br /><a href="mailto:pasnox@gmail.com">Filipe AZEVEDO</a>|Kronos Qt Gui<br />Basada en Yabause %1<br /><a href="http://yabause.org">http://yabause.org</a><br />El Equipo Yabause<br /><a href="mailto:pasnox@gmail.com">Filipe AZEVEDO</a>
 Kronos Save State (*.yss)|Guardado de estado de Kronos (*.yss)
-Kronos is not initialized, can't manage backup ram.|Kronos no está inicializado. No se puede gestionar el editor de la memoria de backup.			  
-Language :|Idioma :	
+Kronos is not initialized, can't manage backup ram.|Kronos no está inicializado. No se puede gestionar el editor de la memoria de backup.
+Language :|Idioma :
 Load0|Cargar0
 Load1|Cargar1
 Load2|Cargar2
@@ -257,15 +257,15 @@ Load5|Cargar5
 Load6|Cargar6
 Load7|Cargar7
 Load8|Cargar8
-Load9|Cargar9															
+Load9|Cargar9
 L&oad State|Cargar Estad&o
 Left|Izquierda
 Left_P2|P2 Izquierda
 Left stick:\nTrigger:      X\nLeft button:  Y\nRight button: Z|Stick izq:\nGatillo:      X\nBotón izq:  Y\nBotón der: Z
-Left Stick Axis X|Eje X Stick izq 		  
+Left Stick Axis X|Eje X Stick izq
 Left Stick Axis Y|Eje Y Stick iqz
-Left Stick Axis Throttle|Acelerar Eje Stick izq						 
-Left Stick Throttle Down|Decelerar Eje Stick izq						 
+Left Stick Axis Throttle|Acelerar Eje Stick izq
+Left Stick Throttle Down|Decelerar Eje Stick izq
 Left trigger|Gatillo izquierdo
 Less than|Menor a
 Long|Long
@@ -283,7 +283,7 @@ Memory Transfer|Transferir memoria
 Mesh Mode :|Modo Mesh
 Middle|Medio
 Mission Stick|Stick Mando de avión
-Mission Stick Configuration|Configuración mando de avión														
+Mission Stick Configuration|Configuración mando de avión
 Mouse|Ratón
 Mouse Configuration|Configuración del Ratón
 Mpeg ROM|ROM Mpeg
@@ -338,7 +338,7 @@ Restart|Reiniciar
 Right|Derecha
 Right_P2|P2 derecha
 Right Stick:\nTrigger:      A\nLeft button:  B\nRight button: C|Stick der:\nGatillo:      A\nBotón izq:  B\nBotón der: C|
-Right Stick Axis X|Eje X Stick der			   
+Right Stick Axis X|Eje X Stick der
 Right Stick Axis Y|Eje Y Stick der
 Right Stick Axis Throttle|Acelerar Eje Stick der
 Right trigger|Gatillo derecho
@@ -364,7 +364,7 @@ Save MD2|Guardar MD2
 Save MD3|Guardar MD3
 Save Selected|Guardado seleccionado
 Save Program|Guardar programa
-Save Slot Registers|Guardar Registros de ranuras	
+Save Slot Registers|Guardar Registros de ranuras
 S&ave State|Gu&ardar Estado
 Save States|Guardar Estados
 Scanline filter|Filtro de escaneo
@@ -387,8 +387,8 @@ Select your iso/cue/bin/zip/chd file|Selecciona tu archivo iso/cue/bin/zip/chd
 Set PC to Start Address|Establecer PC a posición de inicio
 Settings|Configuración
 SH2 Debugger Interpreter|Intérprete Depurador SH2
-SH2 Interpreter|Intérprete SH2
-SH2 Kronos Interpreter|Intérprete SH2 Kronos
+SH2 Interpreter|
+SH2 Performance|
 SH2 Registers|Registros SH2
 Shortcuts|Atajos
 Show FPS|Mostrar frames por segundo
@@ -423,7 +423,7 @@ Stick Up|Stick Arriba
 Stop|Detener
 Stretch to window|Ajustar a la ventana
 Synchronize Saturn internal clock with set time|Sincronizar reloj interno de la Saturn con hora local
-Tesselation|Teselado			
+Tesselation|Teselado
 Text|Texto
 Texture|Textura
 The dummies cores don't need configuration|Los núcleos dummy no necesitan configuración
@@ -439,14 +439,14 @@ Trigger|Detonante
 TV effect :|Efecto TV
 Type:|Tipo:
 Unable to add code|Imposible añadir código
-Unable to change description| 
+Unable to change description|
 Unable to open file for loading|Imposible abrir archivo para cargar
 Unable to open file for saving|Imposible abrir archivo para guardar
 Unable to remove code|Imposible eliminar código
 Unknow (%1)|Desconocido (%1)
 Unsigned|Sin signo
 Unsigned 8-bit value|Valor de 8-bit sin signo
-Unsigned 16-bit value|Valor de 16-bit sin signo					  
+Unsigned 16-bit value|Valor de 16-bit sin signo
 Unsigned 32-bit value|Valor de 32-bit sin signo
 Up|Arriba
 Up_P2|Arriba_P2
@@ -479,6 +479,6 @@ Window size :|Tamaño de ventana :
 Wireframe :| Estructura de diseño
 Word|Palabra(word)
 Word Write|Escribir WORD
-Word Write : %1 %2|Escribir WORD : %1 %2 
+Word Write : %1 %2|Escribir WORD : %1 %2
 Write|Escribir
 Yes|Si

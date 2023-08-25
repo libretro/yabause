@@ -1,7 +1,7 @@
 %1 Images (*.%2)|%1 Bilder (*.%2)
 %1/%2 blocks free|%1/%2 Blöcke frei
 3D Control Pad Configuration|3D Control Pad Konfiguration
-&About...|&Über...  
+&About...|&Über...
 &Action Replay|&Action Replay
 &Backup Manager...|&Speichermanager...
 &Browse|&Suchen
@@ -37,15 +37,15 @@
 16-bit|16-bit
 16-bit Relative value(s)|16-bit Relative value(s)
 16 Mbit Backup Ram|16 Mbit Backup Ram
-16 Mbit ROM|16 Mbit ROM			
-32-bit|32-bit	
-32 Mbit Backup Ram|32 Mbit Backup Ram			   
+16 Mbit ROM|16 Mbit ROM
+32-bit|32-bit
+32 Mbit Backup Ram|32 Mbit Backup Ram
 32 Mbit Dram|32 Mbit Dram
 3D Control Pad|3D Control Pad
 4 Mbit Backup Ram|4 Mbit Backup Ram
 503/512 blocks free|503/512 Blöcke frei
 510/512 blocks free|510/512 Blöcke frei
-68000 Core|68000 Kern		   
+68000 Core|68000 Kern
 8 Mbit Backup Ram|8 Mbit Backup Ram
 8 Mbit Dram|8 Mbit Dram
 8-bit|8-bit
@@ -63,14 +63,14 @@ Address :|Adresse :
 Advanced|Erweitert
 All Files|Alle Dateien
 All Files;|Alle Dateien;
-All Files (*)|Alle Dateien (*)  
+All Files (*)|Alle Dateien (*)
 Always|Immer
-An error occured while writing file.|Beim Schreiben der Datei ist ein Fehler aufgetreten									 
+An error occured while writing file.|Beim Schreiben der Datei ist ein Fehler aufgetreten
 Are you sure you want to delete '%1' ?|Sind Sie sicher, dass Sie '%1' löschen möchten?
 Are you sure you want to format '%1' ?|Sind Sie sicher, dass Sie '%1' formatieren möchten?
 Asia (NTSC)|Asien (NTSC)
 Asia (PAL)|Asien (PAL)
-Assembly code|Assembler-Code			  
+Assembly code|Assembler-Code
 Auto-detect|Automatische Erkennung
 Autostart|Auto-Start
 Awaiting input for|Warte auf Eingabe für
@@ -80,12 +80,12 @@ Axis Throttle|Achsendrossel
 Axis X|Achse X
 Axis Y|Achse Y
 Axis L Trigger|Achse L Abzug
-Axis R Trigger|Achse R Abzug  
+Axis R Trigger|Achse R Abzug
 Backup Ram Manager|Backup Ram Manager
-BiCubic|Bikubisch		  
+BiCubic|Bikubisch
 Bilinear|Bilinear
-Bilinear Filtering (Restart required)|Bilineare Filterung (Neustart erforderlich)	   
-Binary Files (*.bin)|Binary Files (*.bin)	   
+Bilinear Filtering (Restart required)|Bilineare Filterung (Neustart erforderlich)
+Binary Files (*.bin)|Binary Files (*.bin)
 Binary Files (*.bin);;COFF Program Files (*.cof *.coff);;ELF Program Files (*.elf);;All Files (*)|
 Bios|Bios
 Bios file path|Bios-Dateipfad
@@ -101,21 +101,21 @@ Cancel|Abbrechen
 Cannot initialize Windows SPTI Driver|Windows SPTI Treiber kann nicht initialisiert werden
 Can't plug in the new controller, cancelling.|Der neue Controller kann nicht angeschlossen werden. Der Vorgang wird abgebrochen
 Can't initialize Kronos|Kronos Kann nicht initialisiert werden
-Cart/Memory|Steckmodul / Speicher			
+Cart/Memory|Steckmodul / Speicher
 Cartridge|Steckmodul Typ
 Cartridge Path|Steckmodul Verzeichnis
 CD Images (*.iso *.cue *.bin)|CD Image (*.iso *.cue *.bin)
 CD-ROM||CD-Rom
 Central/South America (NTSC)|Zentral/Südamerika (NTSC)
 Central/South America (PAL)|Zentral/Südamerika (PAL)
-Cheats File|Cheatdatei			
+Cheats File|Cheatdatei
 Cheat &Search...|Cheat &Suche
 Cheat Search|Cheat Suche
 Cheat Type|Cheattyp
 Choose a binary file|Binärdatei öffnen
 Choose a bios file|Bios-Datei öffnen
 Choose a cartridge file|Steckmoduldatei öffnen
-Choose a cartridge folder|Ordner der Steckmoduldateien						  
+Choose a cartridge folder|Ordner der Steckmoduldateien
 Choose a cdrom drive/mount point|CD-Rom Laufwerk/Mount-Punkt auswählen
 Choose a cheat file to open|Cheatdatei öffnen
 Choose a cheat file to save to|Cheatdatei speichern
@@ -131,7 +131,7 @@ Choose a location for your wav file|Ordner für Ihre WAV Dateien
 Choose a memory file|Speicherdatei auswählen
 Choose a mpeg rom|Mpeg rom auswählen
 Choose a STV cartridge folder|STV-Steckmodul auswählen
-Clear|Löschen  
+Clear|Löschen
 Clear configuration|Konfiguration löschen
 Close|Schließen
 Code Breakpoints|Code Breakpoints
@@ -139,7 +139,7 @@ COFF Program Files (*.cof *.coff)|COFF-Programmdateien (*.cof *.coff)
 Comment :|Kommentar :
 Common Control Registers|Common Control Registers
 Compare Type|Vergleiche Typen
-Compatibility List|Kompatibilitätsliste			   
+Compatibility List|Kompatibilitätsliste
 Compute Shader Video Interface|Shader berechnen Video-Schnittstelle
 Couldn't save state file|Spielstand konnte nicht gespeichert werden
 Couldn't load state file|Spielstand konnte nicht geladen werden
@@ -148,11 +148,11 @@ CPU Tesselation|CPU Tesselation
 Data Size|Dateigrösse
 Data Size :|Dateigrösse :
 Data Type|Dateityp
-Debug|Debuggen	  
+Debug|Debuggen
 Debug CPU|Debug CPU
 Debug M68K|Debug M68K
 Debug Master SH2|Debug Master SH2
-Debug SCSP|Debuggen SCSP  
+Debug SCSP|Debuggen SCSP
 Debug SCU DSP|Debug SCU DSP
 Debug Slave SH2|Debug Slave SH2
 Debug VDP1|Debug VDP1
@@ -176,7 +176,7 @@ Disabled|Deaktiviert
 Disassembled Code|Disassembled Code
 Display on Hover|Anzeigen beim Hovern
 Double Mission Stick|Double Mission Stick
-Double Mission Stick Configuration|Double Mission Stick Configuration								   
+Double Mission Stick Configuration|Double Mission Stick Configuration
 Down|Runter
 Down_P2|P2 Runter
 Download|Herunterladen
@@ -196,11 +196,11 @@ English|Englisch
 Embellishment filter :|Verschönerungsfilter
 Enable|Aktivieren
 Enable Bios Emulation|Aktivieren Sie die Bios-Emulation
-Enable Code : %1 %2|			
+Enable Code : %1 %2|
 Enable Frame Skip/Limiter|Aktiviere Frame überspringen/limitieren
-Enable Multithreading|Aktiviere Multithreading	
-Enable vertical synchronization|Aktiviere vertikale synchronisierung		 
-Enabled|Aktiviert		
+Enable Multithreading|Aktiviere Multithreading
+Enable vertical synchronization|Aktiviere vertikale synchronisierung
+Enabled|Aktiviert
 Enter new assembly code|Neuen Assemblycode eingeben
 Enter New Value|Neuen Wert eingeben
 Error|Fehler
@@ -218,7 +218,7 @@ General Info|Allgemeine Info
 German|Deutsch
 Goto Address|Goto Address
 GPU RBG :| GPU RGB (OpenGl 4.3)
-GPU Tesselation|GPU-Tesselation			 
+GPU Tesselation|GPU-Tesselation
 Greater then|Größer als
 Gun|Pistole
 Gun Configuration|Pistolen-Konfiguration
@@ -246,7 +246,7 @@ Kronos Cheat Files (*.yct);;All Files (*)|Kronos Cheat Dateien (*ycf);;Alle Date
 Kronos Qt GUI|Kronos Qt Grafikoberfäche
 Kronos Qt Gui<br />Based on Kronos %1<br /><a href="http://yabause.org">http://yabause.org</a><br />The Kronos Team<br /><a href="mailto:pasnox@gmail.com">Filipe AZEVEDO</a>|Kronos Qt Grafikoberfäche<br />Basierend auf Kronos %1<br /><a href="http://yabause.org">http://yabause.org</a><br />Das Kronos Team<br /><a href="mailto:pasnox@gmail.com">Filipe AZEVEDO</a>
 Kronos Save State (*.yss)|Kronos Speicherstände (*.yss)
-Kronos is not initialized, can't manage backup ram.|Kronos ist nicht initialisiert, Backup Ram kann nicht verwaltet werden.						  
+Kronos is not initialized, can't manage backup ram.|Kronos ist nicht initialisiert, Backup Ram kann nicht verwaltet werden.
 Language :|Sprache :
 Load0|Lade0
 Load1|Lade1
@@ -283,7 +283,7 @@ Memory Transfer|Speichertransfer
 Mesh Mode :|Meshmodus
 Middle|Middle
 Mission Stick|Mission Stick
-Mission Stick Configuration|Configuration du Mission Stick														  
+Mission Stick Configuration|Configuration du Mission Stick
 Mouse|Maus
 Mouse Configuration|Mouse Configuration
 Mpeg ROM|Mpeg ROM
@@ -303,7 +303,7 @@ Never|Niemals
 &No|&Nein
 No matches found.|Keine Treffer gefunden.
 None|Keine
-Normal format not available, trying alternative|Standardformat nicht verfügbar, versuche es alternatives										
+Normal format not available, trying alternative|Standardformat nicht verfügbar, versuche es alternatives
 North America (NTSC)|Nordamerika (NTSC)
 Number of Threads|Anzahl an Threads
 On fullscreen|In Vollbild
@@ -319,7 +319,7 @@ Options|Optionen
 Original|Original
 Original (original resolution of the Saturn)|Original (native Auflösung des Saturn)
 Original aspect ratio|natives Seitenverhältnis
-OSD Core|OSD Kern					  
+OSD Core|OSD Kern
 Pad|Pad
 Pad Configuration|Pad Konfiguration
 Pause|Pause
@@ -362,11 +362,11 @@ Save MD0|Speichern MD0
 Save MD1|Speichern MD1
 Save MD2|Speichern MD2
 Save MD3|Speichern MD3
-Save Selected|Ausgewähltes speichern			 
+Save Selected|Ausgewähltes speichern
 Save Program|Programm speichern
 Save Slot Registers|Steckplatzregister speichern
 S&ave State|Spielstand speichern
-Save States|Spielstände speichern				
+Save States|Spielstände speichern
 Scanline filter|Scanlinesfilter
 Scanline off|Scanlines deaktivieren
 Scanline on|Scanlines aktivieren
@@ -378,7 +378,7 @@ SCSP Channels|SCSP-Kanäle
 SDL Joystick Interface|SDL-Joystick-Schnittstelle
 SDL Sound Interface|SDL-Sound-Schnittstelle
 Search|Suche
-Search/Add Cheats|Suche/Füge Cheats hinzu				
+Search/Add Cheats|Suche/Füge Cheats hinzu
 Search Criteria|Suchkriterien
 Search Memory|Speicher durchsuchen
 Search Value:|Suchbegriff:
@@ -387,14 +387,14 @@ Select your iso/cue/bin/zip/chd file|Wählen Sie Ihre iso/cue/bin/zip/chd Datei
 Set PC to Start Address|PC zur Startadresse setzen
 Settings|Einstellungen
 SH2 Debugger Interpreter|SH2 Debugger Interpreter
-SH2 Interpreter|SH2 Interpreter
-SH2 Kronos Interpreter|SH2 Kronos Interpreter
-SH2 Registers|SH2 Registers			
+SH2 Interpreter|
+SH2 Performance|
+SH2 Registers|SH2 Registers
 Shortcuts|Shortcuts
 Show FPS|FPS anzeigen
 Show Log Window|Zeige Log Fenster
 Signed|Signiert
-Signed 8-bit value|Signed 8-bit value					
+Signed 8-bit value|Signed 8-bit value
 Signed 16-bit value|Signed 16-bit value
 Signed 32-bit value|Signed 32-bit value
 Slot Info|Slot Info
@@ -407,7 +407,7 @@ Sound Core|Sound Schnittstelle
 Spanish|Spanisch
 ST-V cabinet Configuration|ST-V Cabinet Konfiguration
 ST-V Cabinet|ST-V Cabinet
-STV Rom game|STV Rom game		 
+STV Rom game|STV Rom game
 Start|Start
 Start Address:|Adressenanfang:
 Start in Fullscreen|In Vollbild starten
@@ -421,14 +421,14 @@ Stick Left|Stick links
 Stick Right|Stick rechts
 Stick Up|Stick hoch
 Stop|Stop
-Stretch to window|Auf Windowsgröße skalieren								
+Stretch to window|Auf Windowsgröße skalieren
 Synchronize Saturn internal clock with set time|Synchronisiere Saturn internal clock mit set time
 Tesselation|Tessellation
 Text|Text
 Texture|Texturen
 The dummies cores don't need configuration|Die Dummykerne müssen nicht konfiguriert werden
 Throttle Down|Bremsen
-Throttle Up|Beschleunigen   
+Throttle Up|Beschleunigen
 To File...|Speicherdatei öffnen
 toolBar|Werkzeugleiste
 Trace Logging|Trace-Protokollierung
@@ -445,12 +445,12 @@ Unable to open file for saving|Datei konnte nicht zum Speichern geöffnet werden
 Unable to remove code|Code konnte nicht entfernt werden
 Unknown (%1)|Inconnu (%1)
 Unsigned|Unsigniert
-Unsigned 8-bit value|Unsigned 8-bit value	
+Unsigned 8-bit value|Unsigned 8-bit value
 Unsigned 16-bit value|Unsigned 16-bit value
-Unsigned 32-bit value|Unsigned 32-bit value	
+Unsigned 32-bit value|Unsigned 32-bit value
 Up|Hoch
-Up_P2|P2_Hoch				  
-Upload|Hochladen					  
+Up_P2|P2_Hoch
+Upload|Hochladen
 Upscale Filter :|Hochskalierungs-Filter :
 Use Vdp1 Cache|Verwenden Sie den Vdp1-Cache
 Use SH2 cache - Experimental|SH2-Cache verwenden - Experimentell
@@ -476,9 +476,9 @@ Wheel Configuration|Rad Konfiguration
 Window Resolution|Bildschirmauflösung
 Windows SPTI Driver|Windows SPTI Treiber
 Window size :|Fenstergröße
-Wireframe :|Drahtmodell	  
+Wireframe :|Drahtmodell
 Word|Word
 Word Write|Word Schreiben
-Word Write : %1 %2|Wortschreiben:% 1% 2 
+Word Write : %1 %2|Wortschreiben:% 1% 2
 Write|Schreiben
 Yes|Ja

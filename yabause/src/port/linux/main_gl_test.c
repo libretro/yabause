@@ -51,9 +51,7 @@
 #include "../vdp2.h"
 #include "../cdbase.h"
 #include "peripheral.h"
-#ifdef DYNAREC_KRONOS
 #include "../sh2_kronos/sh2int_kronos.h"
-#endif
 
 M68K_struct * M68KCoreList[] = {
 &M68KDummy,

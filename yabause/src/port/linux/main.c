@@ -51,9 +51,7 @@
 #include "../vdp2.h"
 #include "../cdbase.h"
 #include "peripheral.h"
-#ifdef DYNAREC_KRONOS
 #include "../sh2_kronos/sh2int_kronos.h"
-#endif
 
 #define AR (4.0f/3.0f)
 #define WINDOW_WIDTH 1200
@@ -74,15 +72,7 @@ NULL
 SH2Interface_struct *SH2CoreList[] = {
 &SH2Interpreter,
 &SH2DebugInterpreter,
-#ifdef TEST_PSP_SH2
-&SH2PSP,
-#endif
-#ifdef DYNAREC_DEVMIYAX
-&SH2Dyn,
-#endif
-#ifdef DYNAREC_KRONOS
 &SH2KronosInterpreter,
-#endif
 NULL
 };
 

@@ -642,9 +642,8 @@ M68K_struct *M68KCoreList[] = {
 };
 
 SH2Interface_struct *SH2CoreList[] = {
-    &SH2Interpreter,
-    &SH2DebugInterpreter,
     &SH2KronosInterpreter,
+    &SH2KronosDebugInterpreter,
     NULL
 };
 
@@ -934,8 +933,6 @@ void check_variables(void)
    {
       if (strcmp(var.value, "kronos") == 0)
          g_sh2coretype = 8;
-      else if (strcmp(var.value, "interpreter") == 0)
-         g_sh2coretype = SH2CORE_INTERPRETER;
    }
 
 #if !defined(_OGLES3_)

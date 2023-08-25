@@ -813,7 +813,7 @@ else {
 //////////////////////////////////////////////////////////////////////////////
 SH2Interface_struct SH2KronosInterpreter = {
    SH2CORE_KRONOS_INTERPRETER,
-   "SH2 Kronos Interpreter",
+   "SH2 Performance",
 
    SH2KronosInterpreterInit,
    SH2KronosInterpreterDeInit,
@@ -855,7 +855,7 @@ SH2Interface_struct SH2KronosInterpreter = {
 //////////////////////////////////////////////////////////////////////////////
 SH2Interface_struct SH2KronosDebugInterpreter = {
    SH2CORE_KRONOS_DEBUG_INTERPRETER,
-   "SH2 Kronos Debug Interpreter",
+   "SH2 Debug",
 
    SH2KronosInterpreterInit,
    SH2KronosInterpreterDeInit,

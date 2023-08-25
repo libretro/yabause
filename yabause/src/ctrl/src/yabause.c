@@ -891,9 +891,6 @@ int YabauseEmulate(void) {
    }
 #endif
 #endif
-#if DYNAREC_DEVMIYAX
-   if (SH2Core->id == 3) SH2DynShowSttaics(MSH2, SSH2);
-#endif
 
    return ret;
 }

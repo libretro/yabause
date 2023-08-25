@@ -206,10 +206,6 @@ endif()
 include(${CMAKE_SOURCE_DIR}/l10n/CMakeLists.txt)
 
 #-------------------------------------------------------
-
-option(YAB_WANT_DYNAREC_KRONOS "Enable Sh2 dynarec by Kronos" ON)
-if (YAB_WANT_DYNAREC_KRONOS)
-	add_definitions(-DDYNAREC_KRONOS=1)
   set(kronos_SOURCES
     ${kronos_SOURCES}
     core/sh2/sh2_kronos/src/sh2int.c
@@ -220,7 +216,6 @@ if (MSVC)
         set(CMAKE_CPP_FLAGS "${CMAKE_CPP_FLAGS} /bigobj")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
 endif(MSVC)
-endif()
 
 option(YAB_WANT_VDP1RAM_CS_ASYNC "Enable Threaded update of VDP1 Ram for CS core" ON)
 if (YAB_WANT_VDP1RAM_CS_ASYNC)

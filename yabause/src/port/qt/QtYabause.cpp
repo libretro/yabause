@@ -51,19 +51,8 @@ NULL
 };
 
 SH2Interface_struct *SH2CoreList[] = {
-&SH2Interpreter,
-&SH2DebugInterpreter,
-#ifdef SH2_DYNAREC
-&SH2Dynarec,
-#endif
-#if DYNAREC_DEVMIYAX
-&SH2Dyn,
-&SH2DynDebug,
-#endif
-#if DYNAREC_KRONOS
 &SH2KronosInterpreter,
 &SH2KronosDebugInterpreter,
-#endif
 NULL
 };
 
@@ -549,11 +538,7 @@ M68K_struct QtYabause::default68kCore()
 
 SH2Interface_struct QtYabause::defaultSH2Core()
 {
-#if DYNAREC_KRONOS
    return SH2KronosInterpreter;
-#else
-   return SH2Interpreter;
-#endif
 }
 
 QMap<uint, PerPad_struct*>* QtYabause::portPadsBits( uint portNumber )
