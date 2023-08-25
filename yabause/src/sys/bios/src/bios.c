@@ -53,7 +53,7 @@ u32 interruptlist[2][0x80];
 extern u32 backup_file_addr;
 extern u32 backup_file_size;
 
-static void FASTCALL BiosBUPRead(SH2_struct * sh);
+void FASTCALL BiosBUPRead(SH2_struct * sh);
 //////////////////////////////////////////////////////////////////////////////
 
 void BiosInit(SH2_struct *context)
@@ -762,7 +762,7 @@ void FASTCALL BiosBUPInit(SH2_struct * sh)
 
 //////////////////////////////////////////////////////////////////////////////
 
-static void FASTCALL BiosBUPSelectPartition(SH2_struct * sh)
+void FASTCALL BiosBUPSelectPartition(SH2_struct * sh)
 {
    u32 size;
    u32 addr;
@@ -792,7 +792,7 @@ static void FASTCALL BiosBUPSelectPartition(SH2_struct * sh)
 
 //////////////////////////////////////////////////////////////////////////////
 
-static void FASTCALL BiosBUPFormat(SH2_struct * sh)
+void FASTCALL BiosBUPFormat(SH2_struct * sh)
 {
    SH2GetRegisters(sh, &sh->regs);
 
@@ -807,7 +807,7 @@ static void FASTCALL BiosBUPFormat(SH2_struct * sh)
 
 //////////////////////////////////////////////////////////////////////////////
 
-static void FASTCALL BiosBUPStatus(SH2_struct * sh)
+void FASTCALL BiosBUPStatus(SH2_struct * sh)
 {
    u32 size;
    u32 addr;
@@ -856,7 +856,7 @@ static void FASTCALL BiosBUPStatus(SH2_struct * sh)
 
 //////////////////////////////////////////////////////////////////////////////
 
-static void FASTCALL BiosBUPWrite(SH2_struct * sh)
+void FASTCALL BiosBUPWrite(SH2_struct * sh)
 {
    u32 size;
    u32 addr;
@@ -1054,7 +1054,7 @@ static void FASTCALL BiosBUPWrite(SH2_struct * sh)
 
 //////////////////////////////////////////////////////////////////////////////
 
-static void FASTCALL BiosBUPDelete(SH2_struct * sh)
+void FASTCALL BiosBUPDelete(SH2_struct * sh)
 {
    u32 size;
    u32 addr;
@@ -1097,7 +1097,7 @@ static void FASTCALL BiosBUPDelete(SH2_struct * sh)
 
 //////////////////////////////////////////////////////////////////////////////
 
-static void FASTCALL BiosBUPDirectory(SH2_struct * sh)
+void FASTCALL BiosBUPDirectory(SH2_struct * sh)
 {
    u32 size;
    u32 addr;
@@ -1215,7 +1215,7 @@ static void FASTCALL BiosBUPDirectory(SH2_struct * sh)
 
 //////////////////////////////////////////////////////////////////////////////
 
-static void FASTCALL BiosBUPVerify(SH2_struct * sh)
+void FASTCALL BiosBUPVerify(SH2_struct * sh)
 {
    u32 size;
    u32 addr;
@@ -1396,7 +1396,7 @@ static void ConvertMonthAndDayMem(u32 data, u8* monthaddr, u8 * dayaddr, int typ
 
 //////////////////////////////////////////////////////////////////////////////
 
-static void FASTCALL BiosBUPGetDate(SH2_struct * sh)
+void FASTCALL BiosBUPGetDate(SH2_struct * sh)
 {
    u32 date;
    u32 div;
@@ -1445,7 +1445,7 @@ static void FASTCALL BiosBUPGetDate(SH2_struct * sh)
 
 //////////////////////////////////////////////////////////////////////////////
 
-static void FASTCALL BiosBUPSetDate(SH2_struct * sh)
+void FASTCALL BiosBUPSetDate(SH2_struct * sh)
 {
    u32 date;
    u8 data;
@@ -2226,7 +2226,7 @@ int BiosBUPImport(u32 device, saveinfo_struct * saveinfo, const char * buf, int 
 
 
 
-static void FASTCALL BiosBUPRead(SH2_struct * sh)
+void FASTCALL BiosBUPRead(SH2_struct * sh)
 {
   u32 size;
   u32 addr;

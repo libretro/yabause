@@ -483,6 +483,7 @@ typedef struct SH2_struct_s
                 u32 address;
              };
           } stepOverOut;
+    u32 BUPTableAddr;
 //ENd debug
 } SH2_struct;
 

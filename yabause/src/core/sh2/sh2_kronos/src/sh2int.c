@@ -38,10 +38,24 @@
 #define LOCK(A)
 #define UNLOCK(A)
 
+#define LOG_BUP
 
 extern void SH2undecoded(SH2_struct * sh);
 
 static void insertInterruptHandling(SH2_struct *context);
+
+static void BUPDetectInit(SH2_struct *context);
+
+extern void BiosBUPSelectPartition(SH2_struct * context);
+extern void BiosBUPFormat(SH2_struct * context);
+extern void BiosBUPStatus(SH2_struct * context);
+extern void BiosBUPWrite(SH2_struct * context);
+extern void BiosBUPRead(SH2_struct * context);
+extern void BiosBUPDelete(SH2_struct * context);
+extern void BiosBUPDirectory(SH2_struct * context);
+extern void BiosBUPVerify(SH2_struct * context);
+extern void BiosBUPGetDate(SH2_struct * context);
+extern void BiosBUPSetDate(SH2_struct * context);
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -132,21 +146,66 @@ static u16 FASTCALL FetchInvalid(SH2_struct *context, UNUSED u32 addr)
 {
    return 0xFFFF;
 }
+
+static void BUPInstallHooks(SH2_struct *context) {
+  opcode_func entries[10] = {
+    BiosBUPSelectPartition,
+    BiosBUPFormat,
+    BiosBUPStatus,
+    BiosBUPWrite,
+    BiosBUPRead,
+    BiosBUPDelete,
+    BiosBUPDirectory,
+    BiosBUPVerify,
+    BiosBUPGetDate,
+    BiosBUPSetDate
+  };
+
+  LOG_BUP("BUPInstallHooks\n");
+  u32 startTableAdress = context->BUPTableAddr+0x4;
+  for (int i =0; i<10; i++) {
+    u32 addr = startTableAdress+i*0x4;
+    u32 vector = DMAMappedMemoryReadLong(addr);
+    int id = (addr >> 20) & 0xFFF;
+    cacheCode[context->isslave][cacheId[id]][(vector>>1) & 0x7FFFF] = entries[i];
+  }
+
+  //Free the hook
+  int id = (context->regs.PC >> 20) & 0xFFF;
+  u16 opcode = krfetchlist[id](context, context->regs.PC);
+  cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & 0x7FFFF] = opcodeTable[opcode];
+
+  //And finally execute the code
+  opcodeTable[opcode](context);
+}
+
+static void BUPDetectInit(SH2_struct *context)
+{
+  //Execute a dedicated task on BackupMemory Init
+
+   LOG_BUP("BiosBUPInit. arg1 = %08X, arg2 = %08X, arg3 = %08X PR=0x%x\n", context->regs.R[4], context->regs.R[5], context->regs.R[6], context->regs.PR);
+   //Store the Backup function adress table
+   context->BUPTableAddr = context->regs.R[5];
+
+   //Wait for the function to return to setup all the hooks
+   int id = (context->regs.PR >> 20) & 0xFFF;
+   int addr = context->regs.PR >> 1;
+   cacheCode[context->isslave][cacheId[id]][addr & 0x7FFFF] = BUPInstallHooks;
+
+   //And finally execute the code
+   u16 opcode = krfetchlist[(context->regs.PC >> 20) & 0xFFF](context, context->regs.PC);
+   opcodeTable[opcode](context);
+}
+
 //////////////////////////////////////////////////////////////////////////////
 void decode(SH2_struct *context) {
   int id = (context->regs.PC >> 20) & 0xFFF;
   u16 opcode = krfetchlist[id](context, context->regs.PC);
+
 if (cacheId[id] == 5) YabErrorMsg("Decode intstructions from Data array\n");
 if (cacheId[id] == 6) YabErrorMsg("Decode intstructions from unxpected area @0x%x\n", context->regs.PC);
   cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & 0x7FFFF] = opcodeTable[opcode];
   opcodeTable[opcode](context);
-}
-
-void biosDecode(SH2_struct *context) {
-  int isBUPHandled = BackupHandled(context, context->regs.PC);
-  if (isBUPHandled == 0) {
-    decode(context);
-  }
 }
 
 void decodeInt(SH2_struct *context) {
@@ -166,23 +225,13 @@ void decodeInt(SH2_struct *context) {
   opcodeTable[opcode](context);
 }
 
-void biosDecodeInt(SH2_struct *context) {
-  int isBUPHandled = BackupHandled(context, context->regs.PC);
-  if (isBUPHandled == 0) {
-    decodeInt(context);
-  } else {
-    SH2HandleInterrupts(context);
-  }
-}
-
-
 int SH2KronosInterpreterInit(void)
 {
 
    int i,j;
 
 
-   for(i=1; i<6; i++)
+   for(i=0; i<6; i++)
      for(j=0; j<0x80000; j++) {
        cacheCode[0][i][j] = decode;
        cacheCode[1][i][j] = decode;
@@ -191,12 +240,6 @@ int SH2KronosInterpreterInit(void)
    for(j=0; j<0x80000; j++) {
      cacheCode[0][6][j] = SH2undecoded;
      cacheCode[1][6][j] = SH2undecoded;
-   }
-
-   for(j=0; j<0x80000; j++) {
-     //Special BAckupHandled case
-     cacheCode[0][0][j] = biosDecode;
-     cacheCode[1][0][j] = biosDecode;
    }
 
 
@@ -253,6 +296,9 @@ int SH2KronosInterpreterInit(void)
        cacheId[i] = 5;
      }
    }
+   cacheCode[0][0][0x7d600>>1] = BUPDetectInit;
+   cacheCode[1][0][0x7d600>>1] = BUPDetectInit;
+
    return 0;
 }
 
@@ -629,12 +675,7 @@ void SH2KronosInterpreterSetPC(SH2_struct *context, u32 value)
 static void insertInterruptHandling(SH2_struct *context) {
   int addr = (context->regs.PC + 2)>>1;
   int id = (addr >> 19) & 0xFFF;
-  if (cacheId[id] == 0) {  //Special BAckupHandled case
-    cacheCode[context->isslave][cacheId[id]][addr & 0x7FFFF] = biosDecodeInt;
-  }
-  else{
-    cacheCode[context->isslave][cacheId[id]][addr & 0x7FFFF] = decodeInt;
-  }
+  cacheCode[context->isslave][cacheId[id]][addr & 0x7FFFF] = decodeInt;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -739,12 +780,7 @@ static void notify(SH2_struct *context, u32 start, u32 length) {
   for (i=0; i<length; i+=2) {
     int id = ((start + i) >> 20) & 0xFFF;
     int addr = (start + i) >> 1;
-    if (cacheId[id] == 0) {  //Special BAckupHandled case
-      cacheCode[context->isslave][cacheId[id]][addr & 0x7FFFF] = biosDecode;
-    }
-    else{
-      cacheCode[context->isslave][cacheId[id]][addr & 0x7FFFF] = decode;
-    }
+    cacheCode[context->isslave][cacheId[id]][addr & 0x7FFFF] = decode;
   }
 }
 
