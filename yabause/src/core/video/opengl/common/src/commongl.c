@@ -1108,17 +1108,19 @@ YglProgram * YglGetProgram( YglSprite * input, int prg, YglTextureManager *tm, i
 
    level = &_Ygl->vdp2levels[input->idScreen];
 
-   level->prgcurrent++;
     if (progNew == 0){
+      level->prgcurrent++;
       YglProgramChange(level, prg);
       progNew = 1;
     }
 
    if( level->prg[level->prgcurrent].prgid != prg ) {
+      level->prgcurrent++;
       YglProgramChange(level,prg);
       level->prg[level->prgcurrent].prgid = prg;
    }
    else if (input->idScreen != level->prg[level->prgcurrent].id ){
+     level->prgcurrent++;
      YglProgramChange(level, prg);
      level->prg[level->prgcurrent].id = input->idScreen;
    }
