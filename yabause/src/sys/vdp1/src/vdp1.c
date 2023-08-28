@@ -507,9 +507,9 @@ void FASTCALL Vdp1WriteWord(SH2_struct *context, u8* mem, u32 addr, u16 val) {
       Vdp1Regs->FBCR = val;
       FRAMELOG("FBCR => Write %x VBE=%d FCM=%d FCT=%d line = %d (%d) (VBlank %d, max %d)\n", val, (Vdp1Regs->TVMR >> 3) & 0x01, (Vdp1Regs->FBCR & 0x02) >> 1, (Vdp1Regs->FBCR & 0x01),  yabsys.LineCount, yabsys.DecilineCount, yabsys.VBlankLineCount, yabsys.MaxLineCount);
       FBCRUpdated = 1;
-      if (((yabsys.LineCount >= yabsys.VBlankLineCount) && (yabsys.LineCount < yabsys.MaxLineCount))||(yabsys.LineCount == 0))
+      if (((yabsys.LineCount >= yabsys.VBlankLineCount) && (yabsys.LineCount <= ((Vdp1External.switch_trigger_line + yabsys.MaxLineCount -1)%yabsys.MaxLineCount)))||(yabsys.LineCount == 0))
       {
-        updateFBCRMode();
+        //Can not switch after VblankIn if erase is on going or at Line 0
         startField();
       }
       break;
@@ -2631,6 +2631,7 @@ static int Vdp1EraseWrite(int id){
 
 static void startField(void) {
   int isrender = 0;
+  updateFBCRMode();
   yabsys.wait_line_count = -1;
   FRAMELOG("StartField ***** VOUT(T) %d FCM=%d FCT=%d VBE=%d PTMR=%d (%d, %d, %d)*****%d (%d)\n", Vdp1External.swap_frame_buffer, (Vdp1Regs->FBCR & 0x02) >> 1, (Vdp1Regs->FBCR & 0x01), (Vdp1Regs->TVMR >> 3) & 0x01, Vdp1Regs->PTMR, Vdp1External.onecyclemode, Vdp1External.manualchange, Vdp1External.manualerase, yabsys.LineCount, yabsys.DecilineCount);
 
@@ -2641,17 +2642,18 @@ static void startField(void) {
   // Frame Change
   if (Vdp1External.swap_frame_buffer == 1)
   {
-    int switchdelay = yabsys.MaxLineCount;
+    int switchdelay = yabsys.MaxLineCount-1;
     if (yabsys.LineCount == 0) switchdelay = 0;
     checkFBSync();
     addVdp1Framecount();
-    FRAMELOG("Swap Line %d\n", yabsys.LineCount);
+    FRAMELOG("Swap Line %d (v=%d,m=%d)\n", yabsys.LineCount , yabsys.VBlankLineCount, yabsys.MaxLineCount);
     lastHash = -1;
     if ((Vdp1External.manualerase == 1) || (Vdp1External.onecyclemode == 1))
     {
       int id = 0;
       if (_Ygl != NULL) id = _Ygl->readframe;
       Vdp1EraseWrite(id);
+      FRAMELOG("draw frame to be erased\n");
       FRAMELOG("Draw delay shall be %d (%d)(%d)\n", switchdelay, yabsys.VBlankLineCount, yabsys.MaxLineCount);
       Vdp1External.manualerase = 0;
     }
@@ -2661,6 +2663,7 @@ static void startField(void) {
       int id = 0;
       if (_Ygl != NULL) id = _Ygl->readframe;
       Vdp1EraseWrite(id);
+      FRAMELOG("read frame to be erased\n");
       FRAMELOG("Draw delay shall be %d (%d)(%d)\n", switchdelay, yabsys.VBlankLineCount, yabsys.MaxLineCount);
     }
 
@@ -2780,7 +2783,6 @@ void Vdp1VBlankIN(void)
 
   if (Vdp1Regs->PTMR == 0x1) Vdp1External.plot_trigger_done = 0;
   //Game test: Akumajou, Dragon Force, Alone in the dark2
-  updateFBCRMode();
   startField();
 }
 
