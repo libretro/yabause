@@ -139,7 +139,26 @@ static u16 FASTCALL FetchVram(SH2_struct *context, u32 addr)
   return SH2MappedMemoryReadWord(context, addr);
 }
 
-opcode_func cacheCode[2][7][0x80000];
+static opcode_func* cacheCode[2][7];
+static const int const cacheSize[7] = {
+  0x40000, //Bios
+  0x80000, //LowWram
+  0x1000000, //CS0
+  0x40000, //VDP1Ram
+  0x80000, //HighWRam
+  0x800, //Data Array
+  0x80000 //Undecoded
+};
+
+static const int const cacheMask[7] = {
+  0x3FFFF, //Bios
+  0x7FFFF, //LowWram
+  0xFFFFFF, //CS0
+  0x3FFFF, //VDP1Ram
+  0x7FFFF, //HighWRam
+  0x7FF, //Data Array
+  0x7FFFF //Undecoded
+};
 //////////////////////////////////////////////////////////////////////////////
 
 static u16 FASTCALL FetchInvalid(SH2_struct *context, UNUSED u32 addr)
@@ -167,13 +186,13 @@ static void BUPInstallHooks(SH2_struct *context) {
     u32 addr = startTableAdress+i*0x4;
     u32 vector = DMAMappedMemoryReadLong(addr);
     int id = (addr >> 20) & 0xFFF;
-    cacheCode[context->isslave][cacheId[id]][(vector>>1) & 0x7FFFF] = entries[i];
+    cacheCode[context->isslave][cacheId[id]][(vector>>1) & cacheMask[cacheId[id]]] = entries[i];
   }
 
   //Free the hook
   int id = (context->regs.PC >> 20) & 0xFFF;
   u16 opcode = krfetchlist[id](context, context->regs.PC);
-  cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & 0x7FFFF] = opcodeTable[opcode];
+  cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[opcode];
 
   //And finally execute the code
   opcodeTable[opcode](context);
@@ -190,7 +209,7 @@ static void BUPDetectInit(SH2_struct *context)
    //Wait for the function to return to setup all the hooks
    int id = (context->regs.PR >> 20) & 0xFFF;
    int addr = context->regs.PR >> 1;
-   cacheCode[context->isslave][cacheId[id]][addr & 0x7FFFF] = BUPInstallHooks;
+   cacheCode[context->isslave][cacheId[id]][addr & cacheMask[cacheId[id]]] = BUPInstallHooks;
 
    //And finally execute the code
    u16 opcode = krfetchlist[(context->regs.PC >> 20) & 0xFFF](context, context->regs.PC);
@@ -204,7 +223,7 @@ void decode(SH2_struct *context) {
 
 if (cacheId[id] == 5) YabErrorMsg("Decode intstructions from Data array\n");
 if (cacheId[id] == 6) YabErrorMsg("Decode intstructions from unxpected area @0x%x\n", context->regs.PC);
-  cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & 0x7FFFF] = opcodeTable[opcode];
+  cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[opcode];
   opcodeTable[opcode](context);
 }
 
@@ -213,14 +232,14 @@ void decodeInt(SH2_struct *context) {
   u16 opcode = krfetchlist[id](context, context->regs.PC);
   u32 oldPC = context->regs.PC;
 
-  cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & 0x7FFFF] = opcodeTable[opcode];
+  cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[opcode];
   SH2HandleInterrupts(context);
   if (context->regs.PC != oldPC) {
     //There was an interrupt to execute
     //Update the command to execute
     id = (context->regs.PC >> 20) & 0xFFF;
     opcode = krfetchlist[id](context, context->regs.PC);
-    cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & 0x7FFFF] = opcodeTable[opcode];
+    cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[opcode];
   }
   opcodeTable[opcode](context);
 }
@@ -231,13 +250,20 @@ int SH2KronosInterpreterInit(void)
    int i,j;
 
 
-   for(i=0; i<6; i++)
-     for(j=0; j<0x80000; j++) {
+   for(i=0; i<7; i++) {
+     cacheCode[0][i] = (opcode_func *)malloc(cacheSize[i] * sizeof(opcode_func));
+     cacheCode[1][i] = (opcode_func *)malloc(cacheSize[i] * sizeof(opcode_func));
+   }
+
+
+   for(i=0; i<6; i++) {
+     for(j=0; j<cacheSize[i]; j++) {
        cacheCode[0][i][j] = decode;
        cacheCode[1][i][j] = decode;
      }
+   }
 
-   for(j=0; j<0x80000; j++) {
+   for(j=0; j<cacheSize[6]; j++) {
      cacheCode[0][6][j] = SH2undecoded;
      cacheCode[1][6][j] = SH2undecoded;
    }
@@ -340,7 +366,8 @@ FASTCALL void SH2KronosInterpreterExec(SH2_struct *context, u32 cycles)
   context->target_cycles = context->cycles + cycles;
   SH2HandleInterrupts(context);
   while (context->cycles < context->target_cycles){
-    cacheCode[context->isslave][cacheId[(context->regs.PC >> 20) & 0xFFF]][(context->regs.PC >> 1) & 0x7FFFF](context);
+    u32 id = cacheId[(context->regs.PC >> 20) & 0xFFF];
+    cacheCode[context->isslave][id][(context->regs.PC >> 1) & cacheMask[id]](context);
   }
   context->target_cycles = 0;
 }
@@ -423,7 +450,7 @@ FASTCALL void SH2KronosDebugInterpreterExecSave(SH2_struct *context, u32 cycles,
       // Fetch Instruction
       int id = (context->regs.PC >> 20) & 0xFFF;
       context->instruction = krfetchlist[id](context, context->regs.PC);
-      cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & 0x7FFFF] = opcodeTable[context->instruction];
+      cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[context->instruction];
 
 #ifdef DMPHISTORY
     context->pchistory_index++;
@@ -520,7 +547,7 @@ FASTCALL void SH2KronosDebugInterpreterExec(SH2_struct *context, u32 cycles)
       SH2HandleTrackInfLoop(context);
 
       // Execute it
-      cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & 0x7FFFF] = opcodeTable[context->instruction];
+      cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[context->instruction];
       opcodeTable[context->instruction](context);
 
 #ifdef SH2_UBC
@@ -534,7 +561,8 @@ FASTCALL void SH2KronosDebugInterpreterExec(SH2_struct *context, u32 cycles)
 FASTCALL void SH2KronosInterpreterTestExec(SH2_struct *context, u32 cycles)
 {
   context->target_cycles = context->cycles + cycles;
-  cacheCode[context->isslave][cacheId[(context->regs.PC >> 20) & 0xFFF]][(context->regs.PC >> 1) & 0x7FFFF](context);
+  u32 id = cacheId[(context->regs.PC >> 20) & 0xFFF];
+  cacheCode[context->isslave][id][(context->regs.PC >> 1) & cacheMask[id]](context);
   context->target_cycles = 0;
 }
 
@@ -675,7 +703,7 @@ void SH2KronosInterpreterSetPC(SH2_struct *context, u32 value)
 static void insertInterruptHandling(SH2_struct *context) {
   int addr = (context->regs.PC + 2)>>1;
   int id = (addr >> 19) & 0xFFF;
-  cacheCode[context->isslave][cacheId[id]][addr & 0x7FFFF] = decodeInt;
+  cacheCode[context->isslave][cacheId[id]][addr & cacheMask[cacheId[id]]] = decodeInt;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -780,7 +808,7 @@ static void notify(SH2_struct *context, u32 start, u32 length) {
   for (i=0; i<length; i+=2) {
     int id = ((start + i) >> 20) & 0xFFF;
     int addr = (start + i) >> 1;
-    cacheCode[context->isslave][cacheId[id]][addr & 0x7FFFF] = decode;
+    cacheCode[context->isslave][cacheId[id]][addr & cacheMask[cacheId[id]]] = decode;
   }
 }
 
