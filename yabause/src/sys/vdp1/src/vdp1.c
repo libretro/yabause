@@ -2668,6 +2668,7 @@ static void startField(void) {
     }
 
     Vdp1External.swap_frame_buffer = 0;
+    Vdp1External.onecyclemode >>=1;
 
     // if Plot Trigger mode == 0x02 draw start
 
@@ -2688,6 +2689,7 @@ static void startField(void) {
 void Vdp1HBlankIN(void)
 {
   int needToCompose = 0;
+  if (yabsys.LineCount == 0) Vdp1External.onecyclemode <<=1;
   if ((yabsys.LineCount == yabsys.VBlankLineCount+1) && ((Vdp1Regs->TVMR >> 3) & 0x01)) {
     FRAMELOG("VBlankin line %d (%d) VBlankErase %d => Erase Frame %d\n", yabsys.LineCount, yabsys.DecilineCount, (Vdp1Regs->TVMR >> 3) & 0x01, _Ygl->readframe);
     int id = 0;
