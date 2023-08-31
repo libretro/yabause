@@ -468,6 +468,12 @@ FASTCALL void SH2KronosDebugInterpreterExecSave(SH2_struct *context, u32 cycles,
       // Fetch Instruction
       int id = (context->regs.PC >> 20) & 0xFFF;
       context->instruction = krfetchlist[id](context, context->regs.PC);
+      if (cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] == outOfInt) {
+        //OutOfInt
+        context->interruptReturnAddress = 0;
+        // SH2HandleInterrupts(context);
+      }
+
       cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[context->instruction];
 
 #ifdef DMPHISTORY
@@ -565,6 +571,11 @@ FASTCALL void SH2KronosDebugInterpreterExec(SH2_struct *context, u32 cycles)
       SH2HandleStepOverOut(context);
       SH2HandleTrackInfLoop(context);
 
+      if (cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] == outOfInt) {
+        //OutOfInt
+        context->interruptReturnAddress = 0;
+        // SH2HandleInterrupts(context);
+      }
       // Execute it
       cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[context->instruction];
       opcodeTable[context->instruction](context);
