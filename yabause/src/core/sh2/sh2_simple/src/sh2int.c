@@ -82,7 +82,8 @@ SH2Interface_struct SH2Interpreter = {
 
    NULL,  // SH2WriteNotify not used
 
-   SH2InterpreterAddCycle
+   SH2InterpreterAddCycle,
+   NULL
 };
 
 SH2Interface_struct SH2DebugInterpreter = {
@@ -124,7 +125,8 @@ SH2Interface_struct SH2DebugInterpreter = {
 
    NULL,  // SH2WriteNotify not used
 
-   SH2InterpreterAddCycle
+   SH2InterpreterAddCycle,
+   NULL
 };
 
 static fetchfunc fetchlist[0x1000];
@@ -2879,7 +2881,7 @@ FASTCALL void SH2DebugInterpreterExec(SH2_struct *context, u32 cycles)
 
    SH2HandleInterrupts(context);
 
-   while (context->cycles < context->target_cycles)
+   while ((context->cycles < context->target_cycles) || (context->doNotInterrupt != 0))
    {
 #ifdef SH2_UBC
       int ubcinterrupt=0, ubcflag=0;
@@ -2955,7 +2957,7 @@ FASTCALL void SH2DebugInterpreterExecSave(SH2_struct *context, u32 cycles, sh2re
 
    SH2HandleInterrupts(context);
 
-   while (context->cycles < context->target_cycles)
+   while ((context->cycles < context->target_cycles) || (context->doNotInterrupt != 0))
    {
 #ifdef SH2_UBC
       int ubcinterrupt=0, ubcflag=0;
@@ -3040,9 +3042,9 @@ FASTCALL void SH2InterpreterExec(SH2_struct *context, u32 cycles)
 {
   context->target_cycles = context->cycles + cycles;
   SH2HandleInterrupts(context);
-   while (context->cycles < context->target_cycles)
+   while ((context->cycles < context->target_cycles) || (context->doNotInterrupt != 0))
    {
-
+      context->doNotInterrupt = 0;
       // Fetch Instruction
       context->instruction = fetchlist[(context->regs.PC >> 20) & 0xFFF](context, context->regs.PC);
 
@@ -3055,7 +3057,7 @@ FASTCALL void SH2InterpreterExecSave(SH2_struct *context, u32 cycles, sh2regs_st
 {
   context->target_cycles = context->cycles + cycles;
   SH2HandleInterrupts(context);
-   while (context->cycles < context->target_cycles)
+   while ((context->cycles < context->target_cycles) || (context->doNotInterrupt != 0))
    {
       // Fetch Instruction
       memcpy(oldRegs, &context->regs, sizeof(sh2regs_struct));

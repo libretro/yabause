@@ -769,8 +769,8 @@ int YabauseEmulate(void) {
 
    MSH2->cycles = 0;
    MSH2->frtcycles = 0;
-   MSH2->depth = 0;
-   SSH2->depth = 0;
+   // MSH2->depth = 0;
+   // SSH2->depth = 0;
    SSH2->cycles = 0;
    SSH2->frtcycles = 0;
 //   SH2OnFrame(MSH2);

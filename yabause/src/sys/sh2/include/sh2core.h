@@ -434,7 +434,9 @@ typedef struct SH2_struct_s
    u8 isslave;
    u8 isSleeping;
    u16 instruction;
-   int depth;
+   s16 branchDepth;
+   u8 doNotInterrupt;
+   u8 not_used;
 
 #ifdef DMPHISTORY
    u32 pchistory[MAX_DMPHISTORY];
@@ -455,7 +457,7 @@ typedef struct SH2_struct_s
    u32 cycleFrac;
    u32 cycleLost;
    int cdiff;
-   int trace;
+   u32 interruptReturnAddress;
     u32 frtcycles;
     u32 wdtcycles;
 
@@ -528,6 +530,7 @@ typedef struct
 
    void (*WriteNotify)(SH2_struct *context, u32 start, u32 length);
    void(*AddCycle)(SH2_struct *context, u32 value);
+   void(*updateInterruptReturnHandling)(SH2_struct *context);
 } SH2Interface_struct;
 
 static INLINE void SH2HandleBreakpoints(SH2_struct *context)

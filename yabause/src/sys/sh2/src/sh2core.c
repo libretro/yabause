@@ -94,7 +94,8 @@ int SH2Init(int coreid)
    MSH2->onchip.BCR1 = 0x0000;
    MSH2->isslave = 0;
    MSH2->isAccessingCPUBUS = 0;
-MSH2->trace = 0;
+   MSH2->interruptReturnAddress = 0;
+
 
     MSH2->dma_ch0.CHCR = &MSH2->onchip.CHCR0;
     MSH2->dma_ch0.CHCRM = &MSH2->onchip.CHCR0M;
@@ -116,7 +117,7 @@ MSH2->trace = 0;
    if (SH2TrackInfLoopInit(SSH2) != 0)
       return -1;
 
-    SSH2->trace = 0;
+    SSH2->interruptReturnAddress = 0;
     SSH2->onchip.BCR1 = 0x8000;
     SSH2->isslave = 1;
     SSH2->isAccessingCPUBUS = 0;
