@@ -413,7 +413,7 @@ FASTCALL void SH2KronosDebugInterpreterExecSave(SH2_struct *context, u32 cycles,
 
    SH2HandleInterrupts(context);
 
-   while ((context->cycles < context->target_cycles) || (context->doNotInterrupt != 0))
+   while ((context->cycles < target_cycle) || (context->doNotInterrupt != 0))
    {
      context->doNotInterrupt = 0;
      //NOTE: it can happen that next cachecode is generating a SH2HandleInterrupts which is normally forbidden when context->doNotInterrupt is not 0
@@ -503,9 +503,10 @@ FASTCALL void SH2KronosDebugInterpreterExec(SH2_struct *context, u32 cycles)
   u32 target_cycle = context->cycles + cycles;
 
    SH2HandleInterrupts(context);
+   while ((context->cycles < target_cycle) || (context->doNotInterrupt != 0))
 
-   while (context->cycles < target_cycle)
    {
+     context->doNotInterrupt = 0;
      SH2HandleBreakpoints(context);
 #ifdef SH2_UBC
       int ubcinterrupt=0, ubcflag=0;
