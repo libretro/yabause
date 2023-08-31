@@ -83,9 +83,6 @@ void SH2KronosIOnFrame(SH2_struct *context) {
 
 void SH2HandleInterrupts(SH2_struct *context)
 {
-  if (context->interruptReturnAddress != 0) {
-    return; //Do not handle interrupts while on interrupt
-  }
   LOCK(context);
   if (context->NumberOfInterrupts != 0)
   {
@@ -237,7 +234,9 @@ static void decodeInt(SH2_struct *context) {
   u16 opcode = krfetchlist[id](context, context->regs.PC);
   u32 oldPC = context->regs.PC;
   cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[opcode];
-  SH2HandleInterrupts(context);
+  if (context->interruptReturnAddress == 0) {
+    SH2HandleInterrupts(context);
+  }
   if (context->regs.PC != oldPC) {
     //There was an interrupt to execute
     //Update the command to execute
@@ -373,11 +372,14 @@ u8 execInterrupt = 0;
 FASTCALL void SH2KronosInterpreterExec(SH2_struct *context, u32 cycles)
 {
   context->target_cycles = context->cycles + cycles;
-  SH2HandleInterrupts(context);
+  if (context->interruptReturnAddress == 0) {
+    SH2HandleInterrupts(context);
+  }
   while ((context->cycles < context->target_cycles) || (context->doNotInterrupt != 0)) {
     context->doNotInterrupt = 0;
     //NOTE: it can happen that next cachecode is generating a SH2HandleInterrupts which is normally forbidden when context->doNotInterrupt is not 0
     //Not sure it has a functionnal effect anyway
+    // if (context == SSH2) YuiMsg("%x\n", context->regs.PC);
     u32 id = cacheId[(context->regs.PC >> 20) & 0xFFF];
     cacheCode[context->isslave][id][(context->regs.PC >> 1) & cacheMask[id]](context);
   }
@@ -387,13 +389,16 @@ FASTCALL void SH2KronosInterpreterExec(SH2_struct *context, u32 cycles)
 FASTCALL void SH2KronosInterpreterExecSave(SH2_struct *context, u32 cycles, sh2regs_struct *oldRegs)
 {
   context->target_cycles = context->cycles + cycles;
-  SH2HandleInterrupts(context);
+  if (context->interruptReturnAddress == 0) {
+    SH2HandleInterrupts(context);
+  }
   while ((context->cycles < context->target_cycles) || (context->doNotInterrupt != 0)) {
     context->doNotInterrupt = 0;
     //NOTE: it can happen that next cachecode is generating a SH2HandleInterrupts which is normally forbidden when context->doNotInterrupt is not 0
     //Not sure it has a functionnal effect anyway
     memcpy(oldRegs, &context->regs, sizeof(sh2regs_struct));
     int id = (context->regs.PC >> 20) & 0xFFF;
+    // if (context == SSH2) YuiMsg("%x\n", context->regs.PC);
     u16 opcode = krfetchlist[id](context, context->regs.PC);
     if(context->isAccessingCPUBUS == 0) opcodeTable[opcode](context);
     if(context->isAccessingCPUBUS != 0) {
@@ -411,7 +416,9 @@ static int enableTrace = 0;
 FASTCALL void SH2KronosDebugInterpreterExecSave(SH2_struct *context, u32 cycles, sh2regs_struct *oldRegs) {
   u32 target_cycle = context->cycles + cycles;
 
-   SH2HandleInterrupts(context);
+  if (context->interruptReturnAddress == 0) {
+    SH2HandleInterrupts(context);
+  }
 
    while ((context->cycles < target_cycle) || (context->doNotInterrupt != 0))
    {
@@ -508,7 +515,9 @@ FASTCALL void SH2KronosDebugInterpreterExec(SH2_struct *context, u32 cycles)
 {
   u32 target_cycle = context->cycles + cycles;
 
-   SH2HandleInterrupts(context);
+  if (context->interruptReturnAddress == 0) {
+    SH2HandleInterrupts(context);
+  }
    while ((context->cycles < target_cycle) || (context->doNotInterrupt != 0))
 
    {

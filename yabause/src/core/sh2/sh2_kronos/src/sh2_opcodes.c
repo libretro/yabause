@@ -798,7 +798,10 @@ static void SH2ldcsr(SH2_struct * sh, u32 m)
    sh->regs.SR.all = sh->regs.R[m]&0x000003F3;
    sh->regs.PC += 2;
    sh->cycles++;
-   SH2next(sh);
+   //execute the next
+   sh->instruction = krfetchlist[(sh->regs.PC >> 20) & 0xFFF](sh, sh->regs.PC);
+   opcodeTable[sh->instruction](sh);
+   //SR has changed, Handle interrupt now
    SH2HandleInterrupts(sh);
 }
 
