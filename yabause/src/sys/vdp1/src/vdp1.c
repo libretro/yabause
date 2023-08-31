@@ -2642,7 +2642,7 @@ static void startField(void) {
   // Frame Change
   if (Vdp1External.swap_frame_buffer == 1)
   {
-    int switchdelay = yabsys.MaxLineCount-1;
+    int switchdelay = yabsys.MaxLineCount;
     if (yabsys.LineCount == 0) switchdelay = 0;
     checkFBSync();
     addVdp1Framecount();
