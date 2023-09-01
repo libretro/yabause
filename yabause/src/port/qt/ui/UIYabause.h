@@ -81,6 +81,9 @@ public:
 protected:
 	YabauseGL* mYabauseGL;
 
+	QDockWidget* mLogDock;
+	QTextEdit* teLog;
+	bool mCanLog;
 	bool mInit;
 	bool mNeedResize;
 	QList <cheatsearch_struct> search;
@@ -111,6 +114,7 @@ protected:
 	bool mIsCdIn;
 
 public slots:
+	void appendLog( const char* msg );
 	void pause( bool paused );
 	void reset();
 	void hideMouse();

@@ -110,6 +110,18 @@ UIYabause::UIYabause( QWidget* parent )
 	});
 
 	setCentralWidget( container );
+	// create log widget
+	teLog = new QTextEdit( this );
+	teLog->setReadOnly( true );
+	teLog->setWordWrapMode( QTextOption::NoWrap );
+	teLog->setVerticalScrollBarPolicy( Qt::ScrollBarAlwaysOn );
+	teLog->setHorizontalScrollBarPolicy( Qt::ScrollBarAlwaysOn );
+	mLogDock = new QDockWidget( this );
+	mLogDock->setWindowTitle( "Log" );
+	mLogDock->setWidget( teLog );
+	addDockWidget( Qt::BottomDockWidgetArea, mLogDock );
+	mLogDock->setVisible( false );
+	mCanLog = true;
 	oldMouseX = oldMouseY = 0;
 	mouseCaptured = false;
 	cursorShown = false;
@@ -124,6 +136,8 @@ UIYabause::UIYabause( QWidget* parent )
 	connect( mYabauseThread, SIGNAL( requestSize( const QSize& ) ), this, SLOT( sizeRequested( const QSize& ) ) );
 	connect( mYabauseThread, SIGNAL( requestFullscreen( bool ) ), this, SLOT( fullscreenRequested( bool ) ) );
 	connect( mYabauseThread, SIGNAL( requestVolumeChange( int ) ), this, SLOT( on_sVolume_valueChanged( int ) ) );
+	connect( aViewLog, SIGNAL( toggled( bool ) ), mLogDock, SLOT( setVisible( bool ) ) );
+	connect( mLogDock->toggleViewAction(), SIGNAL( toggled( bool ) ), aViewLog, SLOT( setChecked( bool ) ) );
 	connect( mYabauseThread, SIGNAL( error( const QString&, bool ) ), this, SLOT( errorReceived( const QString&, bool ) ) );
 	connect( mYabauseThread, SIGNAL( pause( bool ) ), this, SLOT( pause( bool ) ) );
 	connect( mYabauseThread, SIGNAL( reset() ), this, SLOT( reset() ) );
@@ -180,6 +194,7 @@ UIYabause::UIYabause( QWidget* parent )
 
 UIYabause::~UIYabause()
 {
+	mCanLog = false;
 }
 
 void UIYabause::showEvent( QShowEvent* e )
@@ -357,6 +372,23 @@ void UIYabause::adjustHeight(int & height)
 void UIYabause::swapBuffers()
 {
 	mYabauseGL->swapBuffers();
+}
+
+void UIYabause::appendLog( const char* s )
+{
+	if (! mCanLog)
+	{
+		qWarning( "%s", s );
+		return;
+	}
+
+	teLog->moveCursor( QTextCursor::End );
+	teLog->append( s );
+
+	VolatileSettings* vs = QtYabause::volatileSettings();
+	if (( !mLogDock->isVisible( )) && ( vs->value( "View/LogWindow" ).toInt() == 1 )) {
+		mLogDock->setVisible( true );
+	}
 }
 
 bool UIYabause::eventFilter( QObject* o, QEvent* e )
