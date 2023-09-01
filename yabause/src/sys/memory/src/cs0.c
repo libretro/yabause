@@ -36,6 +36,12 @@ static u8 decryptOn = 0;
 
 #define LOGSTV
 
+#define DEV_LOG_ADDR 0x1000
+#define DEV_LOG_SIZE 1024
+
+static uint8_t log_buffer[1024];
+static uint8_t *log_pos = log_buffer;
+
 //////////////////////////////////////////////////////////////////////////////
 // Dummy/No Cart Functions
 //////////////////////////////////////////////////////////////////////////////
@@ -812,6 +818,59 @@ static void FASTCALL DRAM32MBITCs0WriteLong(SH2_struct *context, UNUSED u8* memo
 }
 
 //////////////////////////////////////////////////////////////////////////////
+// Development Cartridge
+//////////////////////////////////////////////////////////////////////////////
+
+static u8 FASTCALL DevCs1ReadByte(SH2_struct *context, UNUSED u8* memory, u32 addr)
+{
+   return 0;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+static u16 FASTCALL DevCs1ReadWord(SH2_struct *context, UNUSED u8* memory, u32 addr)
+{
+   return 0;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+static u32 FASTCALL DevCs1ReadLong(SH2_struct *context, UNUSED u8* memory, u32 addr)
+{
+   return 0;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+static void FASTCALL DevCs1WriteByte(SH2_struct *context, UNUSED u8* memory, u32 addr, u8 val)
+{
+  addr &= 0x1FFFFFF;
+  if (addr == DEV_LOG_ADDR)
+  {
+     *log_pos++ = val;
+     if ((val == '\n')||(log_pos - log_buffer)>=DEV_LOG_SIZE)
+     {
+        YuiMsg("%s", log_buffer);
+        log_pos = log_buffer;
+     }
+     return;
+  }
+
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+static void FASTCALL DevCs1WriteWord(SH2_struct *context, UNUSED u8* memory, u32 addr, u16 val)
+{
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+static void FASTCALL DevCs1WriteLong(SH2_struct *context, UNUSED u8* memory, u32 addr, u32 val)
+{
+}
+
+//////////////////////////////////////////////////////////////////////////////
 // 4 Mbit Backup Ram
 //////////////////////////////////////////////////////////////////////////////
 
@@ -1531,6 +1590,19 @@ int CartInit(const char * filename, int type)
          CartridgeArea->Cs0WriteWord = &AR4MCs0WriteWord;
          CartridgeArea->Cs0WriteLong = &AR4MCs0WriteLong;
          break;
+      }
+      case CART_DEV:
+      {
+        CartridgeArea->cartid = 0x0;
+
+        // Setup Functions
+        CartridgeArea->Cs1ReadByte = &DevCs1ReadByte;
+        CartridgeArea->Cs1ReadWord = &DevCs1ReadWord;
+        CartridgeArea->Cs1ReadLong = &DevCs1ReadLong;
+        CartridgeArea->Cs1WriteByte = &DevCs1WriteByte;
+        CartridgeArea->Cs1WriteWord = &DevCs1WriteWord;
+        CartridgeArea->Cs1WriteLong = &DevCs1WriteLong;
+        break;
       }
 
       default: // No Cart

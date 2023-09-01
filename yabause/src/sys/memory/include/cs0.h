@@ -41,6 +41,7 @@ extern "C" {
 #define CART_USBDEV            11
 #define CART_ROMSTV            12
 #define CART_DRAM128MBIT       13
+#define CART_DEV               14
 
 #define CART_BUP4MBIT_SIZE  0x080000
 #define CART_BUP8MBIT_SIZE  0x100000
