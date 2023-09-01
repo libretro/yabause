@@ -1843,11 +1843,12 @@ void FRTExec(SH2_struct *context)
    context->frc.leftover = (cycles + context->frc.leftover) & mask;
 
    // Check to see if there is or was a Output Compare A match
-   if (frctemp >= context->onchip.OCRA && frcold < context->onchip.OCRA)
+   if ((frctemp >= context->onchip.OCRA) && (frcold < context->onchip.OCRA) && ((context->onchip.FTCSR & 0x8)==0))
    {
       // Do we need to trigger an interrupt?
-      if (context->onchip.TIER & 0x8)
-         SH2SendInterrupt(context, context->onchip.VCRC & 0x7F, (context->onchip.IPRB & 0xF00) >> 8);
+      if (context->onchip.TIER & 0x8){
+        SH2SendInterrupt(context, context->onchip.VCRC & 0x7F, (context->onchip.IPRB & 0xF00) >> 8);
+      }
 
       // Do we need to clear the FRC?
       if (context->onchip.FTCSR & 0x1)
@@ -1861,18 +1862,18 @@ void FRTExec(SH2_struct *context)
    }
 
    // Check to see if there is or was a Output Compare B match
-   if (frctemp >= context->onchip.OCRB && frcold < context->onchip.OCRB)
+   if ((frctemp >= context->onchip.OCRB) && (frcold < context->onchip.OCRB) && ((context->onchip.FTCSR & 0x4)==0))
    {
       // Do we need to trigger an interrupt?
-      if (context->onchip.TIER & 0x4)
-         SH2SendInterrupt(context, context->onchip.VCRC & 0x7F, (context->onchip.IPRB & 0xF00) >> 8);
+      if (context->onchip.TIER & 0x4){
+         SH2SendInterrupt(context, context->onchip.VCRC & 0x7F, (context->onchip.IPRB & 0xF00) >> 8);}
 
       // Set OCFB flag
       context->onchip.FTCSR |= 0x4;
    }
 
    // If FRC overflows, set overflow flag
-   if (frctemp > 0xFFFF)
+   if ((frctemp > 0xFFFF) && ((context->onchip.FTCSR & 0x2)== 0x0))
    {
       // Do we need to trigger an interrupt?
       if (context->onchip.TIER & 0x2)
@@ -1908,21 +1909,22 @@ void WDTExec(SH2_struct *context) {
    {
       // Obviously depending on whether or not we're in Watchdog or Interval
       // Modes, they'll handle an overflow differently.
+      if ((context->onchip.WTCSR & 0x80)==0) {
+        if (context->wdt.isinterval)
+        {
+          // Interval Timer Mode
 
-      if (context->wdt.isinterval)
-      {
-         // Interval Timer Mode
+          // Set OVF flag
+          context->onchip.WTCSR |= 0x80;
 
-         // Set OVF flag
-         context->onchip.WTCSR |= 0x80;
-
-         // Trigger interrupt
-         SH2SendInterrupt(context, (context->onchip.VCRWDT >> 8) & 0x7F, (context->onchip.IPRA >> 4) & 0xF);
-      }
-      else
-      {
-         // Watchdog Timer Mode(untested)
-         LOG("Watchdog timer(WDT mode) overflow not implemented\n");
+          // Trigger interrupt
+          SH2SendInterrupt(context, (context->onchip.VCRWDT >> 8) & 0x7F, (context->onchip.IPRA >> 4) & 0xF);
+        }
+        else
+        {
+          // Watchdog Timer Mode(untested)
+          YabErrorMsg("Watchdog timer(WDT mode) overflow not implemented\n");
+        }
       }
    }
 
