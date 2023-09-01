@@ -780,6 +780,16 @@ void SH2KronosInterpreterSendInterrupt(SH2_struct *context, u8 vector, u8 level)
    for (i = 0; i < context->NumberOfInterrupts; i++)
    {
       if (context->interrupts[i].vector == vector) {
+#ifdef DEBUG_INTERRUPTS
+        if (context->interrupts[i].level > context->regs.SR.part.I)
+          for (int j = 0; j < context->NumberOfInterrupts; j++) {
+            if (context->interrupts[j].level > context->regs.SR.part.I)
+              if (context->interrupts[j].vector == vector) {
+                YuiMsg("Already existing interrupt Vector next to handle 0x%x %x\n", vector, context->interruptReturnAddress);
+              }
+              break;
+          }
+#endif
          UNLOCK(context);
          return;
       }
