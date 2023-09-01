@@ -367,8 +367,6 @@ static INLINE void SH2UBCInterrupt(SH2_struct *context, u32 flag)
    context->onchip.BRCR |= flag;
 }
 
-u8 execInterrupt = 0;
-
 FASTCALL void SH2KronosInterpreterExec(SH2_struct *context, u32 cycles)
 {
   context->target_cycles = context->cycles + cycles;
