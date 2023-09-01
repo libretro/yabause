@@ -439,7 +439,7 @@ static void updateTVMRMode() {
 static u8 FBCRUpdated = 0;
 static void updateFBCRMode() {
   if (FBCRUpdated == 0) return;
-  uint oldOneCycle = Vdp1External.onecyclemode;
+  int oldOneCycle = Vdp1External.onecyclemode;
   Vdp1External.manualchange = 0;
   Vdp1External.onecyclemode = 0;
   Vdp1External.useVBlankErase = 0;
