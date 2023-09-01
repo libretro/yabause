@@ -439,6 +439,7 @@ static void updateTVMRMode() {
 static u8 FBCRUpdated = 0;
 static void updateFBCRMode() {
   if (FBCRUpdated == 0) return;
+  uint oldOneCycle = Vdp1External.onecyclemode;
   Vdp1External.manualchange = 0;
   Vdp1External.onecyclemode = 0;
   Vdp1External.useVBlankErase = 0;
@@ -461,6 +462,10 @@ static void updateFBCRMode() {
     Vdp1External.onecyclemode = ((Vdp1Regs->FBCR & 3) == 0) || ((Vdp1Regs->FBCR & 3) == 1);
     Vdp1External.manualerase |= ((Vdp1Regs->FBCR & 3) == 2);
     Vdp1External.manualchange = ((Vdp1Regs->FBCR & 3) == 3);
+  }
+
+  if ((Vdp1External.onecyclemode != 0) && (oldOneCycle != 0)) {
+    Vdp1External.onecyclemode = oldOneCycle; //Do not reinit onecyclemode if alreadu processed on the frame
   }
   FBCRUpdated = 0;
 }
