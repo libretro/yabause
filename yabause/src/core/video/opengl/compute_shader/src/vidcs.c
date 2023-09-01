@@ -1547,9 +1547,9 @@ static void Vdp2DrawNBG1(Vdp2* varVdp2Regs)
       vdp2draw_struct infotmp = info;
       infotmp.cellw = _Ygl->rwidth;
       if (_Ygl->rheight >= 448)
-        infotmp.cellh = (_Ygl->rheight >> 1);
+        infotmp.cellh = (_Ygl->rheight >> 1) << vdp2_interlace;
       else
-        infotmp.cellh = _Ygl->rheight;
+        infotmp.cellh = _Ygl->rheight << vdp2_interlace;
       YglQuad(&infotmp, &texture, &tmpc, YglTM_vdp2);
       Vdp2DrawBitmapCoordinateInc(&info, &texture, varVdp2Regs);
     }
