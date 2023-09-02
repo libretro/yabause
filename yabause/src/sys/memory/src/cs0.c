@@ -29,6 +29,7 @@
 #include "japmodem.h"
 #include "netlink.h"
 #include "decrypt.h"
+#include "yui.h"
 
 cartridge_struct *CartridgeArea;
 
@@ -847,11 +848,12 @@ static void FASTCALL DevCs1WriteByte(SH2_struct *context, UNUSED u8* memory, u32
   addr &= 0x1FFFFFF;
   if (addr == DEV_LOG_ADDR)
   {
-     *log_pos++ = val;
      if ((val == '\n')||(log_pos - log_buffer)>=DEV_LOG_SIZE)
      {
-        YuiMsg("%s", log_buffer);
+        YuiMsg("%s\n", log_buffer);
         log_pos = log_buffer;
+     } else {
+        *log_pos++ = val;
      }
      return;
   }
