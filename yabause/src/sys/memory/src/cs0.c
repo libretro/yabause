@@ -848,11 +848,11 @@ static void FASTCALL DevCs1WriteByte(SH2_struct *context, UNUSED u8* memory, u32
   addr &= 0x1FFFFFF;
   if (addr == DEV_LOG_ADDR)
   {
-     if ((val == '\n')||(log_pos - log_buffer)>=DEV_LOG_SIZE)
+     if ((val == '\n')||(log_pos - log_buffer)>=(DEV_LOG_SIZE-1))
      {
+        *log_pos++ = 0; //add \0 character to end the %s
         YuiMsg("%s\n", log_buffer);
         log_pos = log_buffer;
-        memset(log_buffer, 0x0, DEV_LOG_SIZE);
      } else {
         *log_pos++ = val;
      }
