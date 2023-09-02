@@ -259,6 +259,14 @@ int SH2KronosInterpreterInit(void)
 
 
    for(i=0; i<7; i++) {
+     if (cacheCode[0][i] != NULL) {
+       free(cacheCode[0][i]);
+       cacheCode[0][i] = NULL;
+     }
+     if (cacheCode[1][i] != NULL) {
+       free(cacheCode[1][i]);
+       cacheCode[1][i] = NULL;
+     }
      cacheCode[0][i] = (opcode_func *)malloc(cacheSize[i] * sizeof(opcode_func));
      cacheCode[1][i] = (opcode_func *)malloc(cacheSize[i] * sizeof(opcode_func));
    }
@@ -341,6 +349,16 @@ int SH2KronosInterpreterInit(void)
 void SH2KronosInterpreterDeInit(void)
 {
    // DeInitialize any internal variables here
+   for(i=0; i<7; i++) {
+     if (cacheCode[0][i] != NULL) {
+       free(cacheCode[0][i]);
+       cacheCode[0][i] = NULL;
+     }
+     if (cacheCode[1][i] != NULL) {
+       free(cacheCode[1][i]);
+       cacheCode[1][i] = NULL;
+     }
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
