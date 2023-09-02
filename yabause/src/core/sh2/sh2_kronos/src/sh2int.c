@@ -349,7 +349,7 @@ int SH2KronosInterpreterInit(void)
 void SH2KronosInterpreterDeInit(void)
 {
    // DeInitialize any internal variables here
-   for(i=0; i<7; i++) {
+   for(int i=0; i<7; i++) {
      if (cacheCode[0][i] != NULL) {
        free(cacheCode[0][i]);
        cacheCode[0][i] = NULL;
