@@ -40,7 +40,7 @@ static u8 decryptOn = 0;
 #define DEV_LOG_ADDR 0x1000
 #define DEV_LOG_SIZE 1024
 
-static uint8_t log_buffer[1024];
+static uint8_t log_buffer[DEV_LOG_SIZE];
 static uint8_t *log_pos = log_buffer;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -852,6 +852,7 @@ static void FASTCALL DevCs1WriteByte(SH2_struct *context, UNUSED u8* memory, u32
      {
         YuiMsg("%s\n", log_buffer);
         log_pos = log_buffer;
+        memset(log_buffer, 0x0, DEV_LOG_SIZE);
      } else {
         *log_pos++ = val;
      }
