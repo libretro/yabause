@@ -20,6 +20,7 @@
 &Help|&Hilfe
 &Layer|&Layer
 &Load From File|&Datei öffnen
+&Log|
 &Master SH2|&Master SH2
 &Memory Transfer|&Speichertransfer
 &OK|&OK
@@ -58,6 +59,7 @@ Add Action Replay Code|Action Replay Code hinzufügen
 Add Cheat|Cheat hinzufügen
 Add Codes...|Codes hinzufügen...
 Add Raw Memory Code|Raw Speicher Code hinzufügen
+addr2line Executable|
 Address|Adresse
 Address :|Adresse :
 Advanced|Erweitert
@@ -217,8 +219,6 @@ General|Allgemein
 General Info|Allgemeine Info
 German|Deutsch
 Goto Address|Goto Address
-GPU RBG :| GPU RGB (OpenGl 4.3)
-GPU Tesselation|GPU-Tesselation
 Greater then|Größer als
 Gun|Pistole
 Gun Configuration|Pistolen-Konfiguration
@@ -313,8 +313,6 @@ Open &ISO...|&ISO öffnen
 Open a cartridge file|Steckmoduldatei öffnen
 Open a mpeg rom|Mpeg ROM öffnen
 Open CD Rom|CD-Rom öffnen
-OpenGL size :|OpenGL-Größe
-OpenGL Video Interface|OpenGL-Video-Schnittstelle
 Options|Optionen
 Original|Original
 Original (original resolution of the Saturn)|Original (native Auflösung des Saturn)
@@ -386,8 +384,7 @@ Select a file to load your state|Wählen Sie eine Datei zum Laden des Spielstand
 Select your iso/cue/bin/zip/chd file|Wählen Sie Ihre iso/cue/bin/zip/chd Datei
 Set PC to Start Address|PC zur Startadresse setzen
 Settings|Einstellungen
-SH2 Debugger Interpreter|SH2 Debugger Interpreter
-SH2 Interpreter|
+SH2 Debug|
 SH2 Performance|
 SH2 Registers|SH2 Registers
 Shortcuts|Shortcuts
