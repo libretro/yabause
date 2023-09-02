@@ -1126,7 +1126,6 @@ static void Vdp2DrawNBG0(Vdp2* varVdp2Regs) {
     {
       // Bitmap Mode
       ReadBitmapSize(&info, varVdp2Regs->CHCTLA >> 2, 0x3);
-      if (vdp2_interlace) info.cellh *= 2;
 
       info.x = -((varVdp2Regs->SCXIN0 & 0x7FF) % info.cellw);
       info.y = -((varVdp2Regs->SCYIN0 & 0x7FF) % info.cellh);
