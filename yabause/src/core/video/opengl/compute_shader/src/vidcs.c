@@ -1530,7 +1530,7 @@ static void Vdp2DrawNBG1(Vdp2* varVdp2Regs)
   if (info.isbitmap)
   {
 
-    if (info.coordincx != 1.0f || info.coordincy != 1.0f) {
+    if (info.coordincx != 1.0f || info.coordincy != 1.0f || VDPLINE_SZ(info.islinescroll)) {
       info.sh = (varVdp2Regs->SCXIN1 & 0x7FF);
       info.sv = (varVdp2Regs->SCYIN1 & 0x7FF);
       info.x = 0;
@@ -1573,10 +1573,12 @@ static void Vdp2DrawNBG1(Vdp2* varVdp2Regs)
         info.vertices[7] = _Ygl->rheight;
         vdp2draw_struct infotmp = info;
         infotmp.cellw = _Ygl->rwidth;
-        infotmp.cellh = _Ygl->rheight;
+        if (_Ygl->rheight >= 448)
+          infotmp.cellh = (_Ygl->rheight >> 1) << vdp2_interlace;
+        else
+          infotmp.cellh = _Ygl->rheight << vdp2_interlace;
         YglQuad(&infotmp, &texture, &tmpc, YglTM_vdp2);
         Vdp2DrawBitmapLineScroll(&info, &texture, _Ygl->rwidth, _Ygl->rheight, varVdp2Regs);
-
       }
       else {
         yy = info.y;
@@ -3304,7 +3306,7 @@ static void FASTCALL Vdp2DrawBitmapLineScroll(vdp2draw_struct *info, YglTexture 
     info->draw_line = i;
     info->alpha = info->alpha_per_line[info->draw_line>>vdp2_interlace];
     baseaddr = (u32)info->charaddr;
-    line = &(info->lineinfo[i*info->lineinc]);
+    line = &(info->lineinfo[i]);
 
     if (VDPLINE_SX(info->islinescroll))
       sh = line->LineScrollValH + info->sh;
@@ -3376,34 +3378,16 @@ static void FASTCALL Vdp2DrawBitmapCoordinateInc(vdp2draw_struct *info, YglTextu
 {
   u32 color;
   int i, j;
-
   int incv = 1.0 / info->coordincy*256.0;
   int inch = 1.0 / info->coordincx*256.0;
-
-  int lineinc = 1;
-  int linestart = 0;
-
-  int height = _Ygl->rheight;
-
-  // Is double-interlace enabled?
-/*
-  if ((vdp1_interlace != 0) || (height >= 448)) {
-    lineinc = 2;
-  }
-
-  if (vdp1_interlace != 0) {
-    linestart = vdp1_interlace - 1;
-  }
-*/
-
-  for (i = linestart; i < lineinc*height; i += lineinc)
+  for (i = 0; i < _Ygl->rheight; i ++)
   {
     int sh, sv;
     int v;
     u32 baseaddr;
     vdp2Lineinfo * line;
     baseaddr = (u32)info->charaddr;
-    line = &(info->lineinfo[i*info->lineinc]);
+    line = &(info->lineinfo[i]);
 
     info->draw_line = i;
 
@@ -3425,7 +3409,6 @@ static void FASTCALL Vdp2DrawBitmapCoordinateInc(vdp2draw_struct *info, YglTextu
 
     //sh &= (info->cellw - 1);
     sv &= (info->cellh - 1);
-
     switch (info->colornumber) {
     case 0:
       baseaddr = baseaddr + (sh >> 1) + (sv * (info->cellw >> 1));
