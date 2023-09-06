@@ -161,6 +161,18 @@ static const int const cacheMask[7] = {
   0x7FF, //Data Array
   0x7FFFF //Undecoded
 };
+opcode_func BUPEntries[10] = {
+  BiosBUPSelectPartition,
+  BiosBUPFormat,
+  BiosBUPStatus,
+  BiosBUPWrite,
+  BiosBUPRead,
+  BiosBUPDelete,
+  BiosBUPDirectory,
+  BiosBUPVerify,
+  BiosBUPGetDate,
+  BiosBUPSetDate
+};
 //////////////////////////////////////////////////////////////////////////////
 
 static u16 FASTCALL FetchInvalid(SH2_struct *context, UNUSED u32 addr)
@@ -169,18 +181,6 @@ static u16 FASTCALL FetchInvalid(SH2_struct *context, UNUSED u32 addr)
 }
 
 static void BUPInstallHooks(SH2_struct *context) {
-  opcode_func entries[10] = {
-    BiosBUPSelectPartition,
-    BiosBUPFormat,
-    BiosBUPStatus,
-    BiosBUPWrite,
-    BiosBUPRead,
-    BiosBUPDelete,
-    BiosBUPDirectory,
-    BiosBUPVerify,
-    BiosBUPGetDate,
-    BiosBUPSetDate
-  };
 
   LOG_BUP("BUPInstallHooks\n");
   u32 startTableAdress = context->BUPTableAddr+0x4;
@@ -188,7 +188,7 @@ static void BUPInstallHooks(SH2_struct *context) {
     u32 addr = startTableAdress+i*0x4;
     u32 vector = DMAMappedMemoryReadLong(addr);
     int id = (addr >> 20) & 0xFFF;
-    cacheCode[context->isslave][cacheId[id]][(vector>>1) & cacheMask[cacheId[id]]] = entries[i];
+    cacheCode[context->isslave][cacheId[id]][(vector>>1) & cacheMask[cacheId[id]]] = BUPEntries[i];
   }
 
   //Free the hook
@@ -490,6 +490,22 @@ FASTCALL void SH2KronosDebugInterpreterExecSave(SH2_struct *context, u32 cycles,
 
       // Fetch Instruction
       int id = (context->regs.PC >> 20) & 0xFFF;
+      uint8_t shallExecute = 1;
+      if (cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] == BUPDetectInit) {
+        shallExecute = 0;
+        BUPDetectInit(context);
+      }
+      if (cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] == BUPInstallHooks) {
+        shallExecute = 0;
+        BUPInstallHooks(context);
+      }
+      for (int i = 0; i<10; i++) {
+        if (cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] == BUPEntries[i]) {
+          shallExecute = 0;
+          BUPEntries[i](context);
+          break;
+        }
+      }
       context->instruction = krfetchlist[id](context, context->regs.PC);
       if (cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] == outOfInt) {
         //OutOfInt
@@ -497,7 +513,9 @@ FASTCALL void SH2KronosDebugInterpreterExecSave(SH2_struct *context, u32 cycles,
         // SH2HandleInterrupts(context);
       }
 
-      cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[context->instruction];
+      if (shallExecute != 0) {
+        cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[context->instruction];
+      }
 
 #ifdef DMPHISTORY
     context->pchistory_index++;
@@ -510,8 +528,10 @@ FASTCALL void SH2KronosDebugInterpreterExecSave(SH2_struct *context, u32 cycles,
       SH2HandleTrackInfLoop(context);
 
       // Execute it
-      if(context->isAccessingCPUBUS == 0) {
-        opcodeTable[context->instruction](context);
+      if (shallExecute != 0) {
+        if(context->isAccessingCPUBUS == 0) {
+          opcodeTable[context->instruction](context);
+        }
       }
       if(context->isAccessingCPUBUS != 0) {
         context->cycles = context->target_cycles;
@@ -596,14 +616,33 @@ FASTCALL void SH2KronosDebugInterpreterExec(SH2_struct *context, u32 cycles)
       SH2HandleStepOverOut(context);
       SH2HandleTrackInfLoop(context);
 
+
+      uint8_t shallExecute = 1;
+      if (cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] == BUPDetectInit) {
+        shallExecute = 0;
+        BUPDetectInit(context);
+      }
+      if (cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] == BUPInstallHooks) {
+        shallExecute = 0;
+        BUPInstallHooks(context);
+      }
+      for (int i = 0; i<10; i++) {
+        if (cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] == BUPEntries[i]) {
+          shallExecute = 0;
+          BUPEntries[i](context);
+          break;
+        }
+      }
       if (cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] == outOfInt) {
         //OutOfInt
         context->interruptReturnAddress = 0;
         // SH2HandleInterrupts(context);
       }
       // Execute it
-      cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[context->instruction];
-      opcodeTable[context->instruction](context);
+      if (shallExecute != 0) {
+        cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[context->instruction];
+        opcodeTable[context->instruction](context);
+      }
 
 #ifdef SH2_UBC
 	  if (ubcinterrupt)
