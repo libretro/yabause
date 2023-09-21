@@ -1596,14 +1596,26 @@ int CartInit(const char * filename, int type)
       }
       case CART_DEV:
       {
-        CartridgeArea->cartid = 0x0;
-
         // Setup Functions
         CartridgeArea->Cs1ReadByte = &DevCs1ReadByte;
         CartridgeArea->Cs1ReadWord = &DevCs1ReadWord;
         CartridgeArea->Cs1ReadLong = &DevCs1ReadLong;
         CartridgeArea->Cs1WriteByte = &DevCs1WriteByte;
         CartridgeArea->Cs1WriteWord = &DevCs1WriteWord;
+
+         if ((CartridgeArea->dram = T1MemoryInit(0x400000)) == NULL)
+              return -1;
+
+         CartridgeArea->cartid = 0x5C;
+
+         // Setup Functions
+         CartridgeArea->Cs0ReadByte = &DRAM32MBITCs0ReadByte;
+         CartridgeArea->Cs0ReadWord = &DRAM32MBITCs0ReadWord;
+         CartridgeArea->Cs0ReadLong = &DRAM32MBITCs0ReadLong;
+         CartridgeArea->Cs0WriteByte = &DRAM32MBITCs0WriteByte;
+         CartridgeArea->Cs0WriteWord = &DRAM32MBITCs0WriteWord;
+         CartridgeArea->Cs0WriteLong = &DRAM32MBITCs0WriteLong;
+         break;
         CartridgeArea->Cs1WriteLong = &DevCs1WriteLong;
         break;
       }
