@@ -159,10 +159,10 @@ void DoMovie(void) {
 	int x;
    size_t num_read = 0;
 
+	IncrementLagAndFrameCounter();
 	if (Movie.Status == 0)
 		return;
 
-	IncrementLagAndFrameCounter();
 	LagFrameFlag=1;
 	SetInputDisplayCharacters();
 
