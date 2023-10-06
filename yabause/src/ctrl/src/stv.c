@@ -96,14 +96,15 @@ Bios BiosList =
         // For now, the emulator picks the first bios it finds so, worldwide, declaring english bioses first seems like a good idea.
         // Also, usa bioses are known for practicing censorship, so let's prioritize euro.
         // In the future it would be nice to have a way to choose this.
+        BIOS_BLOB, STV_REGION_JP, "epr-23603.ic8",  0x000000, 0x080000, 0xf688ae60, // jp
+        BIOS_BLOB, STV_REGION_JP, "epr-20091.ic8",  0x000000, 0x080000, 0x59ed40f4, // jp1
+        BIOS_BLOB, STV_REGION_JP, "epr-19730.ic8",  0x000000, 0x080000, 0xd0e0889d, // jp2
+        BIOS_BLOB, STV_REGION_JP, "epr-17951a.ic8", 0x000000, 0x080000, 0x2672f9d8, // jp3
+        BIOS_BLOB, STV_REGION_JP, "epr-17740a.ic8", 0x000000, 0x080000, 0x3e23c81f, // jp4
+        BIOS_BLOB, STV_REGION_JP, "epr-17740.ic8",  0x000000, 0x080000, 0x5c5aa63d, // jp5
         BIOS_BLOB, STV_REGION_EU, "epr-17954a.ic8", 0x000000, 0x080000, 0xf7722da3, // euro
         BIOS_BLOB, STV_REGION_US, "epr-17952a.ic8", 0x000000, 0x080000, 0xd1be2adf, // us
         BIOS_BLOB, STV_REGION_US, "epr-17741a.ic8", 0x000000, 0x080000, 0x4166c663, // us1
-        BIOS_BLOB, STV_REGION_JP, "epr-20091.ic8",  0x000000, 0x080000, 0x59ed40f4, // jp
-        BIOS_BLOB, STV_REGION_JP, "epr-19730.ic8",  0x000000, 0x080000, 0xd0e0889d, // jp1
-        BIOS_BLOB, STV_REGION_JP, "epr-17951a.ic8", 0x000000, 0x080000, 0x2672f9d8, // jp2
-        BIOS_BLOB, STV_REGION_JP, "epr-17740a.ic8", 0x000000, 0x080000, 0x3e23c81f, // jp3
-        BIOS_BLOB, STV_REGION_JP, "epr-17740.ic8",  0x000000, 0x080000, 0x5c5aa63d, // jp4
         BIOS_BLOB, STV_REGION_TW, "epr-19854.ic8",  0x000000, 0x080000, 0xe09d1f60, // tw
         BIOS_BLOB, STV_REGION_TW, "epr-17953a.ic8", 0x000000, 0x080000, 0xa4c47570, // tw1
         BIOS_BLOB, STV_REGION_TW, "epr-17742a.ic8", 0x000000, 0x080000, 0x02daf123, // tw2
