@@ -249,30 +249,33 @@ void UIDebugSH2::updateCodePage(u32 evaluateAddress)
   }
   else
   {
-    const QString isoPathString{ vs->value( "General/CdRomISO" ).toString() };
+    const QString isoPathString{ vs->value( "Recents/ISOs" ).toString() };
     const QFileInfo fileInfo(isoPathString);
     QDir searchPath = fileInfo.dir();
     const QString filename = fileInfo.completeBaseName() + ".elf";
 
-    searchPath.cdUp();
 
     if (searchPath.cd("build")) {
+      printf("looking for %s in %s\n", filename.toStdString().c_str(), searchPath.path().toStdString().c_str());
       if (searchPath.exists(filename)) {
         //Found in build folder
         elfPath = QFileInfo(searchPath, filename).absoluteFilePath();
+        printf("Found %s !!\n", elfPath.toStdString().c_str());
       }
       else {
         searchPath.cdUp();
       }
     }
-    if ((elfPath.isEmpty()) && (searchPath.exists(filename))) {
-      //Found in local folder
-      elfPath = QFileInfo(searchPath, filename).absoluteFilePath();
-    }
-    else {
+    if (elfPath.isEmpty()) {
+      if (searchPath.exists(filename)) {
+        //Found in local folder
+        elfPath = QFileInfo(searchPath, filename).absoluteFilePath();
+      }
+      else {
         // Not found at all
         YuiMsg("Could not find elf file, ignoring code\n");
         return;
+      }
     }
   }
   std::stringstream hexAddress;
@@ -360,7 +363,7 @@ void UIDebugSH2::updateCodePage(u32 evaluateAddress)
       if (addr2line.isEmpty())
         codeBrowser->setText("addr2line utility is not configured properly, source not available.");
       else
-        codeBrowser->setText("Source not found or available.");
+        codeBrowser->setText("Source not found or available.\nIf sources are present, on linux be sure the shell output is in english.\nthis can be achieved by adding LC_ALL=C before the Kronos launch command\n");
     }
   }
 }
