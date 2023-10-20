@@ -426,7 +426,7 @@ void UIYabause::errorReceived( const QString& error, bool internal )
 		QtYabause::appendLog( error.toLocal8Bit().constData() );
 	}
 	else {
-		CommonDialogs::information( error );
+		if (!CommonDialogs::information( error )) exit(-1);
 	}
 }
 
