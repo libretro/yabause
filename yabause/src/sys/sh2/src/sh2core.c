@@ -2911,7 +2911,8 @@ void SH2HandleBackTrace(SH2_struct *context)
          context->bt.numbacktrace++;
       }
    }
-   else if (inst == 0x000B) // RTS
+   else if ((inst == 0x000B) || // RTS
+            (inst == 0x002B)) //RTE
    {
       if (context->bt.numbacktrace > 0)
          context->bt.numbacktrace--;
