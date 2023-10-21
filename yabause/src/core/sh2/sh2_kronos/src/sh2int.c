@@ -350,6 +350,17 @@ int SH2KronosInterpreterInit(void)
    cacheCode[0][0][0x7d600>>1] = BUPDetectInit;
    cacheCode[1][0][0x7d600>>1] = BUPDetectInit;
 
+   SH2ClearCodeBreakpoints(MSH2);
+   SH2ClearCodeBreakpoints(SSH2);
+   SH2ClearMemoryBreakpoints(MSH2);
+   SH2ClearMemoryBreakpoints(SSH2);
+   MSH2->breakpointEnabled = 0;
+   SSH2->breakpointEnabled = 0;
+   MSH2->backtraceEnabled = 0;
+   SSH2->backtraceEnabled = 0;
+   MSH2->stepOverOut.enabled = 0;
+   SSH2->stepOverOut.enabled = 0;
+
    return 0;
 }
 
