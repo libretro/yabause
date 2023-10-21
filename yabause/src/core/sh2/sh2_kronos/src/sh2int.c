@@ -206,6 +206,12 @@ static void BUPInstallHooks(SH2_struct *context) {
   cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[opcode];
 
   //And finally execute the code
+  context->instruction = opcode;
+  if (SH2Core->id == SH2CORE_KRONOS_DEBUG_INTERPRETER) {
+    SH2HandleBackTrace(context);
+    SH2HandleStepOverOut(context);
+    SH2HandleTrackInfLoop(context);
+  }
   opcodeTable[opcode](context);
 }
 
@@ -223,8 +229,13 @@ static void BUPDetectInit(SH2_struct *context)
    cacheCode[context->isslave][cacheId[id]][addr & cacheMask[cacheId[id]]] = BUPInstallHooks;
 
    //And finally execute the code
-   u16 opcode = krfetchlist[(context->regs.PC >> 20) & 0xFFF](context, context->regs.PC);
-   opcodeTable[opcode](context);
+   context->instruction = krfetchlist[id](context, context->regs.PC);
+   if (SH2Core->id == SH2CORE_KRONOS_DEBUG_INTERPRETER) {
+     SH2HandleBackTrace(context);
+     SH2HandleStepOverOut(context);
+     SH2HandleTrackInfLoop(context);
+   }
+   opcodeTable[context->instruction](context);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -235,6 +246,12 @@ void decode(SH2_struct *context) {
 if (cacheId[id] == 5) YabErrorMsg("Decode intstructions from Data array\n");
 if (cacheId[id] == 6) YabErrorMsg("Decode intstructions from unxpected area @0x%x\n", context->regs.PC);
   cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[opcode];
+  context->instruction = opcode;
+  if (SH2Core->id == SH2CORE_KRONOS_DEBUG_INTERPRETER) {
+    SH2HandleBackTrace(context);
+    SH2HandleStepOverOut(context);
+    SH2HandleTrackInfLoop(context);
+  }
   opcodeTable[opcode](context);
 }
 
@@ -252,6 +269,12 @@ static void decodeInt(SH2_struct *context) {
     id = (context->regs.PC >> 20) & 0xFFF;
     opcode = krfetchlist[id](context, context->regs.PC);
     cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[opcode];
+  }
+  context->instruction = opcode;
+  if (SH2Core->id == SH2CORE_KRONOS_DEBUG_INTERPRETER) {
+    SH2HandleBackTrace(context);
+    SH2HandleStepOverOut(context);
+    SH2HandleTrackInfLoop(context);
   }
   opcodeTable[opcode](context);
 }
@@ -526,7 +549,6 @@ FASTCALL void SH2KronosDebugInterpreterExecSave(SH2_struct *context, u32 cycles,
           break;
         }
       }
-      context->instruction = krfetchlist[id](context, context->regs.PC);
       if (cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] == outOfInt) {
         //OutOfInt
         context->interruptReturnAddress = 0;
@@ -534,6 +556,7 @@ FASTCALL void SH2KronosDebugInterpreterExecSave(SH2_struct *context, u32 cycles,
       }
 
       if (shallExecute != 0) {
+        context->instruction = krfetchlist[id](context, context->regs.PC);
         SH2HandleBackTrace(context);
         SH2HandleStepOverOut(context);
         SH2HandleTrackInfLoop(context);
@@ -624,7 +647,6 @@ FASTCALL void SH2KronosDebugInterpreterExec(SH2_struct *context, u32 cycles)
 
       // Fetch Instruction
       int id = (context->regs.PC >> 20) & 0xFFF;
-      context->instruction = krfetchlist[id](context, context->regs.PC);
 
 #ifdef DMPHISTORY
 	  context->pchistory_index++;
@@ -657,6 +679,7 @@ FASTCALL void SH2KronosDebugInterpreterExec(SH2_struct *context, u32 cycles)
       }
       // Execute it
       if (shallExecute != 0) {
+        context->instruction = krfetchlist[id](context, context->regs.PC);
         SH2HandleBackTrace(context);
         SH2HandleStepOverOut(context);
         SH2HandleTrackInfLoop(context);
