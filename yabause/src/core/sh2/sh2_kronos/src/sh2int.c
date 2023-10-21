@@ -60,6 +60,15 @@ extern void BiosBUPSetDate(SH2_struct * context);
 
 //////////////////////////////////////////////////////////////////////////////
 
+void SH2delayCb(SH2_struct *context) {
+  if (SH2Core->id == SH2CORE_KRONOS_DEBUG_INTERPRETER) {
+    SH2HandleBreakpoints(context);
+    SH2HandleBackTrace(context);
+    SH2HandleStepOverOut(context);
+    SH2HandleTrackInfLoop(context);
+  }
+}
+
 static void showCPUState(SH2_struct *context)
 {
   int i;
@@ -514,6 +523,9 @@ FASTCALL void SH2KronosDebugInterpreterExecSave(SH2_struct *context, u32 cycles,
       }
 
       if (shallExecute != 0) {
+        SH2HandleBackTrace(context);
+        SH2HandleStepOverOut(context);
+        SH2HandleTrackInfLoop(context);
         cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[context->instruction];
       }
 
@@ -523,9 +535,6 @@ FASTCALL void SH2KronosDebugInterpreterExecSave(SH2_struct *context, u32 cycles,
     context->regshistory[context->pchistory_index & (MAX_DMPHISTORY - 1)] = context->regs;
 #endif
 
-      SH2HandleBackTrace(context);
-      SH2HandleStepOverOut(context);
-      SH2HandleTrackInfLoop(context);
 
       // Execute it
       if (shallExecute != 0) {
@@ -612,9 +621,6 @@ FASTCALL void SH2KronosDebugInterpreterExec(SH2_struct *context, u32 cycles)
 	  context->regshistory[context->pchistory_index & (MAX_DMPHISTORY - 1)] = context->regs;
 #endif
 
-      SH2HandleBackTrace(context);
-      SH2HandleStepOverOut(context);
-      SH2HandleTrackInfLoop(context);
 
 
       uint8_t shallExecute = 1;
@@ -640,6 +646,9 @@ FASTCALL void SH2KronosDebugInterpreterExec(SH2_struct *context, u32 cycles)
       }
       // Execute it
       if (shallExecute != 0) {
+        SH2HandleBackTrace(context);
+        SH2HandleStepOverOut(context);
+        SH2HandleTrackInfLoop(context);
         cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[context->instruction];
         opcodeTable[context->instruction](context);
       }

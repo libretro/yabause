@@ -34,12 +34,14 @@
 #include "opcode_functions_define.h"
 
 extern void SH2HandleInterrupts(SH2_struct *context);
+extern void SH2delayCb(SH2_struct *context);
 
 //////////////////////////////////////////////////////////////////////////////
 
 static void SH2delay(SH2_struct * sh, u32 addr)
 {
    sh->instruction = krfetchlist[(addr >> 20) & 0xFFF](sh, addr);
+   SH2delayCb(sh);
    sh->regs.PC -= 2;
    opcodeTable[sh->instruction](sh);
 }
