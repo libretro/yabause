@@ -254,9 +254,10 @@ void UIDebugSH2::updateCodePage(u32 evaluateAddress)
     QDir searchPath = fileInfo.dir();
     const QString filename = fileInfo.completeBaseName() + ".elf";
 
+    YuiMsg("looking for %s\n", filename.toStdString().c_str());
 
     if (searchPath.cd("build")) {
-      printf("looking for %s in %s\n", filename.toStdString().c_str(), searchPath.path().toStdString().c_str());
+      YuiMsg("looking for %s in %s\n", filename.toStdString().c_str(), searchPath.path().toStdString().c_str());
       if (searchPath.exists(filename)) {
         //Found in build folder
         elfPath = QFileInfo(searchPath, filename).absoluteFilePath();
@@ -267,8 +268,10 @@ void UIDebugSH2::updateCodePage(u32 evaluateAddress)
       }
     }
     if (elfPath.isEmpty()) {
+      YuiMsg("looking for %s in %s\n", filename.toStdString().c_str(), searchPath.path().toStdString().c_str());
       if (searchPath.exists(filename)) {
         //Found in local folder
+        YuiMsg("Found %s in %s\n", filename.toStdString().c_str(), searchPath.path().toStdString().c_str());
         elfPath = QFileInfo(searchPath, filename).absoluteFilePath();
       }
       else {

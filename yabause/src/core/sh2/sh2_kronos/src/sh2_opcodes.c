@@ -40,9 +40,11 @@ extern void SH2delayCb(SH2_struct *context);
 
 static void SH2delay(SH2_struct * sh, u32 addr)
 {
+   uint32_t oldPC = sh->regs.PC;
+   sh->regs.PC = addr;
    sh->instruction = krfetchlist[(addr >> 20) & 0xFFF](sh, addr);
    SH2delayCb(sh);
-   sh->regs.PC -= 2;
+   sh->regs.PC = oldPC-2;
    opcodeTable[sh->instruction](sh);
 }
 
@@ -802,6 +804,7 @@ static void SH2ldcsr(SH2_struct * sh, u32 m)
    sh->cycles++;
    //execute the next
    sh->instruction = krfetchlist[(sh->regs.PC >> 20) & 0xFFF](sh, sh->regs.PC);
+   SH2delayCb(sh);
    opcodeTable[sh->instruction](sh);
    //SR has changed, Handle interrupt now
    SH2HandleInterrupts(sh);
