@@ -1648,14 +1648,14 @@ static void SH2rte(SH2_struct * sh)
    u32 temp;
    temp=sh->regs.PC;
    sh->regs.PC = SH2MappedMemoryReadLong(sh, sh->regs.R[15]);
-   if ((sh->interruptReturnAddress != sh->regs.PC) && (SH2Core->updateInterruptReturnHandling != NULL)) {
-       SH2Core->updateInterruptReturnHandling(sh);
-   }
    sh->regs.R[15] += 4;
    sh->regs.SR.all = SH2MappedMemoryReadLong(sh, sh->regs.R[15]) & 0x000003F3;
    sh->regs.R[15] += 4;
    sh->cycles += 4;
    SH2delay(sh, temp + 2);
+   if ((sh->interruptReturnAddress != sh->regs.PC) && (SH2Core->updateInterruptReturnHandling != NULL)) {
+     SH2Core->updateInterruptReturnHandling(sh);
+   }
 }
 
 
@@ -1667,14 +1667,14 @@ static void SH2rts(SH2_struct * sh)
 
    temp = sh->regs.PC;
    sh->regs.PC = sh->regs.PR;
+   sh->cycles += 2;
+   SH2delay(sh, temp + 2);
    if (sh->interruptReturnAddress != 0) {
      sh->branchDepth--;
      if ((sh->branchDepth < 0) && (SH2Core->updateInterruptReturnHandling != NULL)) {
        SH2Core->updateInterruptReturnHandling(sh);
      }
    }
-   sh->cycles += 2;
-   SH2delay(sh, temp + 2);
 }
 
 
