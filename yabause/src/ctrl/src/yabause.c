@@ -624,7 +624,7 @@ void YabauseResetNoLoad(void) {
    // Reset CS0 area here
    // Reset CS1 area here
    Cs2Reset();
-   ScuReset();
+   ScuReset(1);
    ScspReset();
    Vdp1Reset();
    Vdp2Reset();

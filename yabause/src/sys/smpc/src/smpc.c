@@ -44,6 +44,8 @@
 # include "psp/localtime.h"
 #endif
 
+extern YabSem * g_cpu_ready;
+
 Smpc * SmpcRegs;
 SmpcInternal * SmpcInternalVars;
 
@@ -211,17 +213,19 @@ static void SmpcSYSRES(void) {
 
 //////////////////////////////////////////////////////////////////////////////
 
+static void SmpcPreCKCHG(void) {
+  ScspHalt();
+}
+
 void SmpcCKCHG352(void) {
    // Set DOTSEL
    SmpcInternalVars->dotsel = 1;
 
-   // Send NMI
-   SH2NMI(MSH2);
    // Reset VDP1, VDP2, SCU, and SCSP
+   ScspReset();
    Vdp1Reset();
    Vdp2Reset();
-   ScuReset();
-   ScspReset();
+   ScuReset(0);
 
    // Clear VDP1/VDP2 ram
 
@@ -229,6 +233,10 @@ void SmpcCKCHG352(void) {
 
    // change clock
    YabauseChangeTiming(CLKTYPE_28MHZ);
+   // Send NMI
+   SH2NMI(MSH2);
+
+   YabSemPost(g_cpu_ready);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -238,14 +246,12 @@ void SmpcCKCHG320(void) {
    // Set DOTSEL
    SmpcInternalVars->dotsel = 0;
 
-   // Send NMI
-   SH2NMI(MSH2);
 
    // Reset VDP1, VDP2, SCU, and SCSP
+   ScspReset();
    Vdp1Reset();
    Vdp2Reset();
-   ScuReset();
-   ScspReset();
+   ScuReset(0);
 
    // Clear VDP1/VDP2 ram
 
@@ -253,6 +259,10 @@ void SmpcCKCHG320(void) {
 
    // change clock
    YabauseChangeTiming(CLKTYPE_26MHZ);
+   // Send NMI
+   SH2NMI(MSH2);
+
+   YabSemPost(g_cpu_ready);
 }
 
 struct movietime {
@@ -763,11 +773,13 @@ static void SmpcSetTiming(void) {
       case 0xD:
       case 0xE:
       case 0xF:
-         SmpcInternalVars->timing = 1; // this has to be tested on a real saturn
+        //CLKCHG => 100ms (64 cycles/16ms) => 64*100/16 = 400
+         SmpcPreCKCHG();
+         SmpcInternalVars->timing = 400; // this has to be tested on a real saturn
          return;
       case 0x10:
           if (SmpcInternalVars->firstPeri == 1) {
-            SmpcInternalVars->timing = 16000;
+            SmpcInternalVars->timing = 1400; //350 ms => 64*350/16
             intback_wait_for_line = 1;
           } else {
             // Calculate timing based on what data is being retrieved
@@ -775,17 +787,17 @@ static void SmpcSetTiming(void) {
             if ((SmpcRegs->IREG[0] == 0x01) && (SmpcRegs->IREG[1] & 0x8))
             {
                //status followed by peripheral data
-               SmpcInternalVars->timing = 250;
+               SmpcInternalVars->timing = 18; //4.5ms => 18
             }
             else if ((SmpcRegs->IREG[0] == 0x01) && ((SmpcRegs->IREG[1] & 0x8) == 0))
             {
                //status only
-               SmpcInternalVars->timing = 250;
+               SmpcInternalVars->timing = 18;
             }
             else if ((SmpcRegs->IREG[0] == 0) && (SmpcRegs->IREG[1] & 0x8))
             {
                //peripheral only
-               SmpcInternalVars->timing = 16000;
+               SmpcInternalVars->timing = 1400;
                intback_wait_for_line = 1;
             }
             else SmpcInternalVars->timing = 1;

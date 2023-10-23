@@ -284,7 +284,7 @@ typedef struct {
 
 int ScuInit(void);
 void ScuDeInit(void);
-void ScuReset(void);
+void ScuReset(u8 powering_up);
 void ScuExec(u32 timing);
 extern u8 ScuCPUBAccess();
 

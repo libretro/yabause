@@ -5096,13 +5096,17 @@ static u64 m68k_counter = 0;
 static u64 m68k_counter_done = 0;
 
 
+void ScspHalt(void) {
+  ScspLockThread();
+}
+
 void
 ScspReset (void)
 {
-  g_scsp_lock = 1;
-  YabThreadUSleep(100000);
+  // ScspLockThread();
+  // YabThreadUSleep(100000);
   scsp_reset();
-  g_scsp_lock = 0;
+  ScspUnLockThread();
 }
 
 //////////////////////////////////////////////////////////////////////////////
