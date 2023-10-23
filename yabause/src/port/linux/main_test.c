@@ -26,22 +26,22 @@
 #include "platform.h"
 
 #include "yabause.h"
-#include "../gameinfo.h"
-#include "../yui.h"
+#include "gameinfo.h"
+#include "yui.h"
 #include "peripheral.h"
-#include "../sh2core.h"
-#include "../sh2int.h"
+#include "sh2core.h"
+#include "sh2int.h"
 #ifdef TEST_KRONOS_INTERPRETER
-#include "../sh2_kronos/sh2int_kronos.h"
+#include "sh2int_kronos.h"
 #endif
 #ifdef HAVE_LIBGL
 #include "ygl.h"
 #endif
-#include "../vidsoft.h"
-#include "../cs0.h"
-#include "../cs2.h"
-#include "../cdbase.h"
-#include "../scsp.h"
+#include "vidsoft.h"
+#include "cs0.h"
+#include "cs2.h"
+#include "cdbase.h"
+#include "scsp.h"
 #include "sndsdl.h"
 #include "sndal.h"
 #include "persdljoy.h"
@@ -49,10 +49,10 @@
 #include "perlinuxjoy.h"
 #endif
 #include "debug.h"
-#include "../m68kcore.h"
-#include "../vdp1.h"
-#include "../vdp2.h"
-#include "../cdbase.h"
+#include "m68kcore.h"
+#include "vdp1.h"
+#include "vdp2.h"
+#include "cdbase.h"
 #include "peripheral.h"
 
 
@@ -85,7 +85,7 @@ VideoInterface_struct *VIDCoreList[] = {
 };
 
 #ifdef YAB_PORT_OSD
-#include "nanovg/nanovg_osdcore.h"
+#include "nanovg_osdcore.h"
 OSD_struct *OSDCoreList[] = {
 &OSDNnovg,
 NULL
@@ -115,6 +115,18 @@ int YuiUseOGLOnThisThread(){
 
 void YuiSwapBuffers(void) {
 }
+
+void YuiMsg(const char *format, ...) {
+}
+
+void YuiEndOfFrame()
+{
+}
+
+int YuiGetFB(void) {
+  return 0;
+}
+
 
 void YuiInit() {
 	yinit.m68kcoretype = 0;

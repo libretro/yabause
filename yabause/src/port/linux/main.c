@@ -26,19 +26,20 @@
 #include "platform.h"
 
 #include "yabause.h"
-#include "../gameinfo.h"
-#include "../yui.h"
+#include "gameinfo.h"
+#include "yui.h"
 #include "peripheral.h"
-#include "../sh2core.h"
-#include "../sh2int.h"
+#include "sh2core.h"
+#include "sh2int.h"
 #ifdef HAVE_LIBGL
 #include "ygl.h"
 #endif
-#include "../vidsoft.h"
-#include "../cs0.h"
-#include "../cs2.h"
-#include "../cdbase.h"
-#include "../scsp.h"
+#include "vidsoft.h"
+#include "vidcs.h"
+#include "cs0.h"
+#include "cs2.h"
+#include "cdbase.h"
+#include "scsp.h"
 #include "sndsdl.h"
 #include "sndal.h"
 #include "persdljoy.h"
@@ -46,12 +47,12 @@
 #include "perlinuxjoy.h"
 #endif
 #include "debug.h"
-#include "../m68kcore.h"
+#include "m68kcore.h"
 #include "vdp1.h"
-#include "../vdp2.h"
-#include "../cdbase.h"
+#include "vdp2.h"
+#include "cdbase.h"
 #include "peripheral.h"
-#include "../sh2_kronos/sh2int_kronos.h"
+#include "sh2int_kronos.h"
 
 #define AR (4.0f/3.0f)
 #define WINDOW_WIDTH 1200
@@ -110,7 +111,7 @@ NULL
 };
 
 #ifdef YAB_PORT_OSD
-#include "nanovg/nanovg_osdcore.h"
+#include "nanovg_osdcore.h"
 OSD_struct *OSDCoreList[] = {
 &OSDNnovg,
 NULL
@@ -143,6 +144,11 @@ void YuiMsg(const char *format, ...) {
 void YuiErrorMsg(const char *error_text)
 {
    YuiMsg("\n\nError: %s\n", error_text);
+}
+
+void YuiEndOfFrame()
+{
+
 }
 
 int YuiRevokeOGLOnThisThread(){
@@ -229,9 +235,6 @@ void initEmulation() {
 int main(int argc, char *argv[]) {
 	int i;
 
-	LogStart();
-	LogChangeOutput( DEBUG_STDERR, NULL );
-
 	YuiInit();
 
         yinit.stvbiospath = NULL;
@@ -254,26 +257,8 @@ int main(int argc, char *argv[]) {
         strncpy(biospath, argv[i] + strlen("--bios="), 256);
         yinit.biospath = biospath;
       }
-      //set System Language
-      if (0 == strcmp(argv[i], "-l") && argv[i + 1]) {
-        strncpy(strsyslangeid, argv[i + 1], 256);
-        if (toLower(strsyslangeid) == "english") { yinit.languageid = 0; }
-        if (toLower(strsyslangeid) == "deutsch") { yinit.languageid = 1; }
-        if (toLower(strsyslangeid) == "french") { yinit.languageid = 2; }
-        if (toLower(strsyslangeid) == "spanish") { yinit.languageid = 3; }
-        if (toLower(strsyslangeid) == "italian") { yinit.languageid = 4; }
-        if (toLower(strsyslangeid) == "japanese") { yinit.languageid = 5; }
-      } else if (strstr(argv[i], "--language=")) {
-        strncpy(strsyslangeid, argv[i] + strlen("--language="), 256);
-        if (toLower(strsyslangeid) == "english") { yinit.languageid = 0; }
-        if (toLower(strsyslangeid) == "deutsch") { yinit.languageid = 1; }
-        if (toLower(strsyslangeid) == "french") { yinit.languageid = 2; }
-        if (toLower(strsyslangeid) == "spanish") { yinit.languageid = 3; }
-        if (toLower(strsyslangeid) == "italian") { yinit.languageid = 4; }
-        if (toLower(strsyslangeid) == "japanese") { yinit.languageid = 5; }
-      }
       //set iso
-      else if (0 == strcmp(argv[i], "-i") && argv[i + 1]) {
+      if (0 == strcmp(argv[i], "-i") && argv[i + 1]) {
         strncpy(cdpath, argv[i + 1], 256);
         yinit.cdcoretype = 1;
         yinit.cdpath = cdpath;
@@ -387,7 +372,6 @@ int main(int argc, char *argv[]) {
   }
 
 	YabauseDeInit();
-	LogStop();
   platform_Deinit();
 
 	return 0;
