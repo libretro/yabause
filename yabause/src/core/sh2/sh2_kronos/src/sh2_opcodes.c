@@ -34,17 +34,13 @@
 #include "opcode_functions_define.h"
 
 extern void SH2HandleInterrupts(SH2_struct *context);
-extern void SH2delayCb(SH2_struct *context);
+extern void SH2ExecCb(SH2_struct *context);
 
 //////////////////////////////////////////////////////////////////////////////
 
 static void SH2delay(SH2_struct * sh, u32 addr)
 {
-   uint32_t oldPC = sh->regs.PC;
-   sh->regs.PC = addr;
    sh->instruction = krfetchlist[(addr >> 20) & 0xFFF](sh, addr);
-   SH2delayCb(sh);
-   sh->regs.PC = oldPC-2;
    opcodeTable[sh->instruction](sh);
 }
 
@@ -232,7 +228,9 @@ static void SH2bfs(SH2_struct * sh, u32 d)
    {
       s32 disp = (s32)(s8)d;
 
-      sh->regs.PC = sh->regs.PC + (disp * 2) + 4;
+      sh->regs.PC = sh->regs.PC + (disp * 2);
+
+      sh->regs.PC += 2;
 
       sh->cycles += 2;
       SH2delay(sh, temp + 2);
@@ -256,8 +254,9 @@ static void SH2bra(SH2_struct * sh, u32 disp)
    if ((disp&0x800) != 0)
       disp |= 0xFFFFF000;
 
-   sh->regs.PC = sh->regs.PC + (disp<<1) + 4;
+   sh->regs.PC = sh->regs.PC + (disp<<1);
 
+   sh->regs.PC += 2;
    sh->cycles += 2;
    SH2delay(sh, temp + 2);
 }
@@ -270,8 +269,8 @@ static void SH2braf(SH2_struct * sh, u32 m)
    u32 temp;
 
    temp = sh->regs.PC;
-   sh->regs.PC += sh->regs.R[m] + 4;
-
+   sh->regs.PC += sh->regs.R[m];
+   sh->regs.PC += 2;
    sh->cycles += 2;
    SH2delay(sh, temp + 2);
 }
@@ -287,7 +286,8 @@ static void SH2bsr(SH2_struct * sh, u32 disp)
    temp = sh->regs.PC;
    if ((disp&0x800) != 0) disp |= 0xFFFFF000;
    sh->regs.PR = sh->regs.PC + 4;
-   sh->regs.PC = sh->regs.PC+(disp<<1) + 4;
+   sh->regs.PC = sh->regs.PC+(disp<<1);
+   sh->regs.PC += 2;
 
    sh->cycles += 2;
    SH2delay(sh, temp + 2);
@@ -300,7 +300,8 @@ static void SH2bsrf(SH2_struct * sh, u32 n)
    if (sh->interruptReturnAddress != 0) sh->branchDepth++;
    u32 temp = sh->regs.PC;
    sh->regs.PR = sh->regs.PC + 4;
-   sh->regs.PC += sh->regs.R[n] + 4;
+   sh->regs.PC += sh->regs.R[n];
+   sh->regs.PC += 2;
    sh->cycles += 2;
    SH2delay(sh, temp + 2);
 }
@@ -334,7 +335,8 @@ static void SH2bts(SH2_struct * sh, u32 d)
    {
       s32 disp = (s32)(s8)d;
 
-      sh->regs.PC += (disp * 2) + 4;
+      sh->regs.PC += (disp * 2);
+      sh->regs.PC += 2;
       sh->cycles += 2;
       SH2delay(sh, temp + 2);
    }
@@ -727,7 +729,8 @@ static void SH2jmp(SH2_struct * sh, u32 m)
    u32 temp;
 
    temp=sh->regs.PC;
-   sh->regs.PC = sh->regs.R[m];
+   sh->regs.PC = sh->regs.R[m] - 4;
+   sh->regs.PC += 2;
    sh->cycles += 2;
    SH2delay(sh, temp + 2);
 }
@@ -742,7 +745,8 @@ static void SH2jsr(SH2_struct * sh, u32 m)
    temp = sh->regs.PC;
    if (sh->interruptReturnAddress != 0) sh->branchDepth++;
    sh->regs.PR = sh->regs.PC + 4;
-   sh->regs.PC = sh->regs.R[m];
+   sh->regs.PC = sh->regs.R[m] - 4;
+   sh->regs.PC += 2;
    sh->cycles += 2;
    SH2delay(sh, temp + 2);
 }
@@ -804,7 +808,7 @@ static void SH2ldcsr(SH2_struct * sh, u32 m)
    sh->cycles++;
    //execute the next
    sh->instruction = krfetchlist[(sh->regs.PC >> 20) & 0xFFF](sh, sh->regs.PC);
-   SH2delayCb(sh);
+   SH2ExecCb(sh);
    opcodeTable[sh->instruction](sh);
    //SR has changed, Handle interrupt now
    SH2HandleInterrupts(sh);
@@ -1647,12 +1651,14 @@ static void SH2rte(SH2_struct * sh)
 {
    u32 temp;
    temp=sh->regs.PC;
-   sh->regs.PC = SH2MappedMemoryReadLong(sh, sh->regs.R[15]);
+   sh->regs.PC = SH2MappedMemoryReadLong(sh, sh->regs.R[15]) - 4;
    sh->regs.R[15] += 4;
    sh->regs.SR.all = SH2MappedMemoryReadLong(sh, sh->regs.R[15]) & 0x000003F3;
    sh->regs.R[15] += 4;
+   sh->regs.PC += 2;
    sh->cycles += 4;
    SH2delay(sh, temp + 2);
+   sh->branchDepth--;
    if ((sh->interruptReturnAddress != sh->regs.PC) && (SH2Core->updateInterruptReturnHandling != NULL)) {
      SH2Core->updateInterruptReturnHandling(sh);
    }
@@ -1666,8 +1672,9 @@ static void SH2rts(SH2_struct * sh)
    u32 temp;
 
    temp = sh->regs.PC;
-   sh->regs.PC = sh->regs.PR;
+   sh->regs.PC = sh->regs.PR - 4;
    sh->cycles += 2;
+   sh->regs.PC += 2;
    SH2delay(sh, temp + 2);
    if (sh->interruptReturnAddress != 0) {
      sh->branchDepth--;

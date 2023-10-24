@@ -60,7 +60,7 @@ extern void BiosBUPSetDate(SH2_struct * context);
 
 //////////////////////////////////////////////////////////////////////////////
 
-void SH2delayCb(SH2_struct *context) {
+void SH2ExecCb(SH2_struct *context) {
   if (SH2Core->id == SH2CORE_KRONOS_DEBUG_INTERPRETER) {
     SH2HandleBreakpoints(context);
     SH2HandleBackTrace(context);
@@ -110,7 +110,7 @@ void SH2HandleInterrupts(SH2_struct *context)
       else {
         context->regs.SR.part.I = context->interrupts[context->NumberOfInterrupts - 1].level;
       }
-      context->branchDepth = 0;
+      context->branchDepth = 1;
       insertInterruptReturnHandling(context); //Insert a new interrupt handling once this one will have been executed
       // force the next PC (or PC+2?) to be decodeWithInterrupt so that next interrupt is evaluated when back from IT
       context->regs.PC = SH2MappedMemoryReadLong(context,context->regs.VBR + (context->interrupts[context->NumberOfInterrupts - 1].vector << 2));
