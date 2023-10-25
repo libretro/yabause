@@ -1658,7 +1658,7 @@ static void SH2rte(SH2_struct * sh)
    sh->regs.PC += 2;
    sh->cycles += 4;
    SH2delay(sh, temp + 2);
-   sh->branchDepth--;
+   sh->branchDepth = 0;
    if ((sh->interruptReturnAddress != sh->regs.PC) && (SH2Core->updateInterruptReturnHandling != NULL)) {
      SH2Core->updateInterruptReturnHandling(sh);
    }
