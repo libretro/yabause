@@ -36,6 +36,7 @@ scudspregs_struct * ScuDsp;
 scubp_struct * ScuBP;
 static int incFlg[4] = { 0 };
 static void ScuTestInterruptMask(void);
+static void ScuRemoveExposedInterrupt(u32 val);
 
 static u8 accessCPUBus;
 
@@ -2606,6 +2607,7 @@ void FASTCALL ScuWriteByte(SH2_struct *sh, u8* mem, u32 addr, u8 val) {
       case 0xA7:
          ScuRegs->IST &= ~(val); // double check this
          ScuRegs->ITEdge &= ~(val);
+         ScuRemoveExposedInterrupt(val);
          ScuTestInterruptMask();
          return;
       default:
@@ -2792,6 +2794,7 @@ void FASTCALL ScuWriteLong(SH2_struct *sh, u8* mem, u32 addr, u32 val) {
       case 0xA4:
          ScuRegs->IST &= val;
          ScuRegs->ITEdge &= val;
+         ScuRemoveExposedInterrupt(val);
          ScuTestInterruptMask();
          break;
       case 0xA8:
@@ -2843,15 +2846,25 @@ void removeSlave(int vector, int level) {
   }
 }
 
-void ScuTestInterruptMask()
+static void ScuRemoveExposedInterrupt(u32 val) {
+  for (int i = 0; i <= EXT_15; i++)
+  {
+    u32 currentExposedStatus = ScuRegs->IST & ~ScuRegs->ITEdge;
+    if ((ScuRegs->ITEdge & ScuInterrupt[i].status) != 0) {
+      SH2RemoveInterrupt(MSH2, ScuInterrupt[i].vector, ScuInterrupt[i].level);
+      removeSlave(ScuInterrupt[i].vector, ScuInterrupt[i].level);
+    }
+  }
+}
+
+static int IRLVector = 0xFF;
+static void ScuTestInterruptMask()
 {
    int mask = 0;
    int IRLSet = 0;
    // Handle SCU interrupts
    for (int i = 0; i <= EXT_15; i++)
    {
-     SH2RemoveInterrupt(MSH2, ScuInterrupt[i].vector, ScuInterrupt[i].level);
-     removeSlave(ScuInterrupt[i].vector, ScuInterrupt[i].level);
      if ((ScuRegs->ITEdge & ScuInterrupt[i].status) != 0) {
        mask = ScuInterrupt[i].mask;
        // A-BUS?
@@ -2869,9 +2882,16 @@ void ScuTestInterruptMask()
          }
        }else if ((!(ScuRegs->IMS & mask)) && (IRLSet == 0)) {
            IRLSet = 1;
+           if (IRLVector != i) {
+             if (IRLVector != 0xFF) {
+               SH2RemoveInterrupt(MSH2, ScuInterrupt[IRLVector].vector, ScuInterrupt[IRLVector].level);
+               removeSlave(ScuInterrupt[IRLVector].vector, ScuInterrupt[IRLVector].level);
+             }
+             SH2SendInterrupt(MSH2, ScuInterrupt[i].vector, ScuInterrupt[i].level);
+             sendSlave(ScuInterrupt[i].vector, ScuInterrupt[i].level);
+             IRLVector = i;
+           }
            ScuRegs->ITEdge &= ~ScuInterrupt[i].status;
-           SH2SendInterrupt(MSH2, ScuInterrupt[i].vector, ScuInterrupt[i].level);
-           sendSlave(ScuInterrupt[i].vector, ScuInterrupt[i].level);
         }
       }
    }
