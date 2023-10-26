@@ -558,14 +558,6 @@ FASTCALL void SH2KronosDebugInterpreterExecSave(SH2_struct *context, u32 cycles,
         // SH2HandleInterrupts(context);
       }
 
-      if (shallExecute != 0) {
-        context->instruction = krfetchlist[id](context, context->regs.PC);
-        SH2HandleBackTrace(context);
-        SH2HandleStepOverOut(context);
-        SH2HandleTrackInfLoop(context);
-        cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[context->instruction];
-      }
-
 #ifdef DMPHISTORY
     context->pchistory_index++;
     context->pchistory[context->pchistory_index & (MAX_DMPHISTORY - 1)] = context->regs.PC;
@@ -575,7 +567,12 @@ FASTCALL void SH2KronosDebugInterpreterExecSave(SH2_struct *context, u32 cycles,
 
       // Execute it
       if (shallExecute != 0) {
+        context->instruction = krfetchlist[id](context, context->regs.PC);
+        cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[context->instruction];
         if(context->isAccessingCPUBUS == 0) {
+          SH2HandleBackTrace(context);
+          SH2HandleStepOverOut(context);
+          SH2HandleTrackInfLoop(context);
           opcodeTable[context->instruction](context);
         }
       }
