@@ -850,11 +850,13 @@ void SH2KronosUpdateInterruptReturnHandling(SH2_struct *context) {
   cacheCode[context->isslave][cacheId[id]][addr & cacheMask[cacheId[id]]] = outOfInt;
 }
 void SH2KronosUpdateInterruptDebugReturnHandling(SH2_struct *context) {
-  while (context->branchDepth < 0) {
-    context->instruction = 0x000B; //Simulate rts to remove extra backtrace
-    SH2HandleBackTrace(context);
-    context->branchDepth++;
-  }
+  // while (context->branchDepth < 0) {
+  //   //negative if coming from RTS
+  //   //0 means we need to remove the trace of interrupt from RTS or RTE
+  //   context->instruction = 0x000B; //Simulate rts to remove extra backtrace
+  //   SH2HandleBackTrace(context);
+  //   context->branchDepth++;
+  // }
   SH2KronosUpdateInterruptReturnHandling(context);
 }
 
