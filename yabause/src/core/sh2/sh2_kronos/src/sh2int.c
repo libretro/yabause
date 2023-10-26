@@ -839,7 +839,6 @@ void SH2KronosInterpreterSetPC(SH2_struct *context, u32 value)
 }
 
 void SH2KronosUpdateInterruptReturnHandling(SH2_struct *context) {
-  context->branchDepth = 0;
   //Clear previous hook
   int addr = context->interruptReturnAddress>>1;
   int id = (addr >> 19) & 0xFFF;
