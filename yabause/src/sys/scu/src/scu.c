@@ -2829,6 +2829,20 @@ void sendSlave(int vector, int level) {
     }
   }
 }
+
+void removeSlave(int vector, int level) {
+  if (yabsys.IsSSH2Running) {
+    if (vector == 0x40)
+    {
+        SH2RemoveInterrupt(SSH2, 0x43, level);
+    }
+    if (vector == 0x42)
+    {
+        SH2RemoveInterrupt(SSH2, 0x41, level);
+    }
+  }
+}
+
 void ScuTestInterruptMask()
 {
    int mask = 0;
@@ -2836,6 +2850,8 @@ void ScuTestInterruptMask()
    // Handle SCU interrupts
    for (int i = 0; i <= EXT_15; i++)
    {
+     SH2RemoveInterrupt(MSH2, ScuInterrupt[i].vector, ScuInterrupt[i].level);
+     removeSlave(ScuInterrupt[i].vector, ScuInterrupt[i].level);
      if ((ScuRegs->ITEdge & ScuInterrupt[i].status) != 0) {
        mask = ScuInterrupt[i].mask;
        // A-BUS?
