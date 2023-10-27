@@ -114,10 +114,12 @@ void SH2HandleInterrupts(SH2_struct *context)
       insertInterruptReturnHandling(context); //Insert a new interrupt handling once this one will have been executed
       // force the next PC (or PC+2?) to be decodeWithInterrupt so that next interrupt is evaluated when back from IT
       context->regs.PC = SH2MappedMemoryReadLong(context,context->regs.VBR + (context->interrupts[context->NumberOfInterrupts - 1].vector << 2));
-      //Show the interrupt as a JSR
-      context->instruction = 0x400B;
-      SH2HandleBackTrace(context);
-      context->NumberOfInterrupts--;
+      if (SH2Core->id == SH2CORE_KRONOS_DEBUG_INTERPRETER) {
+        //Show the interrupt as a JSR
+        context->instruction = 0x400B;
+        SH2HandleBackTrace(context);
+        context->NumberOfInterrupts
+      }
       context->isSleeping = 0;
     }
   }
