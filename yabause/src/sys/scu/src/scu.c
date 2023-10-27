@@ -37,6 +37,7 @@ scubp_struct * ScuBP;
 static int incFlg[4] = { 0 };
 static void ScuTestInterruptMask(void);
 static void ScuRemoveExposedInterrupt(u32 val);
+static void ScuRemoveMaskedInterrupt(u32 maskToRemove);
 
 static u8 accessCPUBus;
 
@@ -2607,7 +2608,7 @@ void FASTCALL ScuWriteByte(SH2_struct *sh, u8* mem, u32 addr, u8 val) {
       case 0xA7:
          ScuRegs->IST &= ~(val); // double check this
          ScuRegs->ITEdge &= ~(val);
-         ScuRemoveExposedInterrupt(val);
+         ScuRemoveExposedInterrupt(val & ScuRegs->IST);
          ScuTestInterruptMask();
          return;
       default:
@@ -2788,13 +2789,16 @@ void FASTCALL ScuWriteLong(SH2_struct *sh, u8* mem, u32 addr, u32 val) {
          ScuRegs->T1MD = val;
          break;
       case 0xA0:
+         //remove Interrupt which were not maked but masked now
+         ScuRemoveMaskedInterrupt(~ScuRegs->IMS & val);
          ScuRegs->IMS = val;
          ScuTestInterruptMask();
          break;
       case 0xA4:
+         //remove Interrupt which occured and for which status has been cleared
+         ScuRemoveExposedInterrupt(val & ScuRegs->IST);
          ScuRegs->IST &= val;
          ScuRegs->ITEdge &= val;
-         ScuRemoveExposedInterrupt(val);
          ScuTestInterruptMask();
          break;
       case 0xA8:
@@ -2845,7 +2849,15 @@ void removeSlave(int vector, int level) {
     }
   }
 }
-
+static void ScuRemoveMaskedInterrupt(u32 maskToRemove) {
+  for (int i = 0; i <= EXT_15; i++)
+  {
+    if (ScuInterrupt[i].mask & maskToRemove) {
+      SH2RemoveInterrupt(MSH2, ScuInterrupt[i].vector, ScuInterrupt[i].level);
+      removeSlave(ScuInterrupt[i].vector, ScuInterrupt[i].level);
+    }
+  }
+}
 static void ScuRemoveExposedInterrupt(u32 val) {
   for (int i = 0; i <= EXT_15; i++)
   {
@@ -2857,7 +2869,6 @@ static void ScuRemoveExposedInterrupt(u32 val) {
   }
 }
 
-static int IRLVector = 0xFF;
 static void ScuTestInterruptMask()
 {
    int mask = 0;
@@ -2882,15 +2893,8 @@ static void ScuTestInterruptMask()
          }
        }else if ((!(ScuRegs->IMS & mask)) && (IRLSet == 0)) {
            IRLSet = 1;
-           if (IRLVector != i) {
-             if (IRLVector != 0xFF) {
-               SH2RemoveInterrupt(MSH2, ScuInterrupt[IRLVector].vector, ScuInterrupt[IRLVector].level);
-               removeSlave(ScuInterrupt[IRLVector].vector, ScuInterrupt[IRLVector].level);
-             }
-             SH2SendInterrupt(MSH2, ScuInterrupt[i].vector, ScuInterrupt[i].level);
-             sendSlave(ScuInterrupt[i].vector, ScuInterrupt[i].level);
-             IRLVector = i;
-           }
+           SH2SendInterrupt(MSH2, ScuInterrupt[i].vector, ScuInterrupt[i].level);
+           sendSlave(ScuInterrupt[i].vector, ScuInterrupt[i].level);
            ScuRegs->ITEdge &= ~ScuInterrupt[i].status;
         }
       }
