@@ -30,7 +30,6 @@ extern "C" {
 
 
 #define SH2CORE_DEFAULT     -1
-#define MAX_INTERRUPTS 50
 
 #ifdef MACH
 #undef MACH
@@ -291,11 +290,68 @@ typedef struct
    u32 CHCR0M;
 } Onchip_struct;
 
-typedef struct
-{
+typedef struct {
    u8 vector;
    u8 level;
-} interrupt_struct;
+} onchip_interrupt_struct;
+
+
+typedef struct
+{
+  u8 nmi;
+  u8 d;
+  u8 irl;
+  onchip_interrupt_struct divu;
+  onchip_interrupt_struct dmac[2];
+  onchip_interrupt_struct wdt;
+  onchip_interrupt_struct bsc;
+  onchip_interrupt_struct sci[4];
+  onchip_interrupt_struct frt[3];
+} intc_s;
+
+void SH2IntcSetDivu(SH2_struct *sh, int vector, int level)
+{
+  sh->intc.divu.vector = vector;
+  sh->intc.divu.level = level;
+}
+void SH2IntcSetDmac(SH2_struct *sh, int id, int vector, int level)
+{
+  sh->intc.dmac[id].vector = vector;
+  sh->intc.dmac[id].level = level;
+}
+void SH2IntcSetWdt(SH2_struct *sh, int vector, int level)
+{
+  sh->intc.wdt.vector = vector;
+  sh->intc.wdt.level = level;
+}
+void SH2IntcSetBsc(SH2_struct *sh, int vector, int level)
+{
+  sh->intc.bsc.vector = vector;
+  sh->intc.bsc.level = level;
+}
+void SH2IntcSetSci(SH2_struct *sh, int id, int vector, int level)
+{
+  sh->intc.sci[id].vector = vector;
+  sh->intc.bsc[id].level = level;
+}
+void SH2IntcSetFrt(SH2_struct *sh, int id, int vector, int level)
+{
+  sh->intc.frt[id].vector = vector;
+  sh->intc.frt[id].level = level;
+}
+void SH2IntcSetIrl(SH2_struct *sh, u8 value)
+{
+  sh->intc.irl = value;
+}
+void SH2IntcSetD(SH2_struct *sh, u8 value)
+{
+  sh->intc.d = value;
+}
+void SH2IntcSetNmi(SH2_struct *sh, u8 value)
+{
+  sh->intc.nmi = value;
+}
+
 
 enum SH2STEPTYPE
 {
@@ -425,8 +481,7 @@ typedef struct SH2_struct_s
         u32 shift;
    } wdt;
 
-   interrupt_struct interrupts[MAX_INTERRUPTS];
-   u32 NumberOfInterrupts;
+   intc_s intc;
    u32 AddressArray[0x100];
    u8 DataArray[0x1000];
    u32 target_cycles;
