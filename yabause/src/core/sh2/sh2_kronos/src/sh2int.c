@@ -118,8 +118,8 @@ void SH2HandleInterrupts(SH2_struct *context)
         //Show the interrupt as a JSR
         context->instruction = 0x400B;
         SH2HandleBackTrace(context);
-        context->NumberOfInterrupts
       }
+      context->NumberOfInterrupts--;
       context->isSleeping = 0;
     }
   }
