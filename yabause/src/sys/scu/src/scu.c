@@ -2613,7 +2613,7 @@ void FASTCALL ScuWriteByte(SH2_struct *sh, u8* mem, u32 addr, u8 val) {
       case 0xA7:
          ScuRegs->IST &= val; // double check this
          ScuRegs->ITEdge &= val;
-         // ScuTestInterruptMask();
+         needEvaluate = 1;
          return;
       default:
          LOG("Unhandled SCU Register byte write %08X\n", addr);
@@ -2795,17 +2795,17 @@ void FASTCALL ScuWriteLong(SH2_struct *sh, u8* mem, u32 addr, u32 val) {
       case 0xA0:
          //remove Interrupt which were not maked but masked now
          ScuRegs->IMS = val;
-         // ScuTestInterruptMask();
+         needEvaluate = 1;
          break;
       case 0xA4:
          //remove Interrupt which occured and for which status has been cleared
          ScuRegs->IST &= val;
          ScuRegs->ITEdge &= val;
-         // ScuTestInterruptMask();
+         needEvaluate = 1;
          break;
       case 0xA8:
          ScuRegs->AIACK = val;
-         // ScuTestInterruptMask();
+         needEvaluate = 1;
          break;
       case 0xB0:
          ScuRegs->ASR0 = val;
