@@ -784,6 +784,7 @@ static void SH2ldcmsr(SH2_struct * sh, u32 m)
    sh->regs.PC += 2;
    sh->cycles += 3;
    SH2next(sh);
+   SH2EvaluateInterrupt(sh);
 }
 
 
@@ -811,7 +812,7 @@ static void SH2ldcsr(SH2_struct * sh, u32 m)
    SH2ExecCb(sh);
    opcodeTable[sh->instruction](sh);
    //SR has changed, Handle interrupt now
-   SH2HandleInterrupts(sh);
+   SH2EvaluateInterrupt(sh);
 }
 
 
@@ -1662,6 +1663,7 @@ static void SH2rte(SH2_struct * sh)
      sh->branchDepth--;
      SH2Core->updateInterruptReturnHandling(sh);
    }
+   SH2EvaluateInterrupt(sh);
 }
 
 

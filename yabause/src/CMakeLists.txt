@@ -52,7 +52,6 @@ include_directories(core/video/opengl/core/include)
 include_directories(core/video/opengl/compute_shader/include)
 include_directories(core/video/opengl/common/include)
 include_directories(core/video/soft)
-include_directories(core/sh2/sh2_simple/include)
 include_directories(core/sh2/sh2_kronos/include)
 include_directories(core/peripheral/mac)
 include_directories(core/peripheral/linux)
@@ -106,7 +105,6 @@ set(kronos_HEADERS
 	core/video/opengl/common/include/ygl.h
 	core/video/soft/vidsoft.h
 	core/video/soft/titan/titan.h
-	core/sh2/sh2_simple/include/sh2int.h
 	core/peripheral/common/peripheral.h
 	core/net/sock.h
   ctrl/include/core.h
@@ -165,7 +163,6 @@ set(kronos_SOURCES
 	sys/memory/src/cs2.c
 	sys/memory/src/eeprom.c
 	sys/memory/src/decrypt.c
-	core/sh2/sh2_simple/src/sh2int.c
 	core/video/soft/vidsoft.c
 	core/video/soft/titan/titan.c
 	core/video/opengl/common/src/vidshared.c

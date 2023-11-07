@@ -42,7 +42,7 @@
 
 extern void SH2undecoded(SH2_struct * sh);
 
-static void insertInterruptChecking(SH2_struct *context);
+static void SH2KronosNotifyInterrupt(SH2_struct *context);
 static void insertInterruptReturnHandling(SH2_struct *context);
 
 static void BUPDetectInit(SH2_struct *context);
@@ -93,35 +93,27 @@ void SH2KronosIOnFrame(SH2_struct *context) {
 void SH2HandleInterrupts(SH2_struct *context)
 {
   LOCK(context);
-  if (context->NumberOfInterrupts != 0)
+  if (context->intPriority != 0x0)
   {
-    if (context->interrupts[context->NumberOfInterrupts - 1].level > context->regs.SR.part.I)
-    {
-      u32 oldpc = context->regs.PC;
-      u32 persr = context->regs.SR.part.I;
-      context->regs.R[15] -= 4;
-      SH2MappedMemoryWriteLong(context, context->regs.R[15], context->regs.SR.all);
-      context->regs.R[15] -= 4;
-      SH2MappedMemoryWriteLong(context, context->regs.R[15], context->regs.PC);
-      if (context->interrupts[context->NumberOfInterrupts - 1].level == 0x10) {
-        //NMI
-        context->regs.SR.part.I = 0xF;
-      }
-      else {
-        context->regs.SR.part.I = context->interrupts[context->NumberOfInterrupts - 1].level;
-      }
-      context->branchDepth = 0;
-      insertInterruptReturnHandling(context); //Insert a new interrupt handling once this one will have been executed
-      // force the next PC (or PC+2?) to be decodeWithInterrupt so that next interrupt is evaluated when back from IT
-      context->regs.PC = SH2MappedMemoryReadLong(context,context->regs.VBR + (context->interrupts[context->NumberOfInterrupts - 1].vector << 2));
-      if (SH2Core->id == SH2CORE_KRONOS_DEBUG_INTERPRETER) {
-        //Show the interrupt as a JSR
-        context->instruction = 0x400B;
-        SH2HandleBackTrace(context);
-      }
-      context->NumberOfInterrupts--;
-      context->isSleeping = 0;
+    u32 oldpc = context->regs.PC;
+    u32 persr = context->regs.SR.part.I;
+    context->regs.R[15] -= 4;
+    SH2MappedMemoryWriteLong(context, context->regs.R[15], context->regs.SR.all);
+    context->regs.R[15] -= 4;
+    SH2MappedMemoryWriteLong(context, context->regs.R[15], context->regs.PC);
+    context->regs.SR.part.I = context->intPriority;
+
+    context->intPriority = 0; //Flag for next IT
+    context->branchDepth = 0;
+    insertInterruptReturnHandling(context); //Insert a new interrupt handling once this one will have been executed
+    // force the next PC (or PC+2?) to be decodeWithInterrupt so that next interrupt is evaluated when back from IT
+    context->regs.PC = SH2MappedMemoryReadLong(context,context->regs.VBR + (context->intVector << 2));
+    if (SH2Core->id == SH2CORE_KRONOS_DEBUG_INTERPRETER) {
+      //Show the interrupt as a JSR
+      context->instruction = 0x400B;
+      SH2HandleBackTrace(context);
     }
+    context->isSleeping = 0;
   }
   UNLOCK(context);
 }
@@ -861,8 +853,13 @@ void SH2KronosUpdateInterruptDebugReturnHandling(SH2_struct *context) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-static void insertInterruptChecking(SH2_struct *context) {
-  if (context->interruptReturnAddress == 0) {
+static void SH2KronosNotifyInterrupt(SH2_struct *context) {
+  if (SH2MappedMemoryReadWord(context, context->regs.PC) == 0x1B) {
+    //SH2 on a sleep command, wake it up
+    context->regs.PC+=2;
+  }
+  if ((context->target_cycles != 0) && (context->interruptReturnAddress == 0))
+   {
     int addr = (context->regs.PC + 2)>>1;
     int id = (addr >> 19) & 0xFFF;
     cacheCode[context->isslave][cacheId[id]][addr & cacheMask[cacheId[id]]] = decodeInt;
@@ -876,113 +873,6 @@ static void insertInterruptReturnHandling(SH2_struct *context) {
     context->interruptReturnAddress = context->regs.PC;
     cacheCode[context->isslave][cacheId[id]][addr & cacheMask[cacheId[id]]] = outOfInt;
   }
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-void SH2KronosInterpreterSendInterrupt(SH2_struct *context, u8 vector, u8 level)
-{
-   u32 i, i2;
-   interrupt_struct tmp;
-   LOCK(context);
-
-   if ((context == SSH2) && (yabsys.IsSSH2Running == 0)) return;
-   // Make sure interrupt doesn't already exist
-   for (i = 0; i < context->NumberOfInterrupts; i++)
-   {
-      if (context->interrupts[i].vector == vector) {
-#ifdef DEBUG_INTERRUPTS
-        if (context->interrupts[i].level > context->regs.SR.part.I)
-          for (int j = 0; j < context->NumberOfInterrupts; j++) {
-            if (context->interrupts[j].level > context->regs.SR.part.I)
-              if (context->interrupts[j].vector == vector) {
-                YuiMsg("Already existing interrupt Vector next to handle 0x%x %x\n", vector, context->interruptReturnAddress);
-              }
-              break;
-          }
-#endif
-         UNLOCK(context);
-         return;
-      }
-   }
-
-   // Ignore Timer0 and Timer1 when masked
-   //if ((vector == 67 || vector == 68) && level <= context->regs.SR.part.I){
-   //  UNLOCK(context);
-   //  return;
-   //}
-
-   context->interrupts[context->NumberOfInterrupts].level = level;
-   context->interrupts[context->NumberOfInterrupts].vector = vector;
-   context->NumberOfInterrupts++;
-
-   // Sort interrupts
-   for (i = 0; i < (context->NumberOfInterrupts-1); i++)
-   {
-      for (i2 = i+1; i2 < context->NumberOfInterrupts; i2++)
-      {
-         if (context->interrupts[i].level > context->interrupts[i2].level)
-         {
-            tmp.level = context->interrupts[i].level;
-            tmp.vector = context->interrupts[i].vector;
-            context->interrupts[i].level = context->interrupts[i2].level;
-            context->interrupts[i].vector = context->interrupts[i2].vector;
-            context->interrupts[i2].level = tmp.level;
-            context->interrupts[i2].vector = tmp.vector;
-         }
-      }
-   }
-   UNLOCK(context);
-
-   if (context->target_cycles != 0) {
-     // force the next PC to be decodeWithInterrupt so that interrupt is evaluated asap
-     insertInterruptChecking(context);
-   }
-}
-
-void SH2KronosInterpreterRemoveInterrupt(SH2_struct *context, u8 vector, u8 level) {
-  u32 i, i2;
-  interrupt_struct tmp;
-  int hit = -1;
-
-  for (i = 0; i < context->NumberOfInterrupts; i++) {
-    if (context->interrupts[i].vector == vector) {
-      context->interrupts[i].level = 0;
-      context->interrupts[i].vector = 0;
-      hit = i;
-      break;
-    }
-  }
-
-  if (hit != -1) {
-    i2 = 0;
-    for (i = 0; i < context->NumberOfInterrupts; i++) {
-      if (i != hit) {
-        context->interrupts[i2].level = context->interrupts[i].level;
-        context->interrupts[i2].vector = context->interrupts[i].vector;
-        i2++;
-      }
-    }
-    context->NumberOfInterrupts--;
-  }
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-int SH2KronosInterpreterGetInterrupts(SH2_struct *context,
-                                interrupt_struct interrupts[MAX_INTERRUPTS])
-{
-   memcpy(interrupts, context->interrupts, sizeof(interrupt_struct) * MAX_INTERRUPTS);
-   return context->NumberOfInterrupts;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-void SH2KronosInterpreterSetInterrupts(SH2_struct *context, int num_interrupts,
-                                 const interrupt_struct interrupts[MAX_INTERRUPTS])
-{
-   memcpy(context->interrupts, interrupts, sizeof(interrupt_struct) * MAX_INTERRUPTS);
-   context->NumberOfInterrupts = num_interrupts;
 }
 
 static void notify(SH2_struct *context, u32 start, u32 length) {
@@ -1054,10 +944,7 @@ SH2Interface_struct SH2KronosInterpreter = {
    SH2KronosInterpreterSetPC,
    SH2KronosIOnFrame,
 
-   SH2KronosInterpreterSendInterrupt,
-   SH2KronosInterpreterRemoveInterrupt,
-   SH2KronosInterpreterGetInterrupts,
-   SH2KronosInterpreterSetInterrupts,
+   SH2KronosNotifyInterrupt,
 
    SH2KronosWriteNotify,
    SH2KronosInterpreterAddCycles,
@@ -1097,10 +984,7 @@ SH2Interface_struct SH2KronosDebugInterpreter = {
    SH2KronosInterpreterSetPC,
    SH2KronosIOnFrame,
 
-   SH2KronosInterpreterSendInterrupt,
-   SH2KronosInterpreterRemoveInterrupt,
-   SH2KronosInterpreterGetInterrupts,
-   SH2KronosInterpreterSetInterrupts,
+   SH2KronosNotifyInterrupt,
 
    SH2KronosWriteNotify,
    SH2KronosInterpreterAddCycles,

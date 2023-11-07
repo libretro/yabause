@@ -23,7 +23,6 @@
 
 #include "cdbase.h"
 #include "sh2core.h"
-#include "sh2int.h"
 #include "scsp.h"
 #include "smpc.h"
 #include "vdp1.h"

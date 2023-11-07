@@ -301,57 +301,7 @@ typedef struct
   u8 nmi;
   u8 d;
   u8 irl;
-  onchip_interrupt_struct divu;
-  onchip_interrupt_struct dmac[2];
-  onchip_interrupt_struct wdt;
-  onchip_interrupt_struct bsc;
-  onchip_interrupt_struct sci[4];
-  onchip_interrupt_struct frt[3];
 } intc_s;
-
-void SH2IntcSetDivu(SH2_struct *sh, int vector, int level)
-{
-  sh->intc.divu.vector = vector;
-  sh->intc.divu.level = level;
-}
-void SH2IntcSetDmac(SH2_struct *sh, int id, int vector, int level)
-{
-  sh->intc.dmac[id].vector = vector;
-  sh->intc.dmac[id].level = level;
-}
-void SH2IntcSetWdt(SH2_struct *sh, int vector, int level)
-{
-  sh->intc.wdt.vector = vector;
-  sh->intc.wdt.level = level;
-}
-void SH2IntcSetBsc(SH2_struct *sh, int vector, int level)
-{
-  sh->intc.bsc.vector = vector;
-  sh->intc.bsc.level = level;
-}
-void SH2IntcSetSci(SH2_struct *sh, int id, int vector, int level)
-{
-  sh->intc.sci[id].vector = vector;
-  sh->intc.bsc[id].level = level;
-}
-void SH2IntcSetFrt(SH2_struct *sh, int id, int vector, int level)
-{
-  sh->intc.frt[id].vector = vector;
-  sh->intc.frt[id].level = level;
-}
-void SH2IntcSetIrl(SH2_struct *sh, u8 value)
-{
-  sh->intc.irl = value;
-}
-void SH2IntcSetD(SH2_struct *sh, u8 value)
-{
-  sh->intc.d = value;
-}
-void SH2IntcSetNmi(SH2_struct *sh, u8 value)
-{
-  sh->intc.nmi = value;
-}
-
 
 enum SH2STEPTYPE
 {
@@ -461,6 +411,11 @@ typedef struct
 } backtrace_struct;
 //END debug
 
+
+void SH2IntcSetIrl(SH2_struct *sh, u8 irl, u8 d);
+void SH2IntcSetNmi(SH2_struct *sh);
+void SH2EvaluateInterrupt(SH2_struct *sh);
+
 typedef struct SH2_struct_s
 {
    sh2regs_struct regs;
@@ -482,6 +437,8 @@ typedef struct SH2_struct_s
    } wdt;
 
    intc_s intc;
+   u8 intVector;
+   u8 intPriority;
    u32 AddressArray[0x100];
    u8 DataArray[0x1000];
    u32 target_cycles;
@@ -576,12 +533,7 @@ typedef struct
    void (*SetPR)(SH2_struct *context, u32 value);
    void (*SetPC)(SH2_struct *context, u32 value);
    void (*OnFrame)(SH2_struct *context);
-   void (*SendInterrupt)(SH2_struct *context, u8 vector, u8 level);
-   void (*RemoveInterrupt)(SH2_struct *context, u8 vector, u8 level);
-   int (*GetInterrupts)(SH2_struct *context,
-                        interrupt_struct interrupts[MAX_INTERRUPTS]);
-   void (*SetInterrupts)(SH2_struct *context, int num_interrupts,
-                         const interrupt_struct interrupts[MAX_INTERRUPTS]);
+   void (*notifyInterrupt)(SH2_struct *context);
 
    void (*WriteNotify)(SH2_struct *context, u32 start, u32 length);
    void(*AddCycle)(SH2_struct *context, u32 value);
@@ -618,8 +570,6 @@ void SH2Reset(SH2_struct *context);
 void SH2PowerOn(SH2_struct *context);
 void FASTCALL SH2Exec(SH2_struct *context, u32 cycles);
 void FASTCALL SH2TestExec(SH2_struct *context, u32 cycles);
-void SH2SendInterrupt(SH2_struct *context, u8 vector, u8 level);
-void SH2RemoveInterrupt(SH2_struct *context, u8 vector, u8 level);
 void SH2NMI(SH2_struct *context);
 
 void SH2GetRegisters(SH2_struct *context, sh2regs_struct * r);

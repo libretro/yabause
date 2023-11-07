@@ -31,7 +31,6 @@
 #include "peripheral.h"
 #include "m68kcore.h"
 #include "sh2core.h"
-#include "sh2int.h"
 #include "cdbase.h"
 #include "cs2.h"
 #include "debug.h"

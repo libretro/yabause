@@ -549,7 +549,7 @@ static void SmpcSETSMEM(void) {
 //////////////////////////////////////////////////////////////////////////////
 
 static void SmpcNMIREQ(void) {
-   SH2SendInterrupt(MSH2, 0xB, 16);
+   SH2IntcSetNmi(MSH2);
    SmpcRegs->OREG[31] = 0x18;
 }
 
@@ -560,7 +560,7 @@ void SmpcResetButton(void) {
    if (SmpcInternalVars->resd)
       return;
 
-   SH2SendInterrupt(MSH2, 0xB, 16);
+   SH2IntcSetNmi(MSH2);
 }
 
 //////////////////////////////////////////////////////////////////////////////
