@@ -41,6 +41,7 @@ static void ScuTestAllInterrupt();
 static u8 accessCPUBus;
 
 static u8 currentInterrupt = 0xFF;
+static u8 needEvaluate = 0;
 
 void step_dsp_dma(scudspregs_struct *sc);
 
@@ -2827,6 +2828,7 @@ void FASTCALL ScuWriteLong(SH2_struct *sh, u8* mem, u32 addr, u32 val) {
 void ScuAcceptInterrupt(SH2_struct *sh) {
   ScuRegs->ITEdge &= ~ScuInterrupt[currentInterrupt].status;
   currentInterrupt = 0xFF;
+  needEvaluate = 1;
 }
 
 static void ScuTestInterruptMask(u8 i)
@@ -2866,9 +2868,12 @@ static void ScuTestInterruptMask(u8 i)
 
 static void ScuTestAllInterrupt()
 {
-  for (int i = 0; i <= EXT_15; i++)
-  {
-    ScuTestInterruptMask(i);
+  if (needEvaluate != 0) {
+    for (int i = 0; i <= EXT_15; i++)
+    {
+      ScuTestInterruptMask(i);
+    }
+    needEvaluate = 0;
   }
 }
 
