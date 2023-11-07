@@ -36,6 +36,7 @@ scudspregs_struct * ScuDsp;
 scubp_struct * ScuBP;
 static int incFlg[4] = { 0 };
 static void ScuTestInterruptMask(u8 id);
+static void ScuTestAllInterrupt();
 
 static u8 accessCPUBus;
 
@@ -1728,6 +1729,8 @@ static void ScuDspExec(u32 timing) {
 
 //////////////////////////////////////////////////////////////////////////////
 void ScuExec(u32 timing) {
+
+  ScuTestAllInterrupt();
   ScuDmaProc(&ScuRegs->dma0, (int)timing - ScuRegs->dma0.consumedCycles);
   ScuDmaProc(&ScuRegs->dma1, (int)timing - ScuRegs->dma1.consumedCycles);
   ScuDmaProc(&ScuRegs->dma2, (int)timing - ScuRegs->dma2.consumedCycles);
@@ -2822,6 +2825,7 @@ void FASTCALL ScuWriteLong(SH2_struct *sh, u8* mem, u32 addr, u32 val) {
 }
 
 void ScuAcceptInterrupt(SH2_struct *sh) {
+  ScuRegs->ITEdge &= ~ScuInterrupt[currentInterrupt].status;
   currentInterrupt = 0xFF;
 }
 
@@ -2858,6 +2862,14 @@ static void ScuTestInterruptMask(u8 i)
        if ((currentInterrupt == HBLANK_IN) && (yabsys.IsSSH2Running)) SH2IntcSetIrl(SSH2, 2, 0x41);
      }
    }
+}
+
+static void ScuTestAllInterrupt()
+{
+  for (int i = 0; i <= EXT_15; i++)
+  {
+    ScuTestInterruptMask(i);
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
