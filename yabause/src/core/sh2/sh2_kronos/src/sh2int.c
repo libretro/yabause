@@ -38,8 +38,6 @@
 #define LOCK(A)
 #define UNLOCK(A)
 
-#define LOG_BUP
-
 extern void SH2undecoded(SH2_struct * sh);
 
 static void SH2KronosNotifyInterrupt(SH2_struct *context);
@@ -193,7 +191,8 @@ static void BUPInstallHooks(SH2_struct *context) {
   for (int i =0; i<10; i++) {
     u32 addr = startTableAdress+i*0x4;
     u32 vector = DMAMappedMemoryReadLong(addr);
-    int id = (addr >> 20) & 0xFFF;
+    LOG_BUP("BUPInstallHooks replace vector @0x%x pointed @0x%x\n", vector, addr);
+    int id = (vector >> 20) & 0xFFF;
     cacheCode[context->isslave][cacheId[id]][(vector>>1) & cacheMask[cacheId[id]]] = BUPEntries[i];
   }
 

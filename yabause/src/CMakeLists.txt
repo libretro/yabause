@@ -177,6 +177,8 @@ set(kronos_SOURCES
 	)
 add_definitions(-DIMPROVED_SAVESTATES)
 
+# add_definitions(-DBUP_DEBUG)
+
 add_subdirectory(tools/libchdr)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/tools/libchdr/src)
 set(KRONOS_LIBRARIES ${KRONOS_LIBRARIES} chdr-static)
