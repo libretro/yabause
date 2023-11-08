@@ -66,7 +66,6 @@ INCLUDE_DIRS := $(CORE_DIR) \
 	$(SOURCE_DIR)/core/video/opengl/common/include \
 	$(SOURCE_DIR)/core/video/soft \
 	$(SOURCE_DIR)/core/sh2/sh2_kronos/include \
-	$(SOURCE_DIR)/core/sh2/sh2_simple/include \
 	$(SOURCE_DIR)/core/peripheral/common \
 	$(SOURCE_DIR)/core/net \
 	$(SOURCE_DIR)/core/net/linux \
@@ -112,7 +111,6 @@ SOURCES_C := \
 	$(SOURCE_DIR)/sys/scsp/src/scsp.c \
 	$(SOURCE_DIR)/sys/scu/src/scu.c \
 	$(SOURCE_DIR)/sys/sh2/src/sh2core.c \
-	$(SOURCE_DIR)/core/sh2/sh2_simple/src/sh2int.c \
 	$(SOURCE_DIR)/sys/smpc/src/smpc.c \
 	$(SOURCE_DIR)/ctrl/src/stv.c \
 	$(SOURCE_DIR)/core/m68k/m68kcore.c \

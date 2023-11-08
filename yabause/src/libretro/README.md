@@ -1,7 +1,10 @@
 # Kronos libretro
 
 ## How to build
-From the root project directory, run `make -C yabause/src/libretro`.
+mkdir build_retro; cd build_retro;
+make -j4 -C ../yabause/src/libretro/ generate-files
+make -j4 -C ../yabause/src/libretro/
+then execute retroarch -L ../yabause/src/libretro/kronos_libretro.so path_to_your_iso
 
 Library will be built in the libretro subfolder.
 
