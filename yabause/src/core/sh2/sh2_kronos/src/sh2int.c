@@ -587,12 +587,12 @@ FASTCALL void SH2KronosDebugInterpreterExecSave(SH2_struct *context, u32 cycles,
 
 FASTCALL void SH2KronosDebugInterpreterExec(SH2_struct *context, u32 cycles)
 {
-  u32 target_cycle = context->cycles + cycles;
+  context->target_cycles = context->cycles + cycles;
 
   // if (context->interruptReturnAddress == 0) {
     SH2HandleInterrupts(context);
   // }
-   while ((context->cycles < target_cycle) || (context->doNotInterrupt != 0))
+   while ((context->cycles < context->target_cycles) || (context->doNotInterrupt != 0))
 
    {
      context->doNotInterrupt = 0;
