@@ -459,23 +459,25 @@ FASTCALL void SH2KronosInterpreterExecSave(SH2_struct *context, u32 cycles, sh2r
     if(context->isAccessingCPUBUS != 0) {
       context->cycles = context->target_cycles;
       memcpy(&context->regs, oldRegs, sizeof(sh2regs_struct));
+      printf("Reset the simu on %s\n", (context == MSH2)?"MSH2":"SSH2");
       context->target_cycles = 0;
       return;
     }
   }
   context->target_cycles = 0;
+  if (context == MSH2) printf("done cycle %d\n", context->target_cycles);
 }
 
 static int enableTrace = 0;
 
 FASTCALL void SH2KronosDebugInterpreterExecSave(SH2_struct *context, u32 cycles, sh2regs_struct *oldRegs) {
-  u32 target_cycle = context->cycles + cycles;
+  context->target_cycles = context->cycles + cycles;
 
   // if (context->interruptReturnAddress == 0) {
     SH2HandleInterrupts(context);
   // }
 
-   while ((context->cycles < target_cycle) || (context->doNotInterrupt != 0))
+   while ((context->cycles < context->target_cycles) || (context->doNotInterrupt != 0))
    {
      context->doNotInterrupt = 0;
      //NOTE: it can happen that next cachecode is generating a SH2HandleInterrupts which is normally forbidden when context->doNotInterrupt is not 0
