@@ -459,7 +459,6 @@ FASTCALL void SH2KronosInterpreterExecSave(SH2_struct *context, u32 cycles, sh2r
     if(context->isAccessingCPUBUS != 0) {
       context->cycles = context->target_cycles;
       memcpy(&context->regs, oldRegs, sizeof(sh2regs_struct));
-      printf("Reset the simu on %s\n", (context == MSH2)?"MSH2":"SSH2");
       context->target_cycles = 0;
       return;
     }

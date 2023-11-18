@@ -2907,7 +2907,7 @@ static void Vdp2GenLineinfo(vdp2draw_struct *info)
     index = 0;
     if (VDPLINE_SX(info->islinescroll))
     {
-      info->lineinfo[i].LineScrollValH = Vdp2RamReadWord(NULL, Vdp2Ram, info->linescrolltbl + (i / info->lineinc)*bound);
+      info->lineinfo[i].LineScrollValH = Vdp2RamReadWord(NULL, Vdp2Ram, info->linescrolltbl + i*bound);
       if ((info->lineinfo[i].LineScrollValH & 0x400)) info->lineinfo[i].LineScrollValH |= 0xF800; else info->lineinfo[i].LineScrollValH &= 0x07FF;
       index += 4;
     }
@@ -2917,7 +2917,7 @@ static void Vdp2GenLineinfo(vdp2draw_struct *info)
 
     if (VDPLINE_SY(info->islinescroll))
     {
-      info->lineinfo[i].LineScrollValV = Vdp2RamReadWord(NULL, Vdp2Ram, info->linescrolltbl + (i / info->lineinc)*bound + index);
+      info->lineinfo[i].LineScrollValV = Vdp2RamReadWord(NULL, Vdp2Ram, info->linescrolltbl + i*bound + index);
       if ((info->lineinfo[i].LineScrollValV & 0x400)) info->lineinfo[i].LineScrollValV |= 0xF800; else info->lineinfo[i].LineScrollValV &= 0x07FF;
       index += 4;
     }
@@ -2927,8 +2927,8 @@ static void Vdp2GenLineinfo(vdp2draw_struct *info)
 
     if (VDPLINE_SZ(info->islinescroll))
     {
-      val1 = Vdp2RamReadWord(NULL, Vdp2Ram, info->linescrolltbl + (i / info->lineinc)*bound + index);
-      val2 = Vdp2RamReadWord(NULL, Vdp2Ram, info->linescrolltbl + (i / info->lineinc)*bound + index + 2);
+      val1 = Vdp2RamReadWord(NULL, Vdp2Ram, info->linescrolltbl + i*bound + index);
+      val2 = Vdp2RamReadWord(NULL, Vdp2Ram, info->linescrolltbl + i*bound + index + 2);
       info->lineinfo[i].CoordinateIncH = (((int)((val1) & 0x07) << 8) | (int)((val2) >> 8));
       index += 4;
     }
