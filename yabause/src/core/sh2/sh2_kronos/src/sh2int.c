@@ -145,21 +145,23 @@ static u16 FASTCALL FetchVram(SH2_struct *context, u32 addr)
   return SH2MappedMemoryReadWord(context, addr);
 }
 
-static opcode_func* cacheCode[2][7];
-static const int const cacheSize[7] = {
+static opcode_func* cacheCode[2][8];
+static const int const cacheSize[8] = {
   0x40000, //Bios
   0x80000, //LowWram
   0x1000000, //CS0
+  0x80000, //SoundRam
   0x40000, //VDP1Ram
   0x80000, //HighWRam
   0x800, //Data Array
   0x80000 //Undecoded
 };
 
-static const int const cacheMask[7] = {
+static const int const cacheMask[8] = {
   0x3FFFF, //Bios
   0x7FFFF, //LowWram
   0xFFFFFF, //CS0
+  0x7FFFF, //SoundRam
   0x3FFFF, //VDP1Ram
   0x7FFFF, //HighWRam
   0x7FF, //Data Array
@@ -239,8 +241,8 @@ void decode(SH2_struct *context) {
   int id = (context->regs.PC >> 20) & 0xFFF;
   u16 opcode = krfetchlist[id](context, context->regs.PC);
 
-if (cacheId[id] == 5) YabErrorMsg("Decode intstructions from Data array\n");
-if (cacheId[id] == 6) YabErrorMsg("Decode intstructions from unxpected area @0x%x\n", context->regs.PC);
+if (cacheId[id] == 6) YabErrorMsg("Decode intstructions from Data array\n");
+if (cacheId[id] == 7) YabErrorMsg("Decode intstructions from unxpected area @0x%x\n", context->regs.PC);
   cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[opcode];
   context->instruction = opcode;
   if (SH2Core->id == SH2CORE_KRONOS_DEBUG_INTERPRETER) {
@@ -286,7 +288,7 @@ int SH2KronosInterpreterInit(void)
    int i,j;
 
 
-   for(i=0; i<7; i++) {
+   for(i=0; i<8; i++) {
      if (cacheCode[0][i] != NULL) {
        free(cacheCode[0][i]);
        cacheCode[0][i] = NULL;
@@ -300,23 +302,23 @@ int SH2KronosInterpreterInit(void)
    }
 
 
-   for(i=0; i<6; i++) {
+   for(i=0; i<7; i++) {
      for(j=0; j<cacheSize[i]; j++) {
        cacheCode[0][i][j] = decode;
        cacheCode[1][i][j] = decode;
      }
    }
 
-   for(j=0; j<cacheSize[6]; j++) {
-     cacheCode[0][6][j] = SH2undecoded;
-     cacheCode[1][6][j] = SH2undecoded;
+   for(j=0; j<cacheSize[7]; j++) {
+     cacheCode[0][7][j] = SH2undecoded;
+     cacheCode[1][7][j] = SH2undecoded;
    }
 
 
    for (i = 0; i < 0x1000; i++)
    {
       krfetchlist[i] = FetchInvalid;
-      cacheId[i] = 6;
+      cacheId[i] = 7;
       if (((i>>8) == 0x0) || ((i>>8) == 0x2)) {
         switch (i&0xFF)
         {
@@ -332,9 +334,13 @@ int SH2KronosInterpreterInit(void)
             krfetchlist[i] = SH2MappedMemoryReadWord;
             cacheId[i] = 2;
             break;
-          case 0x05c: // Fighting Viper
+          case 0x05a: // SoundRam
             krfetchlist[i] = SH2MappedMemoryReadWord;
             cacheId[i] = 3;
+            break;
+          case 0x05c: // Fighting Viper
+            krfetchlist[i] = SH2MappedMemoryReadWord;
+            cacheId[i] = 4;
             break;
           case 0x060: // High Work Ram
           case 0x061:
@@ -353,17 +359,17 @@ int SH2KronosInterpreterInit(void)
           case 0x06E:
           case 0x06F:
             krfetchlist[i] = SH2MappedMemoryReadWord;
-            cacheId[i] = 4;
+            cacheId[i] = 5;
             break;
           default:
             krfetchlist[i] = FetchInvalid;
-            cacheId[i] = 6;
+            cacheId[i] = 7;
             break;
         }
      }
      if ((i>>8) == 0xC) {
        krfetchlist[i] = SH2MappedMemoryReadWord;
-       cacheId[i] = 5;
+       cacheId[i] = 6;
      }
    }
    cacheCode[0][0][0x7d600>>1] = BUPDetectInit;
@@ -388,7 +394,7 @@ int SH2KronosInterpreterInit(void)
 void SH2KronosInterpreterDeInit(void)
 {
    // DeInitialize any internal variables here
-   for(int i=0; i<7; i++) {
+   for(int i=0; i<8; i++) {
      if (cacheCode[0][i] != NULL) {
        free(cacheCode[0][i]);
        cacheCode[0][i] = NULL;
