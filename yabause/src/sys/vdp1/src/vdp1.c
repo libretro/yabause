@@ -2716,6 +2716,7 @@ void Vdp1HBlankIN(void)
     Vdp1Regs->LOPR = Vdp1Regs->COPR;
     Vdp1Regs->COPR = 0;
     Vdp1Regs->lCOPR = 0;
+    Vdp1Regs->EDSR >>= 1;
 
     FRAMELOG("[VDP1] Displayed framebuffer changed. EDSR=%02X\n", Vdp1Regs->EDSR);
 
@@ -2809,6 +2810,7 @@ void Vdp1SwitchFrame(void)
     Vdp1Regs->LOPR = Vdp1Regs->COPR;
     Vdp1Regs->COPR = 0;
     Vdp1Regs->lCOPR = 0;
+    Vdp1Regs->EDSR >>= 1;
 
     FRAMELOG("[VDP1] Displayed framebuffer changed. EDSR=%02X\n", Vdp1Regs->EDSR);
 
