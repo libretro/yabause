@@ -3384,7 +3384,9 @@ static void FASTCALL Vdp2DrawBitmapCoordinateInc(vdp2draw_struct *info, YglTextu
     u32 baseaddr;
     vdp2Lineinfo * line;
     baseaddr = (u32)info->charaddr;
-    line = &(info->lineinfo[i/info->lineinc]);
+    int index = i;
+    if (info->lineinc > 0) index /= info->lineinc;
+    line = &(info->lineinfo[index]);
 
     info->draw_line = i;
 
