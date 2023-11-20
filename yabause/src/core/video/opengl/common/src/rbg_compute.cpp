@@ -118,7 +118,6 @@ SHADER_VERSION_COMPUTE
 "  uint coloroffset;\n"
 "  int transparencyenable;\n"
 "  int specialcolormode;\n"
-"  int specialcolorfunction;\n"
 "  uint specialcode;\n"
 "  int colornumber;\n"
 "  int window_area_mode;"
@@ -126,7 +125,6 @@ SHADER_VERSION_COMPUTE
 "  int startLine;\n"
 "  int endLine;\n"
 "  uint specialprimode;\n"
-"  uint specialfunction;\n"
 "  float alpha_lncl;\n"
 "  uint lncl_table_addr;\n"
 "  uint cram_mode;\n"
@@ -135,6 +133,9 @@ SHADER_VERSION_COMPUTE
 "layout(std430, binding = 6) readonly buffer ROTW { uint  rotWin[]; };\n"
 "layout(rgba8, binding = 7) writeonly uniform image2D lnclSurface;\n"
 "layout(std430, binding = 8) readonly buffer ALPHA { uint  alpha[]; };\n"
+" uint specialfunction;\n"
+" uint specialcolorfunction;\n"
+
 " int GetKValue( int paramid, vec2 pos, out float ky, out float kx, out uint lineaddr ){ \n"
 "  uint kdata;\n"
 "  int kindex = int(para[paramid].deltaKAst*pos.y)+int(para[paramid].deltaKAx*pos.x); \n"
@@ -254,6 +255,9 @@ SHADER_VERSION_COMPUTE
 "        prio |= 1u;\n"
 "      }\n"
 "    }\n"
+"  }\n"
+"  if (specialprimode == 1u) {\n"
+"		prio = (priority & 0xEu) | specialfunction;\n"
 "  }\n"
 "	return prio;\n"
 "}\n"
@@ -513,6 +517,8 @@ const char prg_rbg_get_patternaddr[] =
 
 const char prg_rbg_get_pattern_data_1w[] =
 "//prg_rbg_get_pattern_data_1w\n"
+"  specialfunction = (supplementdata & 0x200u) >> 9;\n"
+"  specialcolorfunction = (supplementdata & 0x100u) >> 8;\n"
 "  if( patternname == 0xFFFFFFFFu){\n"
 "    patternname = vram[addr>>2]; \n" // WORD mode( patterndatasize == 1 )
 "    if( (addr & 0x02u) != 0u ) { patternname >>= 16; } \n"
@@ -559,8 +565,8 @@ const char prg_rbg_get_pattern_data_2w[] =
 "  tmp1 = (((tmp1 >> 8) & 0xFFu) | ((tmp1) & 0xFFu) << 8);\n"
 "  uint flipfunction = (tmp1 & 0xC000u) >> 14;\n"
 "  if(colornumber==0) paladdr = tmp1 & 0x7Fu; else paladdr = tmp1 & 0x70u;\n" // not in 16 colors
-"  uint specialfunction_in = (tmp1 & 0x2000u) >> 13;\n"
-"  uint specialcolorfunction_in = (tmp1 & 0x1000u) >> 12;\n"
+"  specialfunction = (tmp1 & 0x2000u) >> 13;\n"
+"  specialcolorfunction = (tmp1 & 0x1000u) >> 12;\n"
 "  charaddr &= 0x3FFFu;\n"
 "  charaddr *= 0x20u;\n";
 
@@ -1008,7 +1014,6 @@ struct RBGUniform {
     coloroffset = 0;
     transparencyenable = 0;
     specialcolormode = 0;
-    specialcolorfunction=0;
     specialcode=0;
 		window_area_mode = 0;
 		priority = 0;
@@ -1031,7 +1036,6 @@ struct RBGUniform {
   unsigned int coloroffset;
   int transparencyenable;
   int specialcolormode;
-  int specialcolorfunction;
   unsigned int specialcode;
   int colornumber;
   int window_area_mode;
@@ -1039,7 +1043,6 @@ struct RBGUniform {
 	int startLine;
 	int endLine;
 	unsigned int specialprimode;
-	unsigned int specialfunction;
 	float alpha_lncl;
 	unsigned int lncl_table_addr;
 	unsigned int cram_mode;
@@ -2361,7 +2364,6 @@ DEBUGWIP("Init\n");
   uniform.coloroffset = rbg->info.coloroffset;
   uniform.transparencyenable = rbg->info.transparencyenable;
   uniform.specialcolormode = rbg->info.specialcolormode;
-  uniform.specialcolorfunction = rbg->info.specialcolorfunction;
   uniform.specialcode = rbg->info.specialcode;
        uniform.colornumber = rbg->info.colornumber;
        uniform.window_area_mode = rbg->info.RotWinMode;
@@ -2369,7 +2371,6 @@ DEBUGWIP("Init\n");
        uniform.startLine = rbg->info.startLine;
        uniform.endLine = rbg->info.endLine;
        uniform.specialprimode = rbg->info.specialprimode;
-       uniform.specialfunction = rbg->info.specialfunction;
 			 uniform.alpha_lncl = ((~(varVdp2Regs->CCRLB & 0x1F) << 3) | NONE)/255.0f;
 			 uniform.lncl_table_addr = Vdp2RamReadWord(NULL, Vdp2Ram, (varVdp2Regs->LCTA.all & 0x7FFFF)<<1);
 			 uniform.cram_mode = Vdp2Internal.ColorMode;
