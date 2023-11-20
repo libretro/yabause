@@ -1504,7 +1504,11 @@ void Vdp2DebugStatsGeneral(char *outstring, int *isenabled)
             AddString(outstring, "240");
             break;
          case 2:
-            AddString(outstring, "256");
+            if (yabsys.IsPal){
+              AddString(outstring, "256");
+            } else {
+              AddString(outstring, "224 - due to invalid");
+            }
             break;
          default:
             AddString(outstring, "Invalid");

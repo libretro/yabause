@@ -2381,9 +2381,13 @@ static void Vdp2SetResolution(u16 TVMD)
     break;
   case 1: height = 240;
     break;
-  case 2: height = 256;
+  case 2:
+    if (yabsys.IsPal) height = 256;
+    else height = 224;
     break;
-  default: height = 256;
+  default:
+    if (yabsys.IsPal) height = 256;
+    else height = 224;
     break;
   }
 
