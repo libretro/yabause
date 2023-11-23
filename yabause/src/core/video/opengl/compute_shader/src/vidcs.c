@@ -277,60 +277,9 @@ static void Vdp2DrawPatternPos(vdp2draw_struct *info, YglTexture *texture, int x
 
 //////////////////////////////////////////////////////////////////////////////
 
-static void Vdp2PatternAddrUsingPatternname(vdp2draw_struct *info, u16 paternname, Vdp2 *varVdp2Regs )
-{
-    u16 tmp = paternname;
-    info->specialfunction = (info->supplementdata >> 9) & 0x1;
-    info->specialcolorfunction = (info->supplementdata >> 8) & 0x1;
-
-    switch (info->colornumber)
-    {
-    case 0: // in 16 colors
-      info->paladdr = ((tmp & 0xF000) >> 12) | ((info->supplementdata & 0xE0) >> 1);
-      break;
-    default: // not in 16 colors
-      info->paladdr = (tmp & 0x7000) >> 8;
-      break;
-    }
-
-    switch (info->auxmode)
-    {
-    case 0:
-      info->flipfunction = (tmp & 0xC00) >> 10;
-
-      switch (info->patternwh)
-      {
-      case 1:
-        info->charaddr = (tmp & 0x3FF) | ((info->supplementdata & 0x1F) << 10);
-        break;
-      case 2:
-        info->charaddr = ((tmp & 0x3FF) << 2) | (info->supplementdata & 0x3) | ((info->supplementdata & 0x1C) << 10);
-        break;
-      }
-      break;
-    case 1:
-      info->flipfunction = 0;
-
-      switch (info->patternwh)
-      {
-      case 1:
-        info->charaddr = (tmp & 0xFFF) | ((info->supplementdata & 0x1C) << 10);
-        break;
-      case 2:
-        info->charaddr = ((tmp & 0xFFF) << 2) | (info->supplementdata & 0x3) | ((info->supplementdata & 0x10) << 10);
-        break;
-      }
-      break;
-    }
-
-  if (!(varVdp2Regs->VRSIZE & 0x8000))
-    info->charaddr &= 0x3FFF;
-
-  info->charaddr *= 0x20; // thanks Runik
-}
-
 static int Vdp2PatternAddrPos(vdp2draw_struct *info, int planex, int x, int planey, int y, Vdp2 *varVdp2Regs)
 {
+
   u32 addr = info->addr +
     (info->pagewh*info->pagewh*info->planew*planey +
       info->pagewh*info->pagewh*planex +
