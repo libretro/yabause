@@ -781,7 +781,7 @@ int YabauseEmulate(void) {
    yabsys.LineCount = 0;
    yabsys.DecilineCount = 0;
 
-   ScspAddCycles((u64)(44100 * 256 / frames)<< SCSP_FRACTIONAL_BITS);
+   ScspAddCycles((u64)(44100 * 256) / frames);
    SyncCPUtoSCSP();
 
    while (yabsys.LineCount < yabsys.MaxLineCount)

@@ -1811,7 +1811,7 @@ static INLINE void
 scsp_trigger_main_interrupt (u32 id)
 {
   SCSPLOG ("scsp main interrupt accepted %.4X\n", id);
-  scsp.mintf ();
+  scsp.mintf();
 }
 
 void scsp_check_interrupt() {
@@ -5354,7 +5354,7 @@ void* ScspAsynMainCpu( void * p ){
       YabThreadUnLock(g_scsp_set_cyc_mtx);
     }
 
-    m68k_inc += (cycleRequest >> SCSP_FRACTIONAL_BITS);
+    m68k_inc += cycleRequest;
     // Sync 44100KHz
     while (m68k_inc >= samplecnt)
     {
@@ -5409,7 +5409,7 @@ void ScspExecAsync() {
      {
         u32 overrun = (scspsoundoutleft + scspsoundlen) -
            scspsoundbufsize;
-        SCSPLOG("WARNING: Sound buffer overrun, %lu samples\n",
+        YuiMsg("WARNING: Sound buffer overrun, %lu samples\n",
            (long)overrun);
         scspsoundoutleft -= overrun;
      }
