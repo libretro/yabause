@@ -67,6 +67,8 @@ vdp1cmdctrl_struct cmdBufferBeingProcessed[CMD_QUEUE_SIZE];
 
 int vdp1_clock = 0;
 
+static u8 needNewFrame = 1;
+
 static int nbCmdToProcess = 0;
 static int CmdListInLoop = 0;
 static int CmdListLimit = 0x80000;
@@ -278,6 +280,7 @@ int Vdp1Init(void) {
    _Ygl->shallVdp1Erase[0] = 1;
    _Ygl->shallVdp1Erase[1] = 1;
 
+   needNewFrame = 1;
    return 0;
 }
 
@@ -360,6 +363,7 @@ void Vdp1Reset(void) {
    VDP1_MASK = 0xFFFF;
    VIDCore->Vdp1Reset();
    vdp1_clock = 0;
+   needNewFrame = 1;
 }
 
 int VideoSetSetting( int type, int value )
@@ -2636,6 +2640,8 @@ static int Vdp1EraseWrite(int id){
 
 static void startField(void) {
   int isrender = 0;
+  if (needNewFrame != 1) return;
+  needNewFrame = 0;
   updateFBCRMode();
   yabsys.wait_line_count = -1;
   FRAMELOG("StartField ***** VOUT(T) %d FCM=%d FCT=%d VBE=%d PTMR=%d (%d, %d, %d)*****%d (%d)\n", Vdp1External.swap_frame_buffer, (Vdp1Regs->FBCR & 0x02) >> 1, (Vdp1Regs->FBCR & 0x01), (Vdp1Regs->TVMR >> 3) & 0x01, Vdp1Regs->PTMR, Vdp1External.onecyclemode, Vdp1External.manualchange, Vdp1External.manualerase, yabsys.LineCount, yabsys.DecilineCount);
@@ -2795,6 +2801,7 @@ void Vdp1VBlankIN(void)
   if (Vdp1Regs->PTMR == 0x1) Vdp1External.plot_trigger_done = 0;
   //Game test: Akumajou, Dragon Force, Alone in the dark2
   startField();
+  needNewFrame = 1;
 }
 
 void Vdp1SwitchFrame(void)
