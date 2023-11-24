@@ -1217,8 +1217,8 @@ void debugCmdList() {
   for (int i=0;;i++)
   {
      char *string;
-
-     if ((string = Vdp1DebugGetCommandNumberName(i)) == NULL)
+     u32 addr = Vdp1DebugGetCommandAddr(i);
+     if ((string = Vdp1DebugGetCommandNumberName(addr)) == NULL)
         break;
 
      YuiMsg("\t%s\n", string);
@@ -1766,7 +1766,7 @@ static u32 Vdp1DebugGetCommandNumberAddr(u32 number)
 
    command = T1ReadWord(Vdp1Ram, addr);
 
-   while (!(command & 0x8000) && commandCounter != number)
+   while (!(command & 0x8000) && (commandCounter != number) && (commandCounter<2000))
    {
       // Make sure we're still dealing with a valid command
       if (command & 0x00C0)
@@ -1827,13 +1827,51 @@ Vdp1CommandType Vdp1DebugGetCommandType(u32 number)
    return VDPCT_INVALID;
 }
 
+u32 Vdp1DebugGetCommandAddr(u32 number) {
+  return Vdp1DebugGetCommandNumberAddr(number);
+}
 
-char *Vdp1DebugGetCommandNumberName(u32 number)
+char *Vdp1DebugGetCommandRaw(u32 addr)
 {
-   u32 addr;
+   u16 command;
+   if (addr != 0xFFFFFFFF)
+   {
+      char *out = (char*)malloc(128*sizeof(char));
+      command = T1ReadWord(Vdp1Ram, addr);
+
+      if (command & 0x8000) {
+        snprintf(out, 128, "END");
+        return out;
+      }
+
+       // Next, determine where to go next
+       switch ((command & 0x3000) >> 12) {
+       case 0: // NEXT, jump to following table
+          snprintf(out, 128, "NEXT 0x%x", addr+0x20);
+          return out;
+       case 1: // ASSIGN, jump to CMDLINK
+          snprintf(out, 128, "ASSIGN 0x%x", T1ReadWord(Vdp1Ram, addr + 2) * 8);
+          return out;
+          break;
+       case 2: // CALL, call a subroutine
+          snprintf(out, 128, "CALL 0x%x", T1ReadWord(Vdp1Ram, addr + 2) * 8);
+          return out;
+          break;
+       case 3: // RETURN, return from subroutine
+          snprintf(out, 128, "RETURN");
+          return out;
+          break;
+       }
+   }
+   else
+      return NULL;
+}
+
+char *Vdp1DebugGetCommandNumberName(u32 addr)
+{
    u16 command;
 
-   if ((addr = Vdp1DebugGetCommandNumberAddr(number)) != 0xFFFFFFFF)
+   if (addr != 0xFFFFFFFF)
    {
       command = T1ReadWord(Vdp1Ram, addr);
 

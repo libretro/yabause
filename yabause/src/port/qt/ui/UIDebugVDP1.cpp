@@ -117,6 +117,7 @@ UIDebugVDP1::UIDebugVDP1( QWidget* p )
    gvTexture->setScene(scene);
 
    lwCommandList->clear();
+   lwCommandRaw->clear();
 
   Vdp1CommandsCount cmdCount;
   memset(&cmdCount, 0, sizeof(Vdp1CommandsCount));
@@ -126,12 +127,15 @@ UIDebugVDP1::UIDebugVDP1( QWidget* p )
       for (int i=0;;i++)
       {
          char *string;
-
-         if ((string = Vdp1DebugGetCommandNumberName(i)) == NULL)
+         u32 addr = Vdp1DebugGetCommandAddr(i);
+         if ((string = Vdp1DebugGetCommandNumberName(addr)) == NULL)
             break;
 
          Vdp1CountCommands(i, cmdCount);
          lwCommandList->addItem(QtYabause::translate(string));
+         string = Vdp1DebugGetCommandRaw(addr);
+         lwCommandRaw->addItem(string);
+         free(string);
       }
    }
 
@@ -159,37 +163,48 @@ UIDebugVDP1::~UIDebugVDP1()
       free(vdp1RawTexture);
 }
 
+void UIDebugVDP1::syncOnVdp1Entry(int cursel) {
+  char tempstr[1024];
+
+  lwCommandRaw->setCurrentRow(cursel);
+  lwCommandList->setCurrentRow(cursel);
+
+  Vdp1DebugCommand(cursel, tempstr);
+  pteCommandInfo->clear();
+  pteCommandInfo->appendPlainText(QtYabause::translate(tempstr));
+  pteCommandInfo->moveCursor(QTextCursor::Start);
+
+  if (vdp1texture)
+     free(vdp1texture);
+
+  if (vdp1RawTexture)
+     free(vdp1RawTexture);
+
+  vdp1texture = Vdp1DebugTexture(cursel, &vdp1texturew, &vdp1textureh);
+  vdp1RawTexture = Vdp1DebugRawTexture(cursel, &vdp1texturew, &vdp1textureh, &vdp1RawNumBytes);
+
+  pbSaveBitmap->setEnabled(vdp1texture ? true : false);
+  pbSaveRawSprite->setEnabled(vdp1RawTexture ? true : false);
+
+  // Redraw texture
+  QGraphicsScene *scene = gvTexture->scene();
+  QImage img((uchar *)vdp1texture, vdp1texturew, vdp1textureh, QImage::Format_ARGB32);
+  QPixmap pixmap = QPixmap::fromImage(img.rgbSwapped());
+  scene->clear();
+  scene->addPixmap(pixmap);
+  scene->setSceneRect(scene->itemsBoundingRect());
+  gvTexture->fitInView(scene->sceneRect());
+  gvTexture->invalidateScene();
+}
+
+void UIDebugVDP1::on_lwCommandRaw_itemSelectionChanged ()
+{
+   syncOnVdp1Entry(lwCommandRaw->currentRow());
+}
+
 void UIDebugVDP1::on_lwCommandList_itemSelectionChanged ()
 {
-   int cursel = lwCommandList->currentRow();
-   char tempstr[1024];
-
-   Vdp1DebugCommand(cursel, tempstr);
-   pteCommandInfo->clear();
-   pteCommandInfo->appendPlainText(QtYabause::translate(tempstr));
-   pteCommandInfo->moveCursor(QTextCursor::Start);
-
-   if (vdp1texture)
-      free(vdp1texture);
-
-   if (vdp1RawTexture)
-      free(vdp1RawTexture);
-
-   vdp1texture = Vdp1DebugTexture(cursel, &vdp1texturew, &vdp1textureh);
-   vdp1RawTexture = Vdp1DebugRawTexture(cursel, &vdp1texturew, &vdp1textureh, &vdp1RawNumBytes);
-
-   pbSaveBitmap->setEnabled(vdp1texture ? true : false);
-   pbSaveRawSprite->setEnabled(vdp1RawTexture ? true : false);
-
-   // Redraw texture
-   QGraphicsScene *scene = gvTexture->scene();
-   QImage img((uchar *)vdp1texture, vdp1texturew, vdp1textureh, QImage::Format_ARGB32);
-   QPixmap pixmap = QPixmap::fromImage(img.rgbSwapped());
-   scene->clear();
-   scene->addPixmap(pixmap);
-   scene->setSceneRect(scene->itemsBoundingRect());
-   gvTexture->fitInView(scene->sceneRect());
-   gvTexture->invalidateScene();
+   syncOnVdp1Entry(lwCommandList->currentRow());
 }
 
 void UIDebugVDP1::on_pbSaveRawSprite_clicked ()

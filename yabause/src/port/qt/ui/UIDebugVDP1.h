@@ -37,8 +37,10 @@ protected:
 
 protected slots:
    void on_lwCommandList_itemSelectionChanged ();
+   void on_lwCommandRaw_itemSelectionChanged ();
    void on_pbSaveBitmap_clicked ();
 	 void on_pbSaveRawSprite_clicked ();
+	 void syncOnVdp1Entry(int cursel);
 
 };
 
