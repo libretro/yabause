@@ -431,9 +431,7 @@ static INLINE void SH2UBCInterrupt(SH2_struct *context, u32 flag)
 FASTCALL void SH2KronosInterpreterExec(SH2_struct *context, u32 cycles)
 {
   context->target_cycles = context->cycles + cycles;
-  // if (context->interruptReturnAddress == 0) {
     SH2HandleInterrupts(context);
-  // }
   while ((context->cycles < context->target_cycles) || (context->doNotInterrupt != 0)) {
     context->doNotInterrupt = 0;
     //NOTE: it can happen that next cachecode is generating a SH2HandleInterrupts which is normally forbidden when context->doNotInterrupt is not 0
@@ -448,9 +446,7 @@ FASTCALL void SH2KronosInterpreterExec(SH2_struct *context, u32 cycles)
 FASTCALL void SH2KronosInterpreterExecSave(SH2_struct *context, u32 cycles, sh2regs_struct *oldRegs)
 {
   context->target_cycles = context->cycles + cycles;
-  // if (context->interruptReturnAddress == 0) {
-    SH2HandleInterrupts(context);
-  // }
+  SH2HandleInterrupts(context);
   while ((context->cycles < context->target_cycles) || (context->doNotInterrupt != 0)) {
     context->doNotInterrupt = 0;
     //NOTE: it can happen that next cachecode is generating a SH2HandleInterrupts which is normally forbidden when context->doNotInterrupt is not 0
@@ -476,9 +472,7 @@ static int enableTrace = 0;
 FASTCALL void SH2KronosDebugInterpreterExecSave(SH2_struct *context, u32 cycles, sh2regs_struct *oldRegs) {
   context->target_cycles = context->cycles + cycles;
 
-  // if (context->interruptReturnAddress == 0) {
     SH2HandleInterrupts(context);
-  // }
 
    while ((context->cycles < context->target_cycles) || (context->doNotInterrupt != 0))
    {
@@ -553,7 +547,6 @@ FASTCALL void SH2KronosDebugInterpreterExecSave(SH2_struct *context, u32 cycles,
       if (cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] == outOfInt) {
         //OutOfInt
         context->interruptReturnAddress = 0;
-        // SH2HandleInterrupts(context);
       }
 
 #ifdef DMPHISTORY
@@ -592,9 +585,7 @@ FASTCALL void SH2KronosDebugInterpreterExec(SH2_struct *context, u32 cycles)
 {
   context->target_cycles = context->cycles + cycles;
 
-  // if (context->interruptReturnAddress == 0) {
     SH2HandleInterrupts(context);
-  // }
    while ((context->cycles < context->target_cycles) || (context->doNotInterrupt != 0))
 
    {
@@ -673,7 +664,6 @@ FASTCALL void SH2KronosDebugInterpreterExec(SH2_struct *context, u32 cycles)
       if (cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] == outOfInt) {
         //OutOfInt
         context->interruptReturnAddress = 0;
-        // SH2HandleInterrupts(context);
       }
       // Execute it
       if (shallExecute != 0) {
