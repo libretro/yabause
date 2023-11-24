@@ -258,9 +258,6 @@ static void decodeInt(SH2_struct *context) {
   u16 opcode = krfetchlist[id](context, context->regs.PC);
   u32 oldPC = context->regs.PC;
   cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[opcode];
-  // if (context->interruptReturnAddress == 0) {
-    SH2HandleInterrupts(context);
-  // }
   if (context->regs.PC != oldPC) {
     //There was an interrupt to execute
     //Update the command to execute
@@ -275,6 +272,7 @@ static void decodeInt(SH2_struct *context) {
     SH2HandleTrackInfLoop(context);
   }
   opcodeTable[opcode](context);
+  SH2HandleInterrupts(context);
 }
 
 static void outOfInt(SH2_struct *context) {
