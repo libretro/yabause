@@ -99,6 +99,7 @@ static void RequestVdp1ToDraw() {
     FRAMELOG("Shift EDSR\n");
     Vdp1Regs->EDSR >>= 1;
     needVdp1draw = 1;
+    CmdListInLoop = 0;
   }
 }
 
@@ -1362,7 +1363,7 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
    yabsys.vdp1cycles = 0;
    //Shall continue is used for prohibited usage of ENd bit. In case a command is valid (like polygon drawing) but with a end bit set, the command is executed then stopped.
    //Not sure it is really stopped in that case, maybe end bit is ignored for other code than 0x8000
-   while (!(command & 0x8000) && (nbCmdToProcess < CMD_QUEUE_SIZE)) {
+   while (!(command & 0x8000) && (nbCmdToProcess < CMD_QUEUE_SIZE) && (CmdListInLoop == 0)) {
      int ret;
       regs->COPR = (regs->addr & 0x7FFFF) >> 3;
       // First, process the command
@@ -1517,6 +1518,7 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
           if (((regs->addr == oldAddr) && (command & 0x4000)) || (regs->addr == 0))   {
             //The next adress is the same as the old adress and the command is skipped => Exit
             //The next adress is the start of the command list. It means the list has an infinte loop => Exit (used by Burning Rangers)
+            //another example is Kanzen Chuukei Pro Yakyuu
             regs->lCOPR = (regs->addr & 0x7FFFF) >> 3;
             FRAMELOG("Reset vdp1_clock %d %d\n", yabsys.LineCount, __LINE__);
             vdp1_clock = 0;
