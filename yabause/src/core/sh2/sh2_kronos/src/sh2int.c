@@ -852,9 +852,12 @@ static void SH2KronosNotifyInterrupt(SH2_struct *context) {
     //SH2 on a sleep command, wake it up
     context->regs.PC+=2;
   }
-  if ((context->target_cycles != 0) && (context->interruptReturnAddress == 0))
-   {
+
+  if (context->interruptReturnAddress == 0) {
     int addr = (context->regs.PC + 2)>>1;
+    if (context->target_cycles == 0)
+      addr = context->regs.PC>>1;
+
     int id = (addr >> 19) & 0xFFF;
     cacheCode[context->isslave][cacheId[id]][addr & cacheMask[cacheId[id]]] = decodeInt;
   }
