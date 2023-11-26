@@ -1922,7 +1922,7 @@ void FRTExec(SH2_struct *context)
       if (context->onchip.FTCSR & 0x1)
       {
          frctemp = 0;
-         context->frc.leftover = (frctemp-context->onchip.OCRA) << context->frc.shift;
+         context->frc.leftover = ((frctemp-context->onchip.OCRA) << context->frc.shift)& mask;
       }
 
       // Set OCFA flag
@@ -1946,7 +1946,7 @@ void FRTExec(SH2_struct *context)
        SH2EvaluateInterrupt(context);
      }
      frctemp = 0;
-     context->frc.leftover = (frctemp-0xFFFF) << context->frc.shift;
+     context->frc.leftover = ((frctemp-0xFFFF) << context->frc.shift)& mask;
    }
 
    // Write new FRC value
