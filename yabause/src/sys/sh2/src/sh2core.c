@@ -592,6 +592,7 @@ void OnchipReset(SH2_struct *context) {
    context->onchip.RDR = 0x00;
    context->onchip.TIER = 0x01;
    context->onchip.FTCSR = 0x00;
+   context->onchip.FTCSRM = 0x00;
    context->onchip.FRC.all = 0x0000;
    context->onchip.OCRA = 0xFFFF;
    context->onchip.OCRB = 0xFFFF;
@@ -693,8 +694,10 @@ u8 FASTCALL OnchipReadByte(SH2_struct *context, u32 addr) {
          return context->onchip.RDR;
       case 0x010:
          return context->onchip.TIER;
-      case 0x011:
-         return context->onchip.FTCSR;
+      case 0x011:{
+        context->onchip.FTCSRM = 0x00;
+        return context->onchip.FTCSR;
+      }
       case 0x012:
          return context->onchip.FRC.part.H;
       case 0x013:
@@ -977,7 +980,7 @@ void FASTCALL OnchipWriteByte(SH2_struct *context, u32 addr, u8 val) {
          SH2EvaluateInterrupt(context);
          return;
       case 0x011:
-         context->onchip.FTCSR = (context->onchip.FTCSR & (val & 0xFE)) | (val & 0x1);
+         context->onchip.FTCSR = (context->onchip.FTCSR & ((val|context->onchip.FTCSRM) & 0x8E)) | (val & 0x1);
          SH2EvaluateInterrupt(context);
          return;
       case 0x012:
@@ -1922,11 +1925,12 @@ void FRTExec(SH2_struct *context)
       if (context->onchip.FTCSR & 0x1)
       {
          frctemp = 0;
-         context->frc.leftover = ((frctemp-context->onchip.OCRA) << context->frc.shift)& mask;
+         context->frc.leftover = (context->frc.leftover+((frctemp-context->onchip.OCRA) << context->frc.shift));
       }
 
       // Set OCFA flag
       context->onchip.FTCSR |= 0x8;
+      context->onchip.FTCSRM |= 0x8;
       SH2EvaluateInterrupt(context);
    }
 
@@ -1935,6 +1939,7 @@ void FRTExec(SH2_struct *context)
    {
       // Set OCFB flag
       context->onchip.FTCSR |= 0x4;
+      context->onchip.FTCSRM |= 0x4;
       SH2EvaluateInterrupt(context);
    }
 
@@ -1942,11 +1947,12 @@ void FRTExec(SH2_struct *context)
    if (frctemp > 0xFFFF) {
      if ((context->onchip.FTCSR & 0x2)== 0x0)
      {
-       context->onchip.FTCSR |= 2;
+       context->onchip.FTCSR |= 0x2;
+       context->onchip.FTCSRM |= 0x2;
        SH2EvaluateInterrupt(context);
      }
      frctemp = 0;
-     context->frc.leftover = ((frctemp-0xFFFF) << context->frc.shift)& mask;
+     context->frc.leftover = (context->frc.leftover+((frctemp>>16) << context->frc.shift));
    }
 
    // Write new FRC value
@@ -2270,6 +2276,7 @@ void FASTCALL MSH2InputCaptureWriteWord(SH2_struct *context, UNUSED u8* memory, 
    FRTExec(MSH2);
    // Set Input Capture Flag
    MSH2->onchip.FTCSR |= 0x80;
+   MSH2->onchip.FTCSRM |= 0x80;
 
    // Copy FRC register to FICR
    MSH2->onchip.FICR = MSH2->onchip.FRC.all;
@@ -2288,6 +2295,7 @@ void FASTCALL SSH2InputCaptureWriteWord(SH2_struct *context, UNUSED u8* memory, 
    FRTExec(SSH2);
    // Set Input Capture Flag
    SSH2->onchip.FTCSR |= 0x80;
+   SSH2->onchip.FTCSRM |= 0x80;
 
    // Copy FRC register to FICR
    SSH2->onchip.FICR = SSH2->onchip.FRC.all;

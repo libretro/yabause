@@ -118,6 +118,7 @@ typedef struct
    u8 RDR;     // 0xFFFFFE05
    u8 TIER;    // 0xFFFFFE10
    u8 FTCSR;   // 0xFFFFFE11
+   u8 FTCSRM;   // 0xFFFFFE11 //Mask
 
 #ifdef WORDS_BIGENDIAN
   union {
