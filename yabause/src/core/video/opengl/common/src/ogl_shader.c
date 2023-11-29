@@ -551,49 +551,6 @@ const GLchar version_core_4_2[] = {
 SHADER_VERSION_TESS
 };
 
-
-//Common Vertex shader
-const GLchar vdp1drawvertex_normal[] = {
-  "layout (location = 0) in vec4 a_position; \n"
-  "layout (location = 1) in vec4 a_texcoord; \n"
-  "layout (location = 2) in vec4 a_grcolor;  \n"
-  "uniform vec2 u_texsize;    \n"
-  "uniform mat4 u_mvpMatrix; \n"
-  "out vec3 v_position;  \n"
-  "out vec4 v_texcoord; \n"
-  "out vec4 v_vtxcolor; \n"
-  "void main() {     \n"
-  "   gl_Position  = a_position*u_mvpMatrix; \n"
-  "   v_vtxcolor  = a_grcolor;  \n"
-  "   v_texcoord  = a_texcoord; \n"
-  "   v_texcoord.x  = v_texcoord.x / u_texsize.x; \n"
-  "   v_texcoord.y  = v_texcoord.y / u_texsize.y; \n"
-  "}\n"
-};
-
-const GLchar vdp1drawvertex_tess[] = {
-  "layout (location = 0) in vec4 a_position; \n"
-  "layout (location = 1) in vec4 a_texcoord; \n"
-  "layout (location = 2) in vec4 a_grcolor;  \n"
-  "uniform vec2 u_texsize;    \n"
-  "uniform mat4 u_mvpMatrix; \n"
-  "out vec3 v_position;  \n"
-  "out vec4 v_texcoord; \n"
-  "out vec4 v_vtxcolor; \n"
-  "void main() {     \n"
-  "   v_position  = a_position.xyz; \n"
-  "   v_vtxcolor  = a_grcolor;  \n"
-  "   v_texcoord  = a_texcoord; \n"
-  "   v_texcoord.x  = v_texcoord.x / u_texsize.x; \n"
-  "   v_texcoord.y  = v_texcoord.y / u_texsize.y; \n"
-  "}\n"
-};
-
-const GLchar* vdp1drawvertex[2]= {
-  vdp1drawvertex_normal,
-  vdp1drawvertex_tess
-};
-
 /*------------------------------------------------------------------------------------
  *  VDP2 Draw Frame buffer Operation
  * ----------------------------------------------------------------------------------*/
