@@ -729,6 +729,7 @@ extern u8 * YglGetVDP2RegPointer();
 
 int Ygl_uniformVDP2DrawFramebuffer(float * offsetcol, int nb_screen, Vdp2* varVdp2Regs);
 
+void showMatrix(YglMatrix *mat, const char* name);
 void YglOrtho(YglMatrix *result, float left, float right, float bottom, float top, float nearZ, float farZ);
 void YglLoadIdentity(YglMatrix *result);
 void YglMatrixMultiply(YglMatrix *result, YglMatrix *srcA, YglMatrix *srcB);

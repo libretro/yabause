@@ -95,6 +95,18 @@ static void MessageCallback( GLenum source,
 
 void YglGenerate();
 
+
+void showMatrix(YglMatrix *mat, const char* name) {
+  YuiMsg("===== %s =======\n", name);
+  for (int l = 0; l<4; l++) {
+    for (int c = 0; c<4; c++) {
+      YuiMsg("%02.04f ", mat->m[l][c]);
+    }
+    YuiMsg("\n");
+  }
+  YuiMsg("===== End =======\n");
+}
+
 void YglOrtho(YglMatrix *result, float left, float right, float bottom, float top, float nearZ, float farZ)
 {
     float       deltaX = right - left;
