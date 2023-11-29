@@ -537,8 +537,7 @@ static const GLchar Yglprg_vdp2_common_draw[] =
 "  if (ram_mode != 1) u_color_ram_offset = u_color_ram_offset & 0x300;\n"
 "  fbmode = 1;\n"
 "  vdp1mode = 1;\n"
-"  ivec2 fbCoord = addr + ivec2(x*vdp1Ratio.x, 0);\n"
-"  fbCoord = getFBCoord(fbCoord);\n"
+"  ivec2 fbCoord = getFBCoord() + ivec2(x*vdp1Ratio.x, 0);\n"
 "  vec4 col = texelFetch(s_vdp1FrameBuffer, fbCoord, 0);\n"
 "  vec4 meshpix = texelFetch(s_vdp1Mesh, fbCoord, 0);\n"
 "  FBTest = col;\n"
@@ -593,7 +592,7 @@ static const GLchar Yglprg_vdp2_common_draw[] =
 "    tmpColor.b += (int(col.a*255.0)&0x7)/255.0;\n"
 "    msb = 1;\n"
 "  } \n"
-"  ret.offset_color = texelFetch( s_perline, ivec2(int( (u_vheight-PosY) * u_emu_height), is_perline[6]), 0 ).rgb;\n"
+"  ret.offset_color = texelFetch( s_perline, ivec2(int(PosY * u_emu_height), is_perline[6]), 0 ).rgb;\n"
 "  ret.offset_color = (ret.offset_color - vec3(0.5))*2.0;\n"
 "  if (fbmode != 0) {\n";
 
@@ -605,7 +604,7 @@ static const GLchar Yglprg_vdp2_common_part[] =
 "void initLineWindow() {\n"
 "  ivec2 linepos; \n "
 "  linepos.y = 0; \n "
-"  linepos.x = int( (u_vheight-PosY) * u_emu_height);\n"
+"  linepos.x = int( PosY * u_emu_height);\n"
 "  vec4 lineW0 = texelFetch(s_win0,linepos,0);\n"
 "  startW0.x = int(((lineW0.r*255.0) + (int(lineW0.g*255.0)<<8))*u_emu_vdp2_width);\n"
 "  endW0.x = int(((lineW0.b*255.0) + (int(lineW0.a*255.0)<<8))*u_emu_vdp2_width);\n"
@@ -1174,12 +1173,12 @@ vec4 cl_off_rbg0 = vec4(0.0);\n \
 vec4 cl_off_rbg1 = vec4(0.0);\n \
 ivec2 addr = ivec2(textureSize(s_back, 0) * v_texcoord.st);\n \
 colorback = texelFetch( s_back, addr,0 );\n \
-ivec2 linepos = ivec2(int( (u_vheight-PosY) * u_emu_height), 0);\n \
+ivec2 linepos = ivec2(int(PosY * u_emu_height), 0);\n \
 linepos.y = is_perline[7];\n \
 if (mod(PosY,2) == nbFrame) discard;\n \
 offset_color = texelFetch( s_perline, linepos,0 ).rgb;\n \
 offset_color.rgb = (offset_color.rgb - vec3(0.5))*2.0;\n \
-addr = ivec2(tvSize * vdp1Ratio * v_texcoord.st);\n \
+addr = ivec2(gl_FragCoord.xy);\n \
 initLineWindow();\n \
 colortop = colorback;\n \
 isRGBtop = 1;\n \

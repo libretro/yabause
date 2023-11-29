@@ -635,11 +635,8 @@ uniform vec2 vdp1Shift; \n \
 uniform mat4 rotVdp1; \n \
 int PosY = int(gl_FragCoord.y)+1;\n \
 int PosX = int(gl_FragCoord.x);\n \
-ivec2 getFBCoord(ivec2 pos) {\n \
- pos.y -= int(tvSize.y*vdp1Ratio.y); \n \
- pos = ivec2((rotVdp1*vec4(vec2(pos), 1.0, 1.0)).xy+vdp1Shift) ;\n \
- pos.y += textureSize(s_vdp1FrameBuffer, 0).y ;\n \
- return pos; \n \
+ivec2 getFBCoord() {\n \
+ return ivec2((rotVdp1*gl_FragCoord).xy+vdp1Shift*vdp1Ratio) ;\n \
 "
 
 #define SAMPLER_TEX(ID) "\
@@ -657,6 +654,7 @@ SHADER_VERSION
 "out vec4 thirdColor; \n"
 "out vec4 fourthColor; \n"
 #endif
+"layout(origin_upper_left) in vec4 gl_FragCoord; \n"
 SAMPLER_TEX(0)
 SAMPLER_TEX(1)
 SAMPLER_TEX(2)
@@ -677,6 +675,7 @@ SHADER_VERSION
 "out vec4 thirdColor; \n"
 "out vec4 fourthColor; \n"
 #endif
+"layout(origin_upper_left) in vec4 gl_FragCoord; \n"
 SAMPLER_TEX(0)
 SAMPLER_TEX(1)
 SAMPLER_TEX(2)
@@ -696,6 +695,7 @@ SHADER_VERSION
 "out vec4 thirdColor; \n"
 "out vec4 fourthColor; \n"
 #endif
+"layout(origin_upper_left) in vec4 gl_FragCoord; \n"
 SAMPLER_TEX(0)
 SAMPLER_TEX(1)
 SAMPLER_TEX(2)
@@ -714,6 +714,7 @@ SHADER_VERSION
 "out vec4 thirdColor; \n"
 "out vec4 fourthColor; \n"
 #endif
+"layout(origin_upper_left) in vec4 gl_FragCoord; \n"
 SAMPLER_TEX(0)
 SAMPLER_TEX(1)
 SAMPLER_TEX(2)
@@ -731,6 +732,7 @@ SHADER_VERSION
 "out vec4 thirdColor; \n"
 "out vec4 fourthColor; \n"
 #endif
+"layout(origin_upper_left) in vec4 gl_FragCoord; \n"
 SAMPLER_TEX(0)
 SAMPLER_TEX(1)
 COMMON_START
@@ -747,6 +749,7 @@ SHADER_VERSION
 "out vec4 thirdColor; \n"
 "out vec4 fourthColor; \n"
 #endif
+"layout(origin_upper_left) in vec4 gl_FragCoord; \n"
 SAMPLER_TEX(0)
 COMMON_START
 "}\n";
@@ -762,6 +765,7 @@ SHADER_VERSION
 "out vec4 thirdColor; \n"
 "out vec4 fourthColor; \n"
 #endif
+"layout(origin_upper_left) in vec4 gl_FragCoord; \n"
 COMMON_START
 "}\n";
 
@@ -780,7 +784,7 @@ const GLchar Yglprg_vdp2_drawfb_gl_cram_f[] =
 "  return int(texelFetch(s_vdp2reg, ivec2(id, line), 0).r*255.0);\n"
 "}\n"
 "FBCol getFB(int x, ivec2 addr){ \n"
-"  vec4 lineCoord = vec4(gl_FragCoord.x, (u_vheight-gl_FragCoord.y), 0.0, 0.0);\n"
+"  vec4 lineCoord = vec4(gl_FragCoord.x, gl_FragCoord.y, 0.0, 0.0);\n"
 "  int line = int(lineCoord.y * u_emu_height);\n";
 
 static const GLchar vdp2blit_gl_end_f[] =
@@ -1067,6 +1071,7 @@ static const char fclear_img[] =
   "#ifdef GL_ES\n"
   "precision highp float;       \n"
   "#endif\n"
+  "layout(origin_upper_left) in vec4 gl_FragCoord; \n"
   "uniform float u_emu_height; \n"
   "uniform float u_vheight; \n"
   "uniform sampler2D u_Clear;     \n"
@@ -1075,7 +1080,7 @@ static const char fclear_img[] =
   "{  \n"
 "    ivec2 linepos; \n "
 "    linepos.y = 0; \n "
-"    linepos.x = int( (u_vheight-gl_FragCoord.y) * u_emu_height);\n"
+"    linepos.x = int( gl_FragCoord.y * u_emu_height);\n"
   "  fragColor = texelFetch( u_Clear, linepos,0 ); \n"
   "} \n";
 
@@ -1337,12 +1342,13 @@ int YglBlitTexture(int* prioscreens, int* modescreens, int* isRGB, int * isBlur,
     float dY = Vdp1ParaA.deltaY;
 
     m.m[0][0] = dX;
-    m.m[0][1] = Xsp;
-    m.m[1][0] = dY;
+    m.m[0][1] = dY;
+    m.m[1][0] = Xsp;
     m.m[1][1] = Ysp;
 
-    mX = dX*Xp + Xsp*Yp;
-    mY = -(dY*Xp + Ysp*Yp);
+    // showMatrix(&m, "Rotation");
+    mX = Xp;
+    mY = Yp;
   }
   glUniform2f(glGetUniformLocation(vdp2blit_prg, "vdp1Shift"), mX, mY);
   glUniformMatrix4fv(glGetUniformLocation(vdp2blit_prg, "rotVdp1"), 1, 0, (GLfloat*)m.m);

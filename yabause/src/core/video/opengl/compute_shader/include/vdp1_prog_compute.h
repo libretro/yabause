@@ -92,10 +92,10 @@ SHADER_VERSION_COMPUTE
 "  ivec2 size = imageSize(outSurface);\n"
 "  ivec2 texel = ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);\n"
 "  if (texel.x >= size.x || texel.y >= size.y ) return;\n"
-"  if (texel.x < limits.x) return;"
-"  if (texel.y > limits.y) return;"
-"  if (texel.x > limits.z) return;"
-"  if (texel.y < limits.w) return;"
+"  if (texel.x < limits.x) return;\n"
+"  if (texel.y < limits.y) return;\n"
+"  if (texel.x > limits.z) return;\n"
+"  if (texel.y > limits.w) return;\n"
 "  imageStore(outSurface,texel,col);\n"
 "  imageStore(outMesh, texel, vec4(0.0));\n"
 "}\n";
@@ -749,14 +749,14 @@ static const char vdp1_continue_no_mesh_f[] =
 static const char vdp1_end_f[] =
 "  }\n"
 "  if (!drawn) return;\n"
-"  imageStore(outSurface,ivec2(int(pos.x), int(size.y - 1.0 - pos.y)),finalColor);\n"
+"  imageStore(outSurface,ivec2(int(pos.x), int(pos.y)),finalColor);\n"
 "}\n";
 
 static const char vdp1_end_mesh_f[] =
 "  }\n"
 "  if (!drawn) return;\n"
-"  imageStore(outSurface,ivec2(int(pos.x), int(size.y - 1.0 - pos.y)),finalColor);\n"
-"  imageStore(meshSurface,ivec2(int(pos.x), int(size.y - 1.0 - pos.y)),meshColor);\n"
+"  imageStore(outSurface,ivec2(int(pos.x), int(pos.y)),finalColor);\n"
+"  imageStore(meshSurface,ivec2(int(pos.x), int(pos.y)),meshColor);\n"
 "}\n";
 
 #ifdef __cplusplus
