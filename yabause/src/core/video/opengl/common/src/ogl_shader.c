@@ -1296,13 +1296,6 @@ int YglBlitTexture(int* prioscreens, int* modescreens, int* isRGB, int * isBlur,
   glUniform1i(glGetUniformLocation(vdp2blit_prg, "use_trans_shadow"), ((varVdp2Regs->SDCTL>>8)&0x1));
   glUniform2i(glGetUniformLocation(vdp2blit_prg, "tvSize"), (int)(_Ygl->rwidth*_Ygl->vdp1wdensity/_Ygl->vdp2wdensity), (int)(_Ygl->rheight*_Ygl->vdp1hdensity/_Ygl->vdp2hdensity));
 
-  // const float rotMat[9] = {
-  //   Vdp1ParaA.deltaX, Vdp1ParaA.deltaXst, 0.0,
-  //   Vdp1ParaA.deltaY, Vdp1ParaA.deltaYst, 0.0,
-  //   0.0, 0.0, 1.0,
-  // };
-  // glUniformMatrix3fv(glGetUniformLocation(vdp2blit_prg, "MatRot"), 1, GL_FALSE, rotMat);
-  // glUniform3f(glGetUniformLocation(vdp2blit_prg, "C"), Vdp1ParaA.Cx, Vdp1ParaA.Cy, Vdp1ParaA.Cz);
   glUniform1i(glGetUniformLocation(vdp2blit_prg, "win_s"), Win_s);
   glUniform1i(glGetUniformLocation(vdp2blit_prg, "win_s_mode"), Win_s_mode);
   glUniform1i(glGetUniformLocation(vdp2blit_prg, "win0"), Win0);
