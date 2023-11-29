@@ -631,10 +631,15 @@ uniform int win1; \n \
 uniform int win1_mode; \n \
 uniform int win_op; \n \
 uniform int nbFrame; \n \
+uniform vec2 vdp1Shift; \n \
+uniform mat4 rotVdp1; \n \
 int PosY = int(gl_FragCoord.y)+1;\n \
 int PosX = int(gl_FragCoord.x);\n \
-vec2 getFBCoord(vec2 pos) {\n \
- return pos;\n \
+ivec2 getFBCoord(ivec2 pos) {\n \
+ pos.y -= int(tvSize.y*vdp1Ratio.y); \n \
+ pos = ivec2((rotVdp1*vec4(vec2(pos), 1.0, 1.0)).xy+vdp1Shift) ;\n \
+ pos.y += textureSize(s_vdp1FrameBuffer, 0).y ;\n \
+ return pos; \n \
 "
 
 #define SAMPLER_TEX(ID) "\
@@ -1317,6 +1322,30 @@ int YglBlitTexture(int* prioscreens, int* modescreens, int* isRGB, int * isBlur,
 #else
   glUniform1i(glGetUniformLocation(vdp2blit_prg, "nbFrame"),-1);
 #endif
+
+  YglMatrix m;
+
+  float mX = 0.0f, mY = 0.0f;
+  YglLoadIdentity(&m);
+  if (Vdp1Regs->TVMR & 0x02) {
+    float Xsp = Vdp1ParaA.deltaXst;
+    float Xp = Vdp1ParaA.Xst;
+    float Ysp = Vdp1ParaA.deltaYst;
+    float Yp = Vdp1ParaA.Yst;
+
+    float dX = Vdp1ParaA.deltaX;
+    float dY = Vdp1ParaA.deltaY;
+
+    m.m[0][0] = dX;
+    m.m[0][1] = Xsp;
+    m.m[1][0] = dY;
+    m.m[1][1] = Ysp;
+
+    mX = dX*Xp + Xsp*Yp;
+    mY = -(dY*Xp + Ysp*Yp);
+  }
+  glUniform2f(glGetUniformLocation(vdp2blit_prg, "vdp1Shift"), mX, mY);
+  glUniformMatrix4fv(glGetUniformLocation(vdp2blit_prg, "rotVdp1"), 1, 0, (GLfloat*)m.m);
 
   glDisable(GL_DEPTH_TEST);
   glDisable(GL_BLEND);

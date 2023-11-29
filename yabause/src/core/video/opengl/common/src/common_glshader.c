@@ -538,7 +538,7 @@ static const GLchar Yglprg_vdp2_common_draw[] =
 "  fbmode = 1;\n"
 "  vdp1mode = 1;\n"
 "  ivec2 fbCoord = addr + ivec2(x*vdp1Ratio.x, 0);\n"
-"  fbCoord = ivec2(getFBCoord(vec2(fbCoord)));\n"
+"  fbCoord = getFBCoord(fbCoord);\n"
 "  vec4 col = texelFetch(s_vdp1FrameBuffer, fbCoord, 0);\n"
 "  vec4 meshpix = texelFetch(s_vdp1Mesh, fbCoord, 0);\n"
 "  FBTest = col;\n"
@@ -1180,7 +1180,6 @@ if (mod(PosY,2) == nbFrame) discard;\n \
 offset_color = texelFetch( s_perline, linepos,0 ).rgb;\n \
 offset_color.rgb = (offset_color.rgb - vec3(0.5))*2.0;\n \
 addr = ivec2(tvSize * vdp1Ratio * v_texcoord.st);\n \
-addr.y += textureSize(s_vdp1FrameBuffer, 0).y - int(tvSize.y*vdp1Ratio.y);\n \
 initLineWindow();\n \
 colortop = colorback;\n \
 isRGBtop = 1;\n \
