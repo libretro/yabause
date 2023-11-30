@@ -607,7 +607,7 @@ uniform sampler2D s_color; \n \
 uniform sampler2D s_vdp2reg; \n \
 uniform sampler2D s_perline; \n \
 uniform float u_emu_height;\n \
-uniform float u_emu_vdp1_width;\n \
+uniform vec2 u_emu_vdp1_ratio;\n \
 uniform float u_emu_vdp2_width;\n \
 uniform float u_vheight; \n \
 uniform vec2 vdp1Ratio; \n \
@@ -637,8 +637,8 @@ int PosY = int(gl_FragCoord.y)+1;\n \
 int PosX = int(gl_FragCoord.x);\n \
 ivec2 getFBCoord() {\n \
  vec4 scaledPos = gl_FragCoord;\n \
- scaledPos.y *= u_emu_height;\n \
- return ivec2((rotVdp1*scaledPos).xy+vdp1Shift*vdp1Ratio) ;\n \
+ scaledPos.xy *= u_emu_vdp1_ratio;\n \
+ return ivec2((rotVdp1*scaledPos).xy+vdp1Shift*u_emu_vdp1_ratio) ;\n \
 "
 
 #define SAMPLER_TEX(ID) "\
@@ -1291,7 +1291,27 @@ int YglBlitTexture(int* prioscreens, int* modescreens, int* isRGB, int * isBlur,
   glUniform1i(glGetUniformLocation(vdp2blit_prg, "s_lncl_off_rgb0"), 17);
   glUniform1i(glGetUniformLocation(vdp2blit_prg, "s_lncl_off_rgb1"), 18);
   glUniform1f(glGetUniformLocation(vdp2blit_prg, "u_emu_height"),(float)_Ygl->rheight / (float)_Ygl->height);
-  glUniform1f(glGetUniformLocation(vdp2blit_prg, "u_emu_vdp1_width"),_Ygl->vdp1width/512.0f);
+  YGLLOG("All: \n\
+    rheight %d\n\
+    height %d\n\
+    vdp1 height %d\n \
+    vdp1 HRatio %f\n\
+    vdp1hdensity %f\n\
+    vdp2hdensity %f\n\
+    ",
+    _Ygl->rheight,
+    _Ygl->height,
+    _Ygl->vdp1height,
+    _Ygl->vdp1hratio,
+    _Ygl->vdp1hdensity,
+    _Ygl->vdp2hdensity
+    );
+  YGLLOG("result => %f\n", _Ygl->vdp1hratio*_Ygl->vdp1hdensity/_Ygl->vdp2hdensity * (float)_Ygl->rheight/(float)_Ygl->height);
+
+  glUniform2f(glGetUniformLocation(vdp2blit_prg, "u_emu_vdp1_ratio"),
+    _Ygl->vdp1wratio*_Ygl->vdp1wdensity/_Ygl->vdp2wdensity * (float)_Ygl->rwidth/(float)_Ygl->width,
+    _Ygl->vdp1hratio*_Ygl->vdp1hdensity/_Ygl->vdp2hdensity * (float)_Ygl->rheight/(float)_Ygl->height
+  );
   glUniform1f(glGetUniformLocation(vdp2blit_prg, "u_emu_vdp2_width"),(float)(_Ygl->width) / (float)(_Ygl->rwidth));
   glUniform1f(glGetUniformLocation(vdp2blit_prg, "u_vheight"), (float)_Ygl->height);
   glUniform2f(glGetUniformLocation(vdp2blit_prg, "vdp1Ratio"), _Ygl->vdp1wratio, _Ygl->vdp1hratio);//((float)_Ygl->rwidth*(float)_Ygl->vdp1wratio * (float)_Ygl->vdp1wdensity)/((float)_Ygl->vdp1width*(float)_Ygl->vdp2wdensity), ((float)_Ygl->rheight*(float)_Ygl->vdp1hratio * (float)_Ygl->vdp1hdensity)/((float)_Ygl->vdp1height * (float)_Ygl->vdp2hdensity));
