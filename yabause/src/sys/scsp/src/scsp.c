@@ -5409,7 +5409,7 @@ void ScspExecAsync() {
      {
         u32 overrun = (scspsoundoutleft + scspsoundlen) -
            scspsoundbufsize;
-        YuiMsg("WARNING: Sound buffer overrun, %lu samples\n",
+        SCSPLOG("WARNING: Sound buffer overrun, %lu samples\n",
            (long)overrun);
         scspsoundoutleft -= overrun;
      }
