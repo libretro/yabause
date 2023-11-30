@@ -638,7 +638,7 @@ int PosX = int(gl_FragCoord.x);\n \
 ivec2 getFBCoord() {\n \
  vec4 scaledPos = gl_FragCoord;\n \
  scaledPos.xy *= u_emu_vdp1_ratio;\n \
- return ivec2((rotVdp1*scaledPos).xy+vdp1Shift*u_emu_vdp1_ratio) ;\n \
+ return ivec2((rotVdp1*scaledPos).xy+vdp1Shift*vdp1Ratio) ;\n \
 "
 
 #define SAMPLER_TEX(ID) "\
