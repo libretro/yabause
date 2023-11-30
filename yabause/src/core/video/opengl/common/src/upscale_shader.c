@@ -3,7 +3,6 @@
 #include "hq4x_lut.h"
 #include "6xbrz_shader.h"
 #include "4xbrz_shader.h"
-#include "2xbrz_shader.h"
 
 static const GLchar * fblithq4x_v[] = { Yglprg_blit_hq4x_v, NULL };
 static const GLchar * fblithq4x_f[] = { Yglprg_blit_hq4x_f, NULL };
@@ -11,8 +10,6 @@ static const GLchar * fblit6xbrz_v[] = { Yglprg_blit_6xbrz_v, NULL };
 static const GLchar * fblit6xbrz_f[] = { Yglprg_blit_6xbrz_f, NULL };
 static const GLchar * fblit4xbrz_v[] = { Yglprg_blit_4xbrz_v, NULL };
 static const GLchar * fblit4xbrz_f[] = { Yglprg_blit_4xbrz_f, NULL };
-static const GLchar * fblit2xbrz_v[] = { Yglprg_blit_2xbrz_v, NULL };
-static const GLchar * fblit2xbrz_f[] = { Yglprg_blit_2xbrz_f, NULL };
 
 static int up_prg = -1;
 static int up_mode = -1;
@@ -117,9 +114,6 @@ int YglUpscaleFramebuffer(u32 srcTexture, u32 targetFbo, float w, float h, float
       case UP_4XBRZ:
         glShaderSource(vshader, 1, fblit4xbrz_v, NULL);
         break;
-      case UP_2XBRZ:
-        glShaderSource(vshader, 1, fblit2xbrz_v, NULL);
-        break;
     }
     glCompileShader(vshader);
     glGetShaderiv(vshader, GL_COMPILE_STATUS, &compiled);
@@ -138,9 +132,6 @@ int YglUpscaleFramebuffer(u32 srcTexture, u32 targetFbo, float w, float h, float
         break;
       case UP_4XBRZ:
         glShaderSource(fshader, 1, fblit4xbrz_f, NULL);
-        break;
-      case UP_2XBRZ:
-        glShaderSource(fshader, 1, fblit2xbrz_f, NULL);
         break;
     }
     glCompileShader(fshader);

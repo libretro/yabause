@@ -282,9 +282,6 @@ int Ygl_useUpscaleBuffer(void){
     case UP_4XBRZ:
       up_scale = 4;
       break;
-    case UP_2XBRZ:
-      up_scale = 2;
-      break;
     default:
       up_scale = 1;
   }

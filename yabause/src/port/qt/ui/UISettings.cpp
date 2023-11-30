@@ -102,9 +102,8 @@ const Items mVideoFilterMode = Items()
 const Items mUpscaleFilterMode = Items()
 	<< Item("0", "None")
 	<< Item("1", "HQ4x")
-	<< Item("2", "2xBRZ")
-	<< Item("3", "4xBRZ")
-	<< Item("4", "6xBRZ");
+	<< Item("2", "4xBRZ")
+	<< Item("3", "6xBRZ");
 
 const Items mPolygonGenerationMode = Items()
 	<< Item("0", "Triangles using perspective correction")
