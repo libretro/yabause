@@ -1030,9 +1030,6 @@ int YglInit(int width, int height, unsigned int depth) {
   glClearBufferfv(GL_COLOR, 0, col);
   glClearBufferfi(GL_DEPTH_STENCIL, 0, 0, 0);
 
-  YglLoadIdentity(&_Ygl->mtxModelView);
-  YglOrtho(&_Ygl->mtxModelView, 0.0f, 512.0f, 256.0f, 0.0f, 10.0f, 0.0f);
-
   glDisable(GL_BLEND);
 
   glDisable(GL_DEPTH_TEST);
@@ -2153,7 +2150,6 @@ void setupMaxSize() {
 //////////////////////////////////////////////////////////////////////////////
 
 void YglChangeResolution(int w, int h) {
-  YglLoadIdentity(&_Ygl->mtxModelView);
   YglLoadIdentity(&_Ygl->rbgModelView);
   float ratio = (float)w/(float)h;
   int par = w/h;
@@ -2205,7 +2201,6 @@ void YglChangeResolution(int w, int h) {
   _Ygl->vdp1wratio = (float)scale;
   _Ygl->vdp1hratio = (float)scale;
 
-  YglOrtho(&_Ygl->mtxModelView, 0.0f, _Ygl->vdp1width, _Ygl->vdp1height, 0.0f, 10.0f, 0.0f);
   rebuild_frame_buffer = 1;
 
   //Effective vdp2 upscale ratio
