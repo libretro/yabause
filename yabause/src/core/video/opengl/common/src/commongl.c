@@ -939,7 +939,7 @@ int YglInit(int width, int height, unsigned int depth) {
 
   glGetIntegerv(GL_MAJOR_VERSION, &maj);
   glGetIntegerv(GL_MINOR_VERSION, &min);
-
+#ifndef __LIBRETRO__
   #if defined(_OGLES3_)
     if (!((maj >=3) && (min >=1))){
       YabErrorMsg("Your graphic card is supporting OpenGLES %d.%d. OpenGLES 3.1 is required!\n", maj, min);
@@ -951,6 +951,7 @@ int YglInit(int width, int height, unsigned int depth) {
       return -1;
     }
   #endif
+#endif
 
   if ((_Ygl = (Ygl *)malloc(sizeof(Ygl))) == NULL) {
     return -1;
