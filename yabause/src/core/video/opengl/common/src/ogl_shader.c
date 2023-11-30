@@ -636,7 +636,9 @@ uniform mat4 rotVdp1; \n \
 int PosY = int(gl_FragCoord.y)+1;\n \
 int PosX = int(gl_FragCoord.x);\n \
 ivec2 getFBCoord() {\n \
- return ivec2((rotVdp1*gl_FragCoord).xy+vdp1Shift*vdp1Ratio) ;\n \
+ vec4 scaledPos = gl_FragCoord;\n \
+ scaledPos.y *= u_emu_height;\n \
+ return ivec2((rotVdp1*scaledPos).xy+vdp1Shift*vdp1Ratio) ;\n \
 "
 
 #define SAMPLER_TEX(ID) "\
