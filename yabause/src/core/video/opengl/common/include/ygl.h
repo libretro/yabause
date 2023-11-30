@@ -232,7 +232,6 @@ typedef struct {
 	int flip;
 	int priority;
 	int dst;
-  int uclipmode;
   s32 cor;
   s32 cog;
   s32 cob;
@@ -353,7 +352,6 @@ typedef struct {
    int currentQuad;
    int maxQuad;
    int vaid;
-   char uClipMode;
    short ux1,uy1,ux2,uy2;
    GLuint vertexp;
    GLuint texcoordp;
@@ -578,7 +576,6 @@ typedef struct {
    int WinS_mode[enBGMAX+1];
    int Win_op[enBGMAX+1];
 
-   YglMatrix mtxModelView;
    YglMatrix rbgModelView;
 
    YglProgram windowpg;

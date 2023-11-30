@@ -112,7 +112,6 @@ typedef struct
    int flipfunction;
    int priority;
    int dst;
-   int uclipmode;
    s32 cor;
    s32 cog;
    s32 cob;

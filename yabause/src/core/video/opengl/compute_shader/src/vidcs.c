@@ -208,7 +208,6 @@ static void Vdp2DrawPatternPos(vdp2draw_struct *info, YglTexture *texture, int x
   int winmode = 0;
 
   tile.dst = 0;
-  tile.uclipmode = 0;
   tile.colornumber = info->colornumber;
   tile.mosaicxmask = info->mosaicxmask;
   tile.mosaicymask = info->mosaicymask;
@@ -946,7 +945,6 @@ static void Vdp2DrawNBG0(Vdp2* varVdp2Regs) {
   u32 char_access = 0;
   u32 ptn_access = 0;
   info.dst = 0;
-  info.uclipmode = 0;
   info.idScreen = NBG0;
   info.coordincx = 1.0f;
   info.coordincy = 1.0f;
@@ -1241,7 +1239,6 @@ static void Vdp2DrawNBG1(Vdp2* varVdp2Regs)
   u32 ptn_access = 0;
   info.dst = 0;
   info.idScreen = NBG1;
-  info.uclipmode = 0;
   info.cor = 0;
   info.cog = 0;
   info.cob = 0;
@@ -1533,7 +1530,6 @@ static void Vdp2DrawNBG2(Vdp2* varVdp2Regs)
   YglTexture texture;
   info.dst = 0;
   info.idScreen = NBG2;
-  info.uclipmode = 0;
   info.cor = 0;
   info.cog = 0;
   info.cob = 0;
@@ -1629,7 +1625,6 @@ static void Vdp2DrawNBG3(Vdp2* varVdp2Regs)
   YglTexture texture;
   info.idScreen = NBG3;
   info.dst = 0;
-  info.uclipmode = 0;
   info.cor = 0;
   info.cog = 0;
   info.cob = 0;
@@ -1724,7 +1719,6 @@ static void Vdp2DrawRBG0_part( RBGDrawInfo *rgb, Vdp2* varVdp2Regs)
 
   info->dst = 0;
   info->idScreen = RBG0;
-  info->uclipmode = 0;
   info->cor = 0;
   info->cog = 0;
   info->cob = 0;
@@ -4125,7 +4119,6 @@ static void Vdp2DrawRBG1_part(RBGDrawInfo *rgb, Vdp2* varVdp2Regs)
 
   info->dst = 0;
   info->idScreen = RBG1;
-  info->uclipmode = 0;
   info->cor = 0;
   info->cog = 0;
   info->cob = 0;
