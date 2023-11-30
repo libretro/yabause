@@ -275,6 +275,9 @@ int Ygl_useUpscaleBuffer(void){
   // Create Screen size frame buffer
   int up_scale = 1;
   switch (_Ygl->upmode) {
+    case UP_6XBRZ:
+      up_scale = 6;
+      break;
     case UP_HQ4X:
     case UP_4XBRZ:
       up_scale = 4;
