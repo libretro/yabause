@@ -1398,7 +1398,7 @@ int YglQuadRbg0(RBGDrawInfo * rbg, YglTexture * output, YglCache * c, int rbg_ty
   unsigned int x, y;
   YglProgram *program;
   texturecoordinate_struct *tmp;
-  vdp2draw_struct * input = &rbg->info;
+  vdp2draw_struct * input = &rbg->ctrl.info;
   int prg;
   float * pos;
 
@@ -1458,17 +1458,17 @@ int YglQuadRbg0(RBGDrawInfo * rbg, YglTexture * output, YglCache * c, int rbg_ty
     program->currentQuad += 12;
 
     tmp[0].s = 0 + ATLAS_BIAS;
-    tmp[0].t = (rbg->vres * rbg->info.startLine)/yabsys.VBlankLineCount + ATLAS_BIAS;
+    tmp[0].t = (rbg->vres * rbg->ctrl.info.startLine)/yabsys.VBlankLineCount + ATLAS_BIAS;
     tmp[1].s = rbg->hres - ATLAS_BIAS;
-    tmp[1].t = (rbg->vres * rbg->info.startLine)/yabsys.VBlankLineCount + ATLAS_BIAS;
+    tmp[1].t = (rbg->vres * rbg->ctrl.info.startLine)/yabsys.VBlankLineCount + ATLAS_BIAS;
     tmp[2].s = rbg->hres - ATLAS_BIAS;
-    tmp[2].t = (rbg->vres * rbg->info.endLine)/yabsys.VBlankLineCount - ATLAS_BIAS;
+    tmp[2].t = (rbg->vres * rbg->ctrl.info.endLine)/yabsys.VBlankLineCount - ATLAS_BIAS;
     tmp[3].s = 0 + ATLAS_BIAS;
-    tmp[3].t = (rbg->vres * rbg->info.startLine)/yabsys.VBlankLineCount + ATLAS_BIAS;
+    tmp[3].t = (rbg->vres * rbg->ctrl.info.startLine)/yabsys.VBlankLineCount + ATLAS_BIAS;
     tmp[4].s = rbg->hres - ATLAS_BIAS;
-    tmp[4].t = (rbg->vres * rbg->info.endLine)/yabsys.VBlankLineCount - ATLAS_BIAS;
+    tmp[4].t = (rbg->vres * rbg->ctrl.info.endLine)/yabsys.VBlankLineCount - ATLAS_BIAS;
     tmp[5].s = 0 + ATLAS_BIAS;
-    tmp[5].t = (rbg->vres * rbg->info.endLine)/yabsys.VBlankLineCount - ATLAS_BIAS;
+    tmp[5].t = (rbg->vres * rbg->ctrl.info.endLine)/yabsys.VBlankLineCount - ATLAS_BIAS;
 
     // glActiveTexture(GL_TEXTURE0);
     // glBindTexture(GL_TEXTURE_2D, RBGGenerator_getTexture(program->interuput_texture));

@@ -1384,8 +1384,8 @@ DEBUGWIP("Init\n");
   //-----------------------------------------------
   void updateRBG0( RBGDrawInfo * rbg, Vdp2 *varVdp2Regs) {
 			if (varVdp2Regs->RPMD == 0 || (varVdp2Regs->RPMD == 3 && (varVdp2Regs->WCTLD & 0xA) == 0) ) {
-				if (rbg->info.isbitmap) {
-					switch (rbg->info.colornumber) {
+				if (rbg->ctrl.info.isbitmap) {
+					switch (rbg->ctrl.info.colornumber) {
 					case 0: {
 						if (prg_rbg_0_2w_bitmap_4bpp_ == 0) {
 							prg_rbg_0_2w_bitmap_4bpp_ = compile_color_dot(
@@ -1434,8 +1434,8 @@ DEBUGWIP("Init\n");
 					}
 				}
 				else {
-					if (rbg->info.patterndatasize == 1) {
-						switch (rbg->info.colornumber) {
+					if (rbg->ctrl.info.patterndatasize == 1) {
+						switch (rbg->ctrl.info.colornumber) {
 							case 0: { // Dead or Alive, Radiant Silver Gun, Diehard
 								DEBUGWIP("prog %d\n", __LINE__);glUseProgram(prg_rbg_0_2w_p1_4bpp_);
 								break;
@@ -1477,7 +1477,7 @@ DEBUGWIP("Init\n");
 						}
 					}
 					else {
-						switch (rbg->info.colornumber) {
+						switch (rbg->ctrl.info.colornumber) {
 						case 0: {
 							DEBUGWIP("prog %d\n", __LINE__);glUseProgram(prg_rbg_0_2w_p2_4bpp_);
 							break;
@@ -1522,8 +1522,8 @@ DEBUGWIP("Init\n");
 				}
 			}
 			else if (varVdp2Regs->RPMD == 1) {
-				if (rbg->info.isbitmap) {
-					switch (rbg->info.colornumber) {
+				if (rbg->ctrl.info.isbitmap) {
+					switch (rbg->ctrl.info.colornumber) {
 					case 0: {
 						if (prg_rbg_1_2w_bitmap_4bpp_ == 0) {
 							prg_rbg_1_2w_bitmap_4bpp_ = compile_color_dot(
@@ -1571,8 +1571,8 @@ DEBUGWIP("Init\n");
 					}
 				}
 				else {
-					if (rbg->info.patterndatasize == 1) {
-						switch (rbg->info.colornumber) {
+					if (rbg->ctrl.info.patterndatasize == 1) {
+						switch (rbg->ctrl.info.colornumber) {
 						case 0: {
 							DEBUGWIP("prog %d\n", __LINE__);glUseProgram(prg_rbg_1_2w_p1_4bpp_);
 							break;
@@ -1614,7 +1614,7 @@ DEBUGWIP("Init\n");
 						}
 					}
 					else {
-						switch (rbg->info.colornumber) {
+						switch (rbg->ctrl.info.colornumber) {
 						case 0: {
 							DEBUGWIP("prog %d\n", __LINE__);glUseProgram(prg_rbg_1_2w_p2_4bpp_);
 							break;
@@ -1658,8 +1658,8 @@ DEBUGWIP("Init\n");
 				}
 			}
 			else if (varVdp2Regs->RPMD == 2) {
-					if (rbg->info.isbitmap) {
-						switch (rbg->info.colornumber) {
+					if (rbg->ctrl.info.isbitmap) {
+						switch (rbg->ctrl.info.colornumber) {
 						case 0: {
 							if (prg_rbg_2_2w_bitmap_4bpp_ == 0) {
 								prg_rbg_2_2w_bitmap_4bpp_ = compile_color_dot(
@@ -1709,8 +1709,8 @@ DEBUGWIP("Init\n");
 
 				}
 				else {
-					if (rbg->info.patterndatasize == 1) {
-						switch (rbg->info.colornumber) {
+					if (rbg->ctrl.info.patterndatasize == 1) {
+						switch (rbg->ctrl.info.colornumber) {
 						case 0: { // BlukSlash, J League Go Go Goal
 							DEBUGWIP("prog %d\n", __LINE__);glUseProgram(prg_rbg_2_2w_p1_4bpp_);
 							break;
@@ -1752,7 +1752,7 @@ DEBUGWIP("Init\n");
 						}
 					}
 					else {
-						switch (rbg->info.colornumber) {
+						switch (rbg->ctrl.info.colornumber) {
 						case 0: {
 							DEBUGWIP("prog %d\n", __LINE__);glUseProgram(prg_rbg_2_2w_p2_4bpp_);
 							break;
@@ -1796,8 +1796,8 @@ DEBUGWIP("Init\n");
 				}
 			}
 			else if (varVdp2Regs->RPMD == 3) {
-				if (rbg->info.isbitmap) {
-					switch (rbg->info.colornumber) {
+				if (rbg->ctrl.info.isbitmap) {
+					switch (rbg->ctrl.info.colornumber) {
 					case 0: {
 						if (prg_rbg_3_2w_bitmap_4bpp_ == 0) {
 							prg_rbg_3_2w_bitmap_4bpp_ = compile_color_dot(
@@ -1846,8 +1846,8 @@ DEBUGWIP("Init\n");
 
 				}
 				else {
-					if (rbg->info.patterndatasize == 1) {
-						switch (rbg->info.colornumber) {
+					if (rbg->ctrl.info.patterndatasize == 1) {
+						switch (rbg->ctrl.info.colornumber) {
 						case 0: {
 							DEBUGWIP("prog %d\n", __LINE__);glUseProgram(prg_rbg_3_2w_p1_4bpp_);
 							break;
@@ -1889,7 +1889,7 @@ DEBUGWIP("Init\n");
 						}
 					}
 					else {
-						switch (rbg->info.colornumber) {
+						switch (rbg->ctrl.info.colornumber) {
 						case 0: {
 							DEBUGWIP("prog %d\n", __LINE__);glUseProgram(prg_rbg_3_2w_p2_4bpp_);
 							break;
@@ -1932,15 +1932,15 @@ DEBUGWIP("Init\n");
 					}
 				}
 				// glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_window_);
-				// glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(vdp2WindowInfo)*rbg->vres, (void*)rbg->info.pWinInfo);
+				// glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(vdp2WindowInfo)*rbg->vres, (void*)rbg->ctrl.info.pWinInfo);
 				// glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, ssbo_window_);
 			}
 	}
 
 	void updateRBG1( RBGDrawInfo * rbg, Vdp2 *varVdp2Regs) {
 			if (varVdp2Regs->RPMD == 0 || (varVdp2Regs->RPMD == 3 && (varVdp2Regs->WCTLD & 0xA) == 0) ) {
-				if (rbg->info.isbitmap) {
-					switch (rbg->info.colornumber) {
+				if (rbg->ctrl.info.isbitmap) {
+					switch (rbg->ctrl.info.colornumber) {
 					case 0: {
 						if (prg_rbg_0_2w_bitmap_4bpp_ == 0) {
 							prg_rbg_0_2w_bitmap_4bpp_ = compile_color_dot(
@@ -1989,8 +1989,8 @@ DEBUGWIP("Init\n");
 					}
 				}
 				else {
-					if (rbg->info.patterndatasize == 1) {
-						switch (rbg->info.colornumber) {
+					if (rbg->ctrl.info.patterndatasize == 1) {
+						switch (rbg->ctrl.info.colornumber) {
 							case 0: { // Dead or Alive, Radiant Silver Gun, Diehard
 								DEBUGWIP("prog %d\n", __LINE__);glUseProgram(prg_rbg_0_2w_p1_4bpp_);
 								break;
@@ -2032,7 +2032,7 @@ DEBUGWIP("Init\n");
 						}
 					}
 					else {
-						switch (rbg->info.colornumber) {
+						switch (rbg->ctrl.info.colornumber) {
 						case 0: {
 							DEBUGWIP("prog %d\n", __LINE__);glUseProgram(prg_rbg_0_2w_p2_4bpp_);
 							break;
@@ -2077,8 +2077,8 @@ DEBUGWIP("Init\n");
 				}
 			}
       else {
-				if (rbg->info.isbitmap) {
-					switch (rbg->info.colornumber) {
+				if (rbg->ctrl.info.isbitmap) {
+					switch (rbg->ctrl.info.colornumber) {
 					case 0: {
 						if (prg_rbg_1_2w_bitmap_4bpp_ == 0) {
 							prg_rbg_1_2w_bitmap_4bpp_ = compile_color_dot(
@@ -2126,8 +2126,8 @@ DEBUGWIP("Init\n");
 					}
 				}
 				else {
-					if (rbg->info.patterndatasize == 1) {
-						switch (rbg->info.colornumber) {
+					if (rbg->ctrl.info.patterndatasize == 1) {
+						switch (rbg->ctrl.info.colornumber) {
 						case 0: {
 							DEBUGWIP("prog %d\n", __LINE__);glUseProgram(prg_rbg1_1_2w_p1_4bpp_);
 							break;
@@ -2169,7 +2169,7 @@ DEBUGWIP("Init\n");
 						}
 					}
 					else {
-						switch (rbg->info.colornumber) {
+						switch (rbg->ctrl.info.colornumber) {
 						case 0: {
 							DEBUGWIP("prog %d\n", __LINE__);glUseProgram(prg_rbg_1_2w_p2_4bpp_);
 							break;
@@ -2228,7 +2228,7 @@ DEBUGWIP("Init\n");
 
     error = glGetError();
 
-    if (rbg->info.idScreen == RBG0) updateRBG0(rbg, varVdp2Regs);
+    if (rbg->ctrl.info.idScreen == RBG0) updateRBG0(rbg, varVdp2Regs);
     else updateRBG1(rbg, varVdp2Regs);
 
        ErrorHandle("glUseProgram");
@@ -2305,7 +2305,7 @@ DEBUGWIP("Init\n");
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_vram_);
   ErrorHandle("glBindBufferBase");
 
-       if (rbg->info.specialcolormode == 3 || rbg->paraA.k_mem_type != 0 || rbg->paraB.k_mem_type != 0 || (_Ygl->linecolorcoef_tex[0]!=0) || (_Ygl->linecolorcoef_tex[1]!=0)) {
+       if (rbg->ctrl.info.specialcolormode == 3 || rbg->paraA.k_mem_type != 0 || rbg->paraB.k_mem_type != 0 || (_Ygl->linecolorcoef_tex[0]!=0) || (_Ygl->linecolorcoef_tex[1]!=0)) {
                if (ssbo_cram_ == 0) {
                        glGenBuffers(1, &ssbo_cram_);
                        glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_cram_);
@@ -2321,9 +2321,9 @@ DEBUGWIP("Init\n");
                glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_rotwin_);
                glBufferData(GL_SHADER_STORAGE_BUFFER, 0x800, NULL, GL_DYNAMIC_DRAW);
        }
-       if (rbg->info.RotWin != NULL) {
+       if (rbg->ctrl.info.RotWin != NULL) {
                glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_rotwin_);
-               glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, 0x800, (void*)rbg->info.RotWin);
+               glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, 0x800, (void*)rbg->ctrl.info.RotWin);
                glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, ssbo_rotwin_);
   				 }
 
@@ -2338,7 +2338,7 @@ DEBUGWIP("Init\n");
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, ssbo_alpha_);
 
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_paraA_);
-	if ( rbg->info.idScreen == RBG0 ) {
+	if ( rbg->ctrl.info.idScreen == RBG0 ) {
        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(vdp2rotationparameter_struct), (void*)&rbg->paraA);
        glBufferSubData(GL_SHADER_STORAGE_BUFFER, struct_size_, sizeof(vdp2rotationparameter_struct), (void*)&rbg->paraB);
 	} else {
@@ -2350,27 +2350,27 @@ DEBUGWIP("Init\n");
 
        uniform.vres_scale = (float)_Ygl->heightRatio;
        uniform.hres_scale = (float)_Ygl->widthRatio;
-       uniform.cellw = rbg->info.cellw;
-       uniform.cellh = rbg->info.cellh;
-       uniform.paladdr_ = rbg->info.paladdr;
+       uniform.cellw = rbg->ctrl.info.cellw;
+       uniform.cellh = rbg->ctrl.info.cellh;
+       uniform.paladdr_ = rbg->ctrl.info.paladdr;
   uniform.pagesize = rbg->pagesize;
   uniform.patternshift = rbg->patternshift;
-  uniform.planew = rbg->info.planew;
-  uniform.pagewh = rbg->info.pagewh;
-  uniform.patterndatasize = rbg->info.patterndatasize;
-  uniform.supplementdata = rbg->info.supplementdata;
-  uniform.auxmode = rbg->info.auxmode;
-  uniform.patternwh = rbg->info.patternwh;
-  uniform.coloroffset = rbg->info.coloroffset;
-  uniform.transparencyenable = rbg->info.transparencyenable;
-  uniform.specialcolormode = rbg->info.specialcolormode;
-  uniform.specialcode = rbg->info.specialcode;
-       uniform.colornumber = rbg->info.colornumber;
-       uniform.window_area_mode = rbg->info.RotWinMode;
-       uniform.priority = rbg->info.priority;
-       uniform.startLine = rbg->info.startLine;
-       uniform.endLine = rbg->info.endLine;
-       uniform.specialprimode = rbg->info.specialprimode;
+  uniform.planew = rbg->ctrl.info.planew;
+  uniform.pagewh = rbg->ctrl.info.pagewh;
+  uniform.patterndatasize = rbg->ctrl.info.patterndatasize;
+  uniform.supplementdata = rbg->ctrl.info.supplementdata;
+  uniform.auxmode = rbg->ctrl.info.auxmode;
+  uniform.patternwh = rbg->ctrl.info.patternwh;
+  uniform.coloroffset = rbg->ctrl.info.coloroffset;
+  uniform.transparencyenable = rbg->ctrl.info.transparencyenable;
+  uniform.specialcolormode = rbg->ctrl.info.specialcolormode;
+  uniform.specialcode = rbg->ctrl.info.specialcode;
+       uniform.colornumber = rbg->ctrl.info.colornumber;
+       uniform.window_area_mode = rbg->ctrl.info.RotWinMode;
+       uniform.priority = rbg->ctrl.info.priority;
+       uniform.startLine = rbg->ctrl.info.startLine;
+       uniform.endLine = rbg->ctrl.info.endLine;
+       uniform.specialprimode = rbg->ctrl.info.specialprimode;
 			 uniform.alpha_lncl = ((~(varVdp2Regs->CCRLB & 0x1F) << 3) | NONE)/255.0f;
 			 uniform.lncl_table_addr = Vdp2RamReadWord(NULL, Vdp2Ram, (varVdp2Regs->LCTA.all & 0x7FFFF)<<1);
 			 uniform.cram_mode = Vdp2Internal.ColorMode;
@@ -2380,7 +2380,7 @@ DEBUGWIP("Init\n");
        ErrorHandle("glBufferSubData");
   glBindBufferBase(GL_UNIFORM_BUFFER, 3, scene_uniform);
 
-       if (rbg->rgb_type == 0x04  ) {
+       if (rbg->rbg_type == 0x04  ) {
                DEBUGWIP("Draw RBG1 [%d -> %d]\n", uniform.startLine, uniform.endLine);
                glBindImageTexture(0, tex_surface_1, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
 							 glBindImageTexture(7, tex_lncl_[1], 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);

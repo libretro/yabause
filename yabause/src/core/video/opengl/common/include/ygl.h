@@ -667,11 +667,16 @@ typedef struct {
 extern Ygl * _Ygl;
 
 // Rotate Screen
+typedef struct {
+  vdp2draw_struct info;
+  YglTexture texture;
+  Vdp2 *regs;
+} Vdp2Ctrl;
 
 typedef struct {
+  Vdp2Ctrl ctrl;
   int useb;
-  YglTexture texture;
-  int rgb_type;
+  int rbg_type;
   int pagesize;
   int patternshift;
   u32 LineColorRamAdress;
@@ -682,10 +687,9 @@ typedef struct {
   volatile int vdp2_sync_flg;
   vdp2rotationparameter_struct  paraA;
   vdp2rotationparameter_struct  paraB;
-  Vdp2 *varVdp2Regs;
   int alpha[270];
-  vdp2draw_struct info;
 } RBGDrawInfo;
+
 
 int YglInit(int, int, unsigned int);
 void YglDeInit(void);

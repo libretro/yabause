@@ -695,8 +695,9 @@ if (CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 6.0)
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fno-PIE -no-pie" )
 endif()
 
-
-set(YAB_OPTIMIZATION "-O3 -s" CACHE STRING "Override optimization level")
+#-Wl,--print-gc-sections
+#set(YAB_OPTIMIZATION "-O3 -g" CACHE STRING "Override optimization level")
+set(YAB_OPTIMIZATION "-O3 -s -fdata-sections -ffunction-sections -Wl,--gc-sections" CACHE STRING "Override optimization level")
 if (MSVC)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Ox")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Ox")
