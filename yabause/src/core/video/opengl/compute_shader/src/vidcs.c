@@ -548,7 +548,7 @@ void* Vdp2DrawCell_in_async(void *p)
    while(drawcell_run != 0){
      Vdp2Ctrl *ctrl = (Vdp2Ctrl *)YabWaitEventQueue(cellq);
      if (ctrl != NULL) {
-       if (ctrl->info.patternwh == 0x1) {
+       if (ctrl->order == CELL_SINGLE) {
          Vdp2DrawCell_in_sync(ctrl);
        } else {
          Vdp2DrawCell_in_sync(ctrl);
@@ -586,6 +586,7 @@ static void FASTCALL Vdp2DrawCell(Vdp2Ctrl *ctrl) {
 
 static void requestDrawCell(Vdp2Ctrl *ctrl) {
 #ifdef CELL_ASYNC
+   ctrl->order = CELL_SINGLE;
    Vdp2DrawCell(ctrl);
 #else
    Vdp2DrawCell_in_sync(ctrl);
@@ -594,6 +595,7 @@ static void requestDrawCell(Vdp2Ctrl *ctrl) {
 
 static void requestDrawCellQuad(Vdp2Ctrl *ctrl) {
 #ifdef CELL_ASYNC
+   ctrl->order = CELL_QUAD;
    Vdp2DrawCell(ctrl);
 #else
    Vdp2DrawCell_in_sync(ctrl);

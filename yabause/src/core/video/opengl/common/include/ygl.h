@@ -671,6 +671,7 @@ typedef struct {
   vdp2draw_struct info;
   YglTexture texture;
   Vdp2 *regs;
+  u8 order;
 } Vdp2Ctrl;
 
 typedef struct {
