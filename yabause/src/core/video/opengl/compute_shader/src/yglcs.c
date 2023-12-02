@@ -158,7 +158,7 @@ void finishCSRender() {
 
 void VIDCSRender(Vdp2 *varVdp2Regs) {
    TRACE_RENDER("VIDCSRender");
-
+   int scale = _Ygl->height/_Ygl->rheight;
    GLuint cprg=0;
    GLuint srcTexture;
    GLuint VDP1fb[2];
@@ -234,7 +234,6 @@ void VIDCSRender(Vdp2 *varVdp2Regs) {
      default:
         break;
     }
-
 
    glViewport(0, 0, GlWidth, GlHeight);
 
@@ -404,7 +403,7 @@ void VIDCSRender(Vdp2 *varVdp2Regs) {
   srcTexture = _Ygl->original_fbotex[0];
 #ifndef __LIBRETRO__
    glViewport(x, y, w, h);
-   glScissor(x, y, w, h);
+   glScissor(x, y+scale-1, w, h-scale-1);
    glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->default_fbo);
    YglBlitFramebuffer(srcTexture, _Ygl->width, _Ygl->height, w, h);
 #endif
