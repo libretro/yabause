@@ -158,7 +158,7 @@ void finishCSRender() {
 
 void VIDCSRender(Vdp2 *varVdp2Regs) {
    TRACE_RENDER("VIDCSRender");
-   int scale = _Ygl->height/_Ygl->rheight;
+   double scale = 1.0;
    GLuint cprg=0;
    GLuint srcTexture;
    GLuint VDP1fb[2];
@@ -234,6 +234,7 @@ void VIDCSRender(Vdp2 *varVdp2Regs) {
      default:
         break;
     }
+    scale = MAX(w/_Ygl->rwidth, h/_Ygl->rheight);
 
    glViewport(0, 0, GlWidth, GlHeight);
 
@@ -402,8 +403,9 @@ void VIDCSRender(Vdp2 *varVdp2Regs) {
   YglBlitTexture( prioscreens, modescreens, isRGB, isBlur, isPerline, isShadow, lncl_draw, GetCSVDP1fb, winS_draw, winS_mode_draw, win0_draw, win0_mode_draw, win1_draw, win1_mode_draw, win_op_draw, useLineColorOffset, varVdp2Regs);
   srcTexture = _Ygl->original_fbotex[0];
 #ifndef __LIBRETRO__
+   int scali = (int)(scale);
    glViewport(x, y, w, h);
-   glScissor(x+scale-1, y+scale-1, w+scale-1, h-scale-1);
+   glScissor(x, y, w-scali, h-scali);
    glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->default_fbo);
    YglBlitFramebuffer(srcTexture, _Ygl->width, _Ygl->height, w, h);
 #endif
