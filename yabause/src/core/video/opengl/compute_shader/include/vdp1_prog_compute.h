@@ -542,7 +542,7 @@ SHADER_VERSION_COMPUTE
 "  ivec2 pos = ivec2(gl_GlobalInvocationID.xy);\n"
 "  if (pos.x >= size.x || pos.y >= size.y ) return;\n"
 "  vec2 texel = vec2(float(pos.x),float(-pos.y));\n"
-"  texel.y = -texel.y;\n"
+"  texel.y = -texel.y+0.5;\n"
 "  ivec2 index = ivec2((texel.x*"Stringify(NB_COARSE_RAST_X)")/size.x, (texel.y*"Stringify(NB_COARSE_RAST_Y)")/size.y);\n"
 "  ivec2 syslimit = sysClip;\n"
 "  ivec4 userlimit = usrClip;\n"
