@@ -403,7 +403,7 @@ void VIDCSRender(Vdp2 *varVdp2Regs) {
   srcTexture = _Ygl->original_fbotex[0];
 #ifndef __LIBRETRO__
    glViewport(x, y, w, h);
-   glScissor(x, y+scale-1, w, h-scale-1);
+   glScissor(x+scale-1, y+scale-1, w+scale-1, h-scale-1);
    glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->default_fbo);
    YglBlitFramebuffer(srcTexture, _Ygl->width, _Ygl->height, w, h);
 #endif
