@@ -671,8 +671,8 @@ static const GLchar Yglprg_vdp2_common_part[] =
 "}\n"
 
 "bool inTransparentWindow(int id) {\n"
-"  return inWindow(id)\n;"
-"}\n;"
+"  return inWindow(id);\n"
+"}\n"
 "bool inCCWindow() {\n"
 "  if ((((win1>>7)&0x1) != 0) || (((win0>>7)&0x1) != 0) || (((win_s>>7)&0x1)!= 0)) {\n"
 "    return inWindow(7);\n"

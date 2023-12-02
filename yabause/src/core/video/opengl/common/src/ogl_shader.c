@@ -443,7 +443,7 @@ uniform int win_op; \n \
 uniform int nbFrame; \n \
 uniform vec2 vdp1Shift; \n \
 uniform mat4 rotVdp1; \n \
-int PosY = int(gl_FragCoord.y)+1;\n \
+int PosY = int(gl_FragCoord.y);\n \
 int PosX = int(gl_FragCoord.x);\n \
 ivec2 getFBCoord() {\n \
  vec4 scaledPos = gl_FragCoord;\n \
