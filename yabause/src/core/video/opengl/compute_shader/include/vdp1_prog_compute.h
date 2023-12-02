@@ -351,7 +351,7 @@ SHADER_VERSION_COMPUTE
 "  Quad[3] = vec2(cmd[idx].CMDXD,cmd[idx].CMDYD)*upscale;\n"
 "  if (cmd[idx].type == "Stringify(FB_WRITE)") return isFBOverwrite(Pin, pixOut);\n"
 "  if ((cmd[idx].type == "Stringify(DISTORTED)") || (cmd[idx].type == "Stringify(POLYGON)")) {\n"
-"    return isOnAQuadLine(Pin+vec2(0,0.5), Quad[0], Quad[1], Quad[2], Quad[3], vec2(cmd[idx].uAstepx, cmd[idx].uAstepy)*upscale, vec2(cmd[idx].uBstepx, cmd[idx].uBstepy)*upscale, uint(float(cmd[idx].nbStep)), uv);\n"
+"    return isOnAQuadLine(Pin, Quad[0], Quad[1], Quad[2], Quad[3], vec2(cmd[idx].uAstepx, cmd[idx].uAstepy)*upscale, vec2(cmd[idx].uBstepx, cmd[idx].uBstepy)*upscale, uint(float(cmd[idx].nbStep)), uv);\n"
 "  } else {\n"
 "    if ((cmd[idx].type == "Stringify(QUAD)")  || (cmd[idx].type == "Stringify(QUAD_POLY)")) {\n"
 "     return isOnAQuad(Pin, Quad[0], Quad[2], uv);\n"
