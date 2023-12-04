@@ -381,6 +381,11 @@ static void invalidateVDP1ReadFramebuffer(int frame) {
 
 static u32* getVDP1Framebuffer(int frame) {
   //Verifier si le fb est dirty. Arrive apres un write ou un compute fait ou prgrammé
+  if (_Ygl->shallVdp1Erase[frame] != 0) {
+    _Ygl->shallVdp1Erase[frame] = 0;
+    VIDCSEraseWriteVdp1(frame);
+    clearVDP1Framebuffer(frame);
+  }
   if (_Ygl->vdp1fb_read_buf[frame] == NULL) {
     //Pas bien ca
     //A faire par core video
