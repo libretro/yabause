@@ -697,14 +697,13 @@ u8 FASTCALL SmpcReadByte(SH2_struct *context, u8* mem, u32 addr) {
      SMPCLOG("Read SMPC[0x63] 0x%x\n", bustmp);
      return bustmp;
    }
-
    if (addr == 0x77){
      //PDR2
     if((SmpcRegs->DDR[1] & 0x7F) == 0x18) {
      u8 val = (((0x67 & ~0x19) | 0x18 | (eeprom_do_read()<<0)) & ~SmpcRegs->DDR[1]) | m_pdr2_readback;
      return val; //Shall use eeprom normally look at mame stv driver
    } else {
-     return (SmpcRegsT[addr >> 1] & SmpcRegs->DDR[1]) | (PORTDATA2.data[2] & ~SmpcRegs->DDR[1]);
+     return SmpcRegsT[addr >> 1];
    }
    }
    if (addr == 0x75){
@@ -712,8 +711,8 @@ u8 FASTCALL SmpcReadByte(SH2_struct *context, u8* mem, u32 addr) {
      if ((SmpcRegs->DDR[0] & 0x7F) == 0x3f) {
        u8 val = (((0x40 & 0x40) | 0x3f) & ~SmpcRegs->DDR[0]) | m_pdr1_readback;
        return val;
-     // } else {
-     //   return (SmpcRegsT[addr >> 1] & SmpcRegs->DDR[0]) | (PORTDATA1.data[2] & ~SmpcRegs->DDR[0]);
+     } else {
+       return SmpcRegsT[addr >> 1];
      }
    }
 
@@ -908,6 +907,8 @@ void FASTCALL SmpcWriteByte(SH2_struct *context, u8* mem, u32 addr, u8 val) {
                break;
             //th control mode (acquire id)
             case 0x40:
+              if(PERCore)
+                   PERCore->HandleEvents();
                SmpcRegs->PDR[0] = do_th_mode(val, &PORTDATA1);
                SMPCLOG("PDR 0 %x %x %x => %x\n", val, PORTDATA1.data[2], PORTDATA1.data[3], SmpcRegs->PDR[0]);
                break;
@@ -953,6 +954,8 @@ void FASTCALL SmpcWriteByte(SH2_struct *context, u8* mem, u32 addr, u8 val) {
 			  break;
         //th control mode (acquire id)
       case 0x40:
+        if(PERCore)
+             PERCore->HandleEvents();
          SmpcRegs->PDR[1] = do_th_mode(val, &PORTDATA2);
          SMPCLOG("PDR 1 %x %x %x => %x\n", val, PORTDATA2.data[2], PORTDATA2.data[3], SmpcRegs->PDR[1]);
          break;
