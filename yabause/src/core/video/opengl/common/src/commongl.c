@@ -389,7 +389,7 @@ static u32* getVDP1Framebuffer(int frame) {
   if (_Ygl->vdp1fb_read_buf[frame] == NULL) {
     //Pas bien ca
     //A faire par core video
-      vdp1_compute();
+      if (frame == _Ygl->drawframe) vdp1_compute();
       glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT|GL_TEXTURE_UPDATE_BARRIER_BIT);
       _Ygl->vdp1fb_read_buf[frame] = vdp1_read(frame);
   }
@@ -397,7 +397,8 @@ static u32* getVDP1Framebuffer(int frame) {
 }
 
 u32* getVDP1ReadFramebuffer() {
-  return getVDP1Framebuffer(_Ygl->readframe);
+  //Only drawFrame can be accessed - Read Framebuffer is only used by VDP2
+  return getVDP1Framebuffer(_Ygl->drawframe);
 }
 
 u32* getVDP1WriteFramebuffer(int frame) {
