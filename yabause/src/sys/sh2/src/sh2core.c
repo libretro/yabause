@@ -58,6 +58,7 @@ void SH2IntcSetIrl(SH2_struct *sh, u8 irl, u8 d)
   if (sh->intc.irl != irl) {
     sh->intc.d = d;
     sh->intc.irl = irl;
+    sh->intPriority = 0;
     SH2EvaluateInterrupt(sh);
   }
 }

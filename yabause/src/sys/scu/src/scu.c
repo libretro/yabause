@@ -2794,11 +2794,17 @@ void FASTCALL ScuWriteLong(SH2_struct *sh, u8* mem, u32 addr, u32 val) {
          break;
       case 0xA0:
          //remove Interrupt which were not maked but masked now
+         if (needEvaluate != 0) {
+           ScuTestAllInterrupt();
+         }
          ScuRegs->IMS = val;
          needEvaluate = 1;
          break;
       case 0xA4:
          //remove Interrupt which occured and for which status has been cleared
+         if (needEvaluate != 0) {
+           ScuTestAllInterrupt();
+         }
          ScuRegs->IST &= val;
          ScuRegs->ITEdge &= val;
          needEvaluate = 1;
