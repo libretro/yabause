@@ -1626,6 +1626,27 @@ void Vdp2DebugStatsGeneral(char *outstring, int *isenabled)
       AddString(outstring, "Sprite Type = %X\r\n", Vdp2Regs->SPCTL & 0xF);
       AddString(outstring, "Screen Mode TVM = %X\r\n", Vdp1Regs->TVMR & 0x7);
       AddString(outstring, "VDP1 Framebuffer Data Format = %s\r\n", Vdp2Regs->SPCTL & 0x20 ? "RGB and palette" : "Palette only");
+      AddString(outstring, "Erased Area: EWLR 0x%x EWRR 0x%x\n");
+      {
+        int shift = ((Vdp1Regs->TVMR & 0x1) == 1)?4:3;
+        int limits[4] = {0};
+        limits[0] = ((Vdp1Regs->EWLR>>9)&0x3F)<<shift;
+        limits[1] = ((Vdp1Regs->EWLR)&0x1FF); //TODO: manage double interlace
+        limits[2] = (((Vdp1Regs->EWRR>>9)&0x7F)<<shift) - 1;
+        limits[3] = ((Vdp1Regs->EWRR)&0x1FF); //TODO: manage double interlace
+
+        //Prohibited value - Example Quake first screens
+        if ((limits[2] == -1)||(limits[3] == 0)) {
+          AddString(outstring, "  Prohibited value\n");
+        }
+
+        AddString(outstring, "  Erase from (%d,%d) to (%d,%d)\n", limits[0], limits[1], limits[2], limits[3]);
+        if ((limits[0]>=limits[2])||(limits[1]>limits[3])) {
+          AddString(outstring, "    Invalid values\n");
+          return 0; //No erase write when invalid area - Should be done only for one dot but no idea of which dot it shall be
+        }
+      }
+
 
       if (Vdp2Regs->SDCTL & 0x100)
       {
