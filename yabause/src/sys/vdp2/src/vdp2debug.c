@@ -1624,7 +1624,27 @@ void Vdp2DebugStatsGeneral(char *outstring, int *isenabled)
       AddString(outstring, "Sprite Stuff\r\n");
       AddString(outstring, "------------\r\n");
       AddString(outstring, "Sprite Type = %X\r\n", Vdp2Regs->SPCTL & 0xF);
-      AddString(outstring, "Screen Mode TVM = %X\r\n", Vdp1Regs->TVMR & 0x7);
+      AddString(outstring, "Screen Mode TVM = ");
+      switch (Vdp1Regs->TVMR & 0x7) {
+        case 0:
+          AddString(outstring, "Normal\n");
+          break;
+        case 1:
+          AddString(outstring, "High Resolution\n");
+          break;
+        case 2:
+          AddString(outstring, "Rotation 16\n");
+          break;
+        case 3:
+          AddString(outstring, "Rotation 8\n");
+          break;
+        case 4:
+          AddString(outstring, "HDTV\n");
+          break;
+        default:
+          AddString(outstring, "Prohibited 0x%x\n",Vdp1Regs->TVMR & 0x7);
+          break;
+      }
       AddString(outstring, "VDP1 Framebuffer Data Format = %s\r\n", Vdp2Regs->SPCTL & 0x20 ? "RGB and palette" : "Palette only");
       AddString(outstring, "Erased Area: EWLR 0x%x EWRR 0x%x\n");
       {
@@ -1643,7 +1663,6 @@ void Vdp2DebugStatsGeneral(char *outstring, int *isenabled)
         AddString(outstring, "  Erase from (%d,%d) to (%d,%d)\n", limits[0], limits[1], limits[2], limits[3]);
         if ((limits[0]>=limits[2])||(limits[1]>limits[3])) {
           AddString(outstring, "    Invalid values\n");
-          return 0; //No erase write when invalid area - Should be done only for one dot but no idea of which dot it shall be
         }
       }
 
