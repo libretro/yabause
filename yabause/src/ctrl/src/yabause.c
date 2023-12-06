@@ -44,7 +44,6 @@
 #include "sh2core.h"
 #include "smpc.h"
 #include "ygl.h"
-#include "vidsoft.h"
 #include "vdp2.h"
 #include "yui.h"
 #include "bios.h"
@@ -249,8 +248,6 @@ static void sh2ExecuteSync( SH2_struct* sh, int req ) {
 int YabauseSh2Init(yabauseinit_struct *init)
 {
    // Need to set this first, so init routines see it
-   yabsys.UseThreads = init->usethreads;
-   yabsys.NumThreads = init->numthreads;
    yabsys.usecache = init->usecache;
    yabsys.vsyncon = init->vsyncon;
    yabsys.wireframe_mode = init->wireframe_mode;
@@ -357,8 +354,6 @@ TRACE_EMULATOR("YabauseInit");
 
 #endif
    // Need to set this first, so init routines see it
-   yabsys.UseThreads = init->usethreads;
-   yabsys.NumThreads = init->numthreads;
    yabsys.usecache = init->usecache;
    yabsys.vsyncon = init->vsyncon;
    yabsys.wireframe_mode = init->wireframe_mode;
@@ -548,21 +543,6 @@ TRACE_EMULATOR("YabauseInit");
    GdbStubInit(MSH2, 43434);
 #endif
 
-#ifndef NO_VIDCORE_SOFT
-   if (yabsys.UseThreads)
-   {
-      int num = yabsys.NumThreads < 1 ? 1 : yabsys.NumThreads;
-      VIDSoftSetVdp1ThreadEnable(num == 1 ? 0 : 1);
-      VIDSoftSetNumLayerThreads(num);
-      VIDSoftSetNumPriorityThreads(num);
-   }
-   else
-   {
-      VIDSoftSetVdp1ThreadEnable(0);
-      VIDSoftSetNumLayerThreads(0);
-      VIDSoftSetNumPriorityThreads(0);
-   }
-#endif
    fpsticks = YabauseGetTicks();
    return 0;
 }

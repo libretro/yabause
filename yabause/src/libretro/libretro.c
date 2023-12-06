@@ -31,7 +31,6 @@
 
 #include "m68kcore.h"
 #include "vidcs.h"
-#include "vidsoft.h"
 #include "ygl.h"
 #include "sh2int_kronos.h"
 #include "libretro_core_options.h"

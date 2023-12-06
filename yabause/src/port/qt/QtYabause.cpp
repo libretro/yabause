@@ -116,7 +116,6 @@ OSD_struct *OSDCoreList[] = {
 #ifdef HAVE_LIBGL
 &OSDNnovg,
 #endif
-&OSDSoft,
 &OSDDummy,
 NULL
 };

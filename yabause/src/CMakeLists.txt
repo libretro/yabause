@@ -103,8 +103,6 @@ set(kronos_HEADERS
   core/m68k/m68kcore.h
 	core/video/opengl/common/include/vidshared.h
 	core/video/opengl/common/include/ygl.h
-	core/video/soft/vidsoft.h
-	core/video/soft/titan/titan.h
 	core/peripheral/common/peripheral.h
 	core/net/sock.h
   ctrl/include/core.h
@@ -163,8 +161,6 @@ set(kronos_SOURCES
 	sys/memory/src/cs2.c
 	sys/memory/src/eeprom.c
 	sys/memory/src/decrypt.c
-	core/video/soft/vidsoft.c
-	core/video/soft/titan/titan.c
 	core/video/opengl/common/src/vidshared.c
 	core/peripheral/common/peripheral.c
 	core/sound/dummy/snddummy.c
@@ -336,14 +332,6 @@ endif()
 
 find_package(Threads)
 set(KRONOS_LIBRARIES ${KRONOS_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
-
-# 16BPP
-set(YAB_RGB "" CACHE STRING "Bit configuration of pixels in the display buffer.")
-if (YAB_RGB STREQUAL "555")
-    add_definitions(-DUSE_16BPP=1 -DUSE_RGB_555=1)
-elseif (YAB_RGB STREQUAL "565")
-    add_definitions(-DUSE_16BPP=1 -DUSE_RGB_565=1)
-endif ()
 
 # OpenGL
 option(YAB_WANT_OPENGL "use OpenGL for video output (most ports require it)" ON)

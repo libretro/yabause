@@ -24,7 +24,6 @@
 #include "osdcore.h"
 #include "vdp1.h"
 #include "font.h"
-#include "titan/titan.h"
 
 #include <stdlib.h>
 #include <stdarg.h>
@@ -43,9 +42,6 @@ when we the new OSD system was added.
 */
 OSD_struct *OSDCoreList[] = {
 &OSDDummy,
-#if !defined(_arch_dreamcast) && !defined(NO_VIDCORE_SOFT)
-&OSDSoft,
-#endif
 NULL
 };
 #else
@@ -241,81 +237,3 @@ int OSDDummyUseBuffer(void)
 {
    return 0;
 }
-
-#if !defined(_arch_dreamcast) && !defined(NO_VIDCORE_SOFT)
-
-static int OSDSoftInit(void);
-static void OSDSoftDeInit(void);
-static void OSDSoftReset(void);
-static void OSDSoftDisplayMessage(OSDMessage_struct * message, pixel_t * buffer, int w, int h);
-static int OSDSoftUseBuffer(void);
-
-OSD_struct OSDSoft = {
-    OSDCORE_SOFT,
-    "Software OSD Interface",
-    OSDSoftInit,
-    OSDSoftDeInit,
-    OSDSoftReset,
-    OSDSoftDisplayMessage,
-    OSDSoftUseBuffer,
-	  NULL
-};
-
-int OSDSoftInit(void)
-{
-   return 0;
-}
-
-void OSDSoftDeInit(void)
-{
-}
-
-void OSDSoftReset(void)
-{
-}
-
-void OSDSoftDisplayMessage(OSDMessage_struct * message, pixel_t * buffer, int w, int h)
-{
-   int i;
-   char * c;
-   int loffset = 0;
-
-   if (buffer == NULL) return;
-
-   switch (message->type)
-   {
-      case OSDMSG_STATUS:
-         loffset = h - 48;
-         break;
-   }
-
-   c = message->message;
-   i = 0;
-   while(*c)
-   {
-      if (*c >= 47)
-      {
-         int first_line, l, p;
-         first_line = *c * 10;
-         for(l = 0;l < 10;l++)
-         {
-            for(p = 0;p < 9;p++)
-            {
-               if (font[first_line + l][p] == '.')
-                  TitanWriteColor(buffer, w, (i * 8) + 20 + p, loffset + l + 20, 0xFF000000);
-               else if (font[first_line + l][p] == '#')
-                  TitanWriteColor(buffer, w, (i * 8) + 20 + p, loffset + l + 20, 0xFFFFFFFF);
-            }
-         }
-      }
-      c++;
-      i++;
-   }
-}
-
-int OSDSoftUseBuffer(void)
-{
-   return 1;
-}
-
-#endif /* !_arch_dreamcast */

@@ -26,8 +26,6 @@
 #include "ygl.h"
 #include "vdp2debug.h"
 #include "vidshared.h"
-#include "vidsoft.h"
-#include "titan/titan.h"
 #include "yabause.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1713,18 +1711,7 @@ static void ClearTextureToColor(u32 *texture, u32 color, int w, int h)
 
 pixel_t *Vdp2DebugTexture(u32 screen, int * w, int * h)
 {
-   pixel_t * bitmap;
-
-   TitanInit();
-   TitanSetBlendingMode(TITAN_BLEND_TOP);
-   VIDSoftVdp2DrawScreen(screen);
-
-   if ((bitmap = (pixel_t *)calloc(sizeof(pixel_t), 704 * 512)) == NULL)
-      return NULL;
-
-   TitanGetResolution(w, h);
-
-   TitanRender(bitmap);
+   pixel_t * bitmap = NULL;
 
    return bitmap;
 }

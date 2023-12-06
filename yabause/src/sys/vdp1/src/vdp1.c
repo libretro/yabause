@@ -31,7 +31,6 @@
 #include "debug.h"
 #include "scu.h"
 #include "vdp2.h"
-#include "vidsoft.h"
 #include "threads.h"
 #include "sh2core.h"
 #include "ygl.h"

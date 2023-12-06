@@ -38,7 +38,6 @@
 #include "threads.h"
 #include "yui.h"
 #include "ygl.h"
-#include "vidsoft.h"
 
 u8 * Vdp2Ram;
 u8 * Vdp2ColorRam;
@@ -644,7 +643,7 @@ void Vdp2HBlankIN(void) {
   } else {
 // Fix : Function doesn't exist without those defines
 #if defined(HAVE_LIBGL) || defined(__ANDROID__) || defined(IOS)
-  if (isSkipped == 0) if(VIDCore && (VIDCore->id != VIDCORE_SOFT)) waitVdp2DrawScreensEnd(yabsys.LineCount == yabsys.VBlankLineCount);
+  if (isSkipped == 0) waitVdp2DrawScreensEnd(yabsys.LineCount == yabsys.VBlankLineCount);
 #endif
   }
 }
@@ -662,7 +661,7 @@ void Vdp2StartVisibleLine(void) {
     nbAddrToUpdate = 0;
   }
   if(yabsys.LineCount == yabsys.MaxLineCount - 1) {
-    if (VIDCore != NULL && VIDCore->id != VIDCORE_SOFT) YglUpdateColorRam();
+    YglUpdateColorRam();
   }
   #endif
 

@@ -27,7 +27,6 @@
 #include "nanovg_osdcore.h"
 #include "yabause.h"
 #include "scsp.h"
-#include "vidsoft.h"
 #include "peripheral.h"
 #include "m68kcore.h"
 #include "sh2core.h"
@@ -320,7 +319,6 @@ void OSDNanovgDisplayMessage(OSDMessage_struct * message, pixel_t * buffer, int 
 #if 0
 OSD_struct *OSDCoreList[] = {
 &OSDNnovg,
-&OSDSoft,
 &OSDDummy,
 NULL
 };

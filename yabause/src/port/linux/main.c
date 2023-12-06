@@ -34,7 +34,6 @@
 #ifdef HAVE_LIBGL
 #include "ygl.h"
 #endif
-#include "vidsoft.h"
 #include "vidcs.h"
 #include "cs0.h"
 #include "cs2.h"
@@ -308,9 +307,6 @@ int main(int argc, char *argv[]) {
       else if (strcmp(argv[i], "-lr") == 0 || strcmp(argv[i], "--lowres") == 0) {
         lowres_mode = 1;
       }
-      else if (strcmp(argv[i], "-sc") == 0 || strcmp(argv[i], "--softcore") == 0) {
-        yinit.vidcoretype = VIDCORE_SOFT;
-      }
       else if (strcmp(argv[i], "-ci") == 0 ) {
         yinit.sh2coretype = 1;
       }
@@ -342,11 +338,6 @@ int main(int argc, char *argv[]) {
   if (YabauseInit(&yinit) != 0) {
     printf("YabauseInit error \n\r");
     return 1;
-  }
-
-  if (yinit.vidcoretype == VIDCORE_SOFT) {
-    OSDChangeCore(OSDCORE_SOFT);
-    VIDSoftSetBilinear(1);
   }
 
   if (lowres_mode == 0){

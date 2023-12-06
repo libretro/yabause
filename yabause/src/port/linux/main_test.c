@@ -37,7 +37,6 @@
 #ifdef HAVE_LIBGL
 #include "ygl.h"
 #endif
-#include "vidsoft.h"
 #include "cs0.h"
 #include "cs2.h"
 #include "cdbase.h"
@@ -135,7 +134,7 @@ void YuiInit() {
 #ifdef TEST_KRONOS_INTERPRETER
 	yinit.sh2coretype = 8;
 #endif
-        yinit.vidcoretype = VIDCORE_SOFT;
+        yinit.vidcoretype = VIDCORE_CS;
 	yinit.sndcoretype = 0;
 	yinit.cdcoretype = CDCORE_DEFAULT;
 	yinit.carttype = 0;

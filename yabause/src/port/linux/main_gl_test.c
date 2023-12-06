@@ -34,7 +34,6 @@
 #ifdef HAVE_LIBGL
 #include "ygl.h"
 #endif
-#include "vidsoft.h"
 #include "cs0.h"
 #include "cs2.h"
 #include "cdbase.h"

@@ -52,30 +52,24 @@ void UIDebugVDP2Viewer::on_cbScreen_currentIndexChanged ( int index )
     if (!Vdp2Regs)
         return;
 
-   if (vdp2texture)
-      free(vdp2texture);
-
    vdp2texture = Vdp2DebugTexture(index, &width, &height);
-   pbSaveAsBitmap->setEnabled(vdp2texture ? true : false);
+	 if (vdp2texture != NULL) {
+		 pbSaveAsBitmap->setEnabled(vdp2texture ? true : false);
 
-   // Redraw screen
-   QGraphicsScene *scene = gvScreen->scene();
+		 // Redraw screen
+		 QGraphicsScene *scene = gvScreen->scene();
 
-#ifdef USE_RGB_555
-   QImage img((uchar *)vdp2texture, width, height, QImage::Format_RGB555);
-#elif USE_RGB_565
-   QImage img((uchar *)vdp2texture, width, height, QImage::Format_RGB16);
-#else
-   QImage img((uchar *)vdp2texture, width, height, QImage::Format_ARGB32);
-#endif
-   QPixmap pixmap = QPixmap::fromImage(img.rgbSwapped());
-   scene->clear();
-   scene->addPixmap(pixmap);
-   scene->setSceneRect(scene->itemsBoundingRect());
-// VBT : corrige le premier affichage du graphicView (permet le calcul de la taille du frameRec)
-   show();
-   gvScreen->fitInView(scene->sceneRect());
-   gvScreen->invalidateScene();
+		 QImage img((uchar *)vdp2texture, width, height, QImage::Format_ARGB32);
+
+		 QPixmap pixmap = QPixmap::fromImage(img.rgbSwapped());
+		 scene->clear();
+		 scene->addPixmap(pixmap);
+		 scene->setSceneRect(scene->itemsBoundingRect());
+		 // VBT : corrige le premier affichage du graphicView (permet le calcul de la taille du frameRec)
+		 show();
+		 gvScreen->fitInView(scene->sceneRect());
+		 gvScreen->invalidateScene();
+	 }
 }
 
 void UIDebugVDP2Viewer::on_pbSaveAsBitmap_clicked ()
@@ -89,14 +83,14 @@ void UIDebugVDP2Viewer::on_pbSaveAsBitmap_clicked ()
 
 	if (!vdp2texture)
 		return;
-	
+
 	// take screenshot of gl view
    QImage img((uchar *)vdp2texture, width, width, QImage::Format_ARGB32);
    img = img.rgbSwapped();
-	
+
 	// request a file to save to to user
 	const QString s = CommonDialogs::getSaveFileName( QString(), QtYabause::translate( "Choose a location for your bitmap" ), filters.join( ";;" ) );
-	
+
 	// write image if ok
 	if ( !s.isEmpty() )
 		if ( !img.save( s ) )
