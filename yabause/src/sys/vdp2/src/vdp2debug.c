@@ -1624,6 +1624,7 @@ void Vdp2DebugStatsGeneral(char *outstring, int *isenabled)
       AddString(outstring, "Sprite Stuff\r\n");
       AddString(outstring, "------------\r\n");
       AddString(outstring, "Sprite Type = %X\r\n", Vdp2Regs->SPCTL & 0xF);
+      AddString(outstring, "Screen Mode TVM = %X\r\n", Vdp1Regs->TVMR & 0x7);
       AddString(outstring, "VDP1 Framebuffer Data Format = %s\r\n", Vdp2Regs->SPCTL & 0x20 ? "RGB and palette" : "Palette only");
 
       if (Vdp2Regs->SDCTL & 0x100)
