@@ -4405,9 +4405,27 @@ static int isEnabled(int id, Vdp2* varVdp2Regs) {
   return display;
 }
 
-static pixel_t *VIDCSGetVdp2ScreenExtract(u32 screen, int * w, int * h) {
-  printf("Screen is %d\n", screen);
-  return NULL;
+static pixel_t *VIDCSGetVdp2ScreenExtract(u32 screen, int * w, int * h)
+{
+  if ((screen >= NBG0) && (screen <= NBG3)) {
+    pixel_t* pixels = (pixel_t*)malloc(_Ygl->rwidth*_Ygl->rheight * sizeof(pixel_t));
+    *w = _Ygl->rwidth;
+    *h = _Ygl->rheight;
+    glBindTexture(GL_TEXTURE_2D, _Ygl->screen_fbotex[screen]);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    return pixels;
+  }
+  if ((screen == RBG0) || (screen == RBG1))
+  {
+    pixel_t* pixels = (pixel_t*)malloc(_Ygl->width*_Ygl->height * sizeof(pixel_t));
+    *w = _Ygl->width;
+    *h = _Ygl->height;
+    glBindTexture(GL_TEXTURE_2D, _Ygl->rbg_compute_fbotex[screen-RBG0]);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    return pixels;
+  }
 }
 
 #endif

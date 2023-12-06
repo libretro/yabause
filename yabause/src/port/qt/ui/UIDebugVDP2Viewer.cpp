@@ -49,6 +49,10 @@ void UIDebugVDP2Viewer::addItem(int id) {
 	}
 }
 
+int UIDebugVDP2Viewer::exec() {
+	return QDialog::exec();
+}
+
 UIDebugVDP2Viewer::UIDebugVDP2Viewer( QWidget* p )
 	: QDialog( p )
 {
@@ -61,37 +65,44 @@ UIDebugVDP2Viewer::UIDebugVDP2Viewer( QWidget* p )
    vdp2texture = NULL;
 	 width = 0;
 	 height = 0;
-   cbScreen->setCurrentIndex(0);
-
 	// retranslate widgets
 	QtYabause::retranslateWidget( this );
 }
 
-void UIDebugVDP2Viewer::on_cbScreen_currentIndexChanged ( int )
+void UIDebugVDP2Viewer::displayCurrentScreen()
 {
-    if (!Vdp2Regs)
-        return;
+	if (!Vdp2Regs)
+			return;
+ int index = cbScreen->itemData( cbScreen->currentIndex() ).toInt();
 
-	 int index = cbScreen->itemData( cbScreen->currentIndex() ).toInt();
+	if (vdp2texture != NULL) free(vdp2texture);
 
-   vdp2texture = Vdp2DebugTexture(index, &width, &height);
-	 if (vdp2texture != NULL) {
-		 pbSaveAsBitmap->setEnabled(vdp2texture ? true : false);
+	vdp2texture = Vdp2DebugTexture(index, &width, &height);
+	if (vdp2texture != NULL) {
+		pbSaveAsBitmap->setEnabled(vdp2texture ? true : false);
 
-		 // Redraw screen
-		 QGraphicsScene *scene = gvScreen->scene();
+		// Redraw screen
+		QGraphicsScene *scene = gvScreen->scene();
+		QImage::Format format = QImage::Format_ARGB32;
+		if (cbOpaque->isChecked()) {
+			format = QImage::Format_RGB32;
+		}
+		QImage img((uchar *)vdp2texture, width, height, format);
 
-		 QImage img((uchar *)vdp2texture, width, height, QImage::Format_ARGB32);
+		QPixmap pixmap = QPixmap::fromImage(img.mirrored(false, true).rgbSwapped());
+		scene->clear();
+		scene->addPixmap(pixmap);
+		scene->setSceneRect(scene->itemsBoundingRect());
+	}
+}
 
-		 QPixmap pixmap = QPixmap::fromImage(img.rgbSwapped());
-		 scene->clear();
-		 scene->addPixmap(pixmap);
-		 scene->setSceneRect(scene->itemsBoundingRect());
-		 // VBT : corrige le premier affichage du graphicView (permet le calcul de la taille du frameRec)
-		 show();
-		 gvScreen->fitInView(scene->sceneRect());
-		 gvScreen->invalidateScene();
-	 }
+void UIDebugVDP2Viewer::on_cbScreen_currentIndexChanged ( int id)
+{
+	 displayCurrentScreen();
+}
+
+void UIDebugVDP2Viewer::showEvent(QShowEvent *) {
+    gvScreen->fitInView(gvScreen->scene()->sceneRect());
 }
 
 void UIDebugVDP2Viewer::on_pbSaveAsBitmap_clicked ()
@@ -107,8 +118,12 @@ void UIDebugVDP2Viewer::on_pbSaveAsBitmap_clicked ()
 		return;
 
 	// take screenshot of gl view
-   QImage img((uchar *)vdp2texture, width, width, QImage::Format_ARGB32);
-   img = img.rgbSwapped();
+	QImage::Format format = QImage::Format_ARGB32;
+	if (cbOpaque->isChecked()) {
+		format = QImage::Format_RGB32;
+	}
+   QImage img((uchar *)vdp2texture, width, width, format);
+   img = img.mirrored(false, true).rgbSwapped();
 
 	// request a file to save to to user
 	const QString s = CommonDialogs::getSaveFileName( QString(), QtYabause::translate( "Choose a location for your bitmap" ), filters.join( ";;" ) );
@@ -117,5 +132,9 @@ void UIDebugVDP2Viewer::on_pbSaveAsBitmap_clicked ()
 	if ( !s.isEmpty() )
 		if ( !img.save( s ) )
 			CommonDialogs::information( QtYabause::translate( "An error occured while writing file." ) );
+}
+
+void UIDebugVDP2Viewer::on_cbOpaque_toggled(bool enable) {
+	displayCurrentScreen();
 }
 
