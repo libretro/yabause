@@ -19,9 +19,35 @@
 
 #include "UIDebugVDP2Viewer.h"
 #include "CommonDialogs.h"
+#include "ygl.h"
 
 #include <QImageWriter>
 #include <QGraphicsPixmapItem>
+
+void UIDebugVDP2Viewer::addItem(int id) {
+	switch(id) {
+		case NBG0:
+			cbScreen->addItem("NBG0", NBG0);
+		break;
+		case NBG1:
+			cbScreen->addItem("NBG1", NBG1);
+		break;
+		case NBG2:
+			cbScreen->addItem("NBG2", NBG2);
+		break;
+		case NBG3:
+			cbScreen->addItem("NBG3", NBG3);
+		break;
+		case RBG0:
+			cbScreen->addItem("RBG0", RBG0);
+		break;
+		case RBG1:
+			cbScreen->addItem("RBG1", RBG1);
+		break;
+		default:
+		break;
+	}
+}
 
 UIDebugVDP2Viewer::UIDebugVDP2Viewer( QWidget* p )
 	: QDialog( p )
@@ -33,24 +59,20 @@ UIDebugVDP2Viewer::UIDebugVDP2Viewer( QWidget* p )
    gvScreen->setScene(scene);
 
    vdp2texture = NULL;
-	width = 0;
-	height = 0;
-
-   cbScreen->addItem("NBG0/RBG1");
-   cbScreen->addItem("NBG1");
-   cbScreen->addItem("NBG2");
-   cbScreen->addItem("NBG3");
-   cbScreen->addItem("RBG0");
+	 width = 0;
+	 height = 0;
    cbScreen->setCurrentIndex(0);
 
 	// retranslate widgets
 	QtYabause::retranslateWidget( this );
 }
 
-void UIDebugVDP2Viewer::on_cbScreen_currentIndexChanged ( int index )
+void UIDebugVDP2Viewer::on_cbScreen_currentIndexChanged ( int )
 {
     if (!Vdp2Regs)
         return;
+
+	 int index = cbScreen->itemData( cbScreen->currentIndex() ).toInt();
 
    vdp2texture = Vdp2DebugTexture(index, &width, &height);
 	 if (vdp2texture != NULL) {

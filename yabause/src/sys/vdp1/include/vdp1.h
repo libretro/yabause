@@ -184,6 +184,7 @@ typedef struct
    int (*setupFrame)();
    void (*FinsihDraw)(void);
    void (*Vdp1FBDraw)(void);
+   pixel_t* (*getVdp2ScreenExtract)(u32 screen, int * w, int * h);
 } VideoInterface_struct;
 
 extern VideoInterface_struct *VIDCore;

@@ -102,16 +102,15 @@ static void Vdp1SetTextureRatio(int vdp2widthratio, int vdp2heightratio);
 
 static void finishRbgQueue();
 
+static pixel_t *VIDCSGetVdp2ScreenExtract(u32 screen, int * w, int * h);
+
 static vdp2Lineinfo lineNBG0[512];
 static vdp2Lineinfo lineNBG1[512];
-
-
 
 #define WA_INSIDE (0)
 #define WA_OUTSIDE (1)
 
 extern void YglGenReset();
-
 
 int VIDCSInit(void);
 void VIDCSDeInit(void);
@@ -184,7 +183,8 @@ VIDCSRender,
 VIDCSRenderVDP1,
 VIDCSGenFrameBuffer,
 VIDCSFinsihDraw,
-VIDCSVdp1DrawFB
+VIDCSVdp1DrawFB,
+VIDCSGetVdp2ScreenExtract
 };
 
 
@@ -4403,6 +4403,11 @@ static int isEnabled(int id, Vdp2* varVdp2Regs) {
       display = 1;
   }
   return display;
+}
+
+static pixel_t *VIDCSGetVdp2ScreenExtract(u32 screen, int * w, int * h) {
+  printf("Screen is %d\n", screen);
+  return NULL;
 }
 
 #endif

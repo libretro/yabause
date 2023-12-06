@@ -27,7 +27,7 @@ class UIDebugVDP2Viewer : public QDialog, public Ui::UIDebugVDP2Viewer
 	Q_OBJECT
 public:
 	UIDebugVDP2Viewer( QWidget* parent = 0 );
-
+	void addItem(int i);
 protected:
    pixel_t *vdp2texture;
    int width, height;

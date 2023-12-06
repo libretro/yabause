@@ -21,27 +21,47 @@
 #include "UIDebugVDP2Viewer.h"
 #include "CommonDialogs.h"
 
+typedef struct {
+	void (*debugStats)(char *, int *);
+	QGroupBox *cb;
+	QPlainTextEdit *pte;
+} debugItem_s;
+
 UIDebugVDP2::UIDebugVDP2( QWidget* p )
 	: QDialog( p )
 {
 	// setup dialog
 	setupUi( this );
+	viewer = new UIDebugVDP2Viewer( this );
+	debugItem_s items[7] = {
+		{Vdp2DebugStatsNBG0, NBG0Debug, pteNBG0Info},
+		{Vdp2DebugStatsNBG1, NBG1Debug, pteNBG1Info},
+		{Vdp2DebugStatsNBG2, NBG2Debug, pteNBG2Info},
+		{Vdp2DebugStatsNBG3, NBG3Debug, pteNBG3Info},
+		{Vdp2DebugStatsRBG0, RBG0Debug, pteRBG0Info},
+		{Vdp2DebugStatsRBG1, RBG1Debug, pteRBG1Info},
+		{Vdp2DebugStatsGeneral, GeneralDebug, pteGeneralInfo}
+	};
 
    if (Vdp2Regs)
    {
-      updateInfoDisplay(Vdp2DebugStatsNBG0, cbNBG0Enabled, pteNBG0Info);
-      updateInfoDisplay(Vdp2DebugStatsNBG1, cbNBG1Enabled, pteNBG1Info);
-      updateInfoDisplay(Vdp2DebugStatsNBG2, cbNBG2Enabled, pteNBG2Info);
-      updateInfoDisplay(Vdp2DebugStatsNBG3, cbNBG3Enabled, pteNBG3Info);
-      updateInfoDisplay(Vdp2DebugStatsRBG0, cbRBG0Enabled, pteRBG0Info);
-      updateInfoDisplay(Vdp2DebugStatsGeneral, cbDisplayEnabled, pteGeneralInfo);
+		 	int index = 0;
+			for (int i=0; i<7; i++) {
+				DebugGrid->removeWidget(items[i].cb);
+				bool isVisible = updateInfoDisplay(items[i].debugStats, items[i].cb, items[i].pte);
+				if (isVisible) {
+					DebugGrid->addWidget(items[i].cb, index/3, index%3);
+					index+=1;
+					viewer->addItem(i);
+				}
+			}
    }
 
 	// retranslate widgets
 	QtYabause::retranslateWidget( this );
 }
 
-void UIDebugVDP2::updateInfoDisplay(void (*debugStats)(char *, int *), QCheckBox *cb, QPlainTextEdit *pte)
+bool UIDebugVDP2::updateInfoDisplay(void (*debugStats)(char *, int *), QGroupBox *cb, QPlainTextEdit *pte)
 {
    char tempstr[2048];
    int isScreenEnabled=false;
@@ -50,17 +70,18 @@ void UIDebugVDP2::updateInfoDisplay(void (*debugStats)(char *, int *), QCheckBox
 
    if (isScreenEnabled)
    {
-      cb->setChecked(true);
+      cb->setVisible(true);
       pte->clear();
       pte->appendPlainText(tempstr);
       pte->moveCursor(QTextCursor::Start);
    }
-   else
-      cb->setChecked(false);
-
+   else {
+		 cb->setVisible(false);
+	 }
+	 return (isScreenEnabled==true);
 }
 
 void UIDebugVDP2::on_pbViewer_clicked()
 {
-	UIDebugVDP2Viewer( this ).exec();
+	viewer->exec();
 }

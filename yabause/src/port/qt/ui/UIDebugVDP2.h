@@ -20,6 +20,7 @@
 #define UIDEBUGVDP2_H
 
 #include "ui_UIDebugVDP2.h"
+#include "UIDebugVDP2Viewer.h"
 #include "../QtYabause.h"
 
 class UIDebugVDP2 : public QDialog, public Ui::UIDebugVDP2
@@ -29,8 +30,8 @@ public:
 	UIDebugVDP2( QWidget* parent = 0 );
 
 protected:
-   void updateInfoDisplay(void (*debugStats)(char *, int *), QCheckBox *cb, QPlainTextEdit *pte);
-
+   bool updateInfoDisplay(void (*debugStats)(char *, int *), QGroupBox *cb, QPlainTextEdit *pte);
+	 UIDebugVDP2Viewer *viewer;
 protected slots:
    void on_pbViewer_clicked();
 

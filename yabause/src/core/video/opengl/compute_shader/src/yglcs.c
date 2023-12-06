@@ -413,4 +413,3 @@ void VIDCSRender(Vdp2 *varVdp2Regs) {
   finishCSRender();
   return;
 }
-
