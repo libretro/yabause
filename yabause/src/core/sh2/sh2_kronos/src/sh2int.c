@@ -149,7 +149,7 @@ static opcode_func* cacheCode[2][8];
 static const int const cacheSize[8] = {
   0x40000, //Bios
   0x80000, //LowWram
-  0x1000000, //CS0
+  0x200000, //CS0
   0x80000, //SoundRam
   0x40000, //VDP1Ram
   0x80000, //HighWRam
@@ -160,7 +160,7 @@ static const int const cacheSize[8] = {
 static const int const cacheMask[8] = {
   0x3FFFF, //Bios
   0x7FFFF, //LowWram
-  0xFFFFFF, //CS0
+  0x1FFFFF, //CS0
   0x7FFFF, //SoundRam
   0x3FFFF, //VDP1Ram
   0x7FFFF, //HighWRam
