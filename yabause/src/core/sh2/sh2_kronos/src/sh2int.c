@@ -56,6 +56,8 @@ extern void BiosBUPVerify(SH2_struct * context);
 extern void BiosBUPGetDate(SH2_struct * context);
 extern void BiosBUPSetDate(SH2_struct * context);
 
+void decode(SH2_struct *context);
+
 //////////////////////////////////////////////////////////////////////////////
 
 void SH2ExecCb(SH2_struct *context) {
@@ -145,16 +147,6 @@ static u16 FASTCALL FetchVram(SH2_struct *context, u32 addr)
   return SH2MappedMemoryReadWord(context, addr);
 }
 
-static const int const cacheSize[8] = {
-  0x40000, //Bios
-  0x80000, //LowWram
-  0x200000, //CS0
-  0x80000, //SoundRam
-  0x40000, //VDP1Ram
-  0x80000, //HighWRam
-  0x800, //Data Array
-  0x80000 //Undecoded
-};
 static const int const cacheMask[8] = {
   0x3FFFF, //Bios
   0x7FFFF, //LowWram
@@ -166,22 +158,22 @@ static const int const cacheMask[8] = {
   0x7FFFF //Undecoded
 };
 
-static opcode_func cache_master_bios[0x40000];
-static opcode_func cache_slave_bios[0x40000];
-static opcode_func cache_master_lowram[0x80000];
-static opcode_func cache_slave_lowram[0x80000];
-static opcode_func cache_master_cs0[0x200000];
-static opcode_func cache_slave_cs0[0x200000];
-static opcode_func cache_master_sound[0x80000];
-static opcode_func cache_slave_sound[0x80000];
-static opcode_func cache_master_vdp1[0x40000];
-static opcode_func cache_slave_vdp1[0x40000];
-static opcode_func cache_master_hiram[0x80000];
-static opcode_func cache_slave_hiram[0x80000];
-static opcode_func cache_master_array[0x800];
-static opcode_func cache_slave_array[0x800];
-static opcode_func cache_master_undecoded[0x80000];
-static opcode_func cache_slave_undecoded[0x80000];
+static opcode_func cache_master_bios[0x40000] = {decode};
+static opcode_func cache_slave_bios[0x40000] = {decode};
+static opcode_func cache_master_lowram[0x80000] = {decode};
+static opcode_func cache_slave_lowram[0x80000] = {decode};
+static opcode_func cache_master_cs0[0x200000] = {decode};
+static opcode_func cache_slave_cs0[0x200000] = {decode};
+static opcode_func cache_master_sound[0x80000] = {decode};
+static opcode_func cache_slave_sound[0x80000] = {decode};
+static opcode_func cache_master_vdp1[0x40000] = {decode};
+static opcode_func cache_slave_vdp1[0x40000] = {decode};
+static opcode_func cache_master_hiram[0x80000] = {decode};
+static opcode_func cache_slave_hiram[0x80000] = {decode};
+static opcode_func cache_master_array[0x800] = {decode};
+static opcode_func cache_slave_array[0x800] = {decode};
+static opcode_func cache_master_undecoded[0x80000] = {SH2undecoded};
+static opcode_func cache_slave_undecoded[0x80000] = {SH2undecoded};
 
 static opcode_func* cacheCode[2][8] = {
   {
@@ -323,18 +315,6 @@ int SH2KronosInterpreterInit(void)
 {
 
    int i,j;
-
-   for(i=0; i<7; i++) {
-     for(j=0; j<cacheSize[i]; j++) {
-       cacheCode[0][i][j] = decode;
-       cacheCode[1][i][j] = decode;
-     }
-   }
-
-   for(j=0; j<cacheSize[7]; j++) {
-     cacheCode[0][7][j] = SH2undecoded;
-     cacheCode[1][7][j] = SH2undecoded;
-   }
 
 
    for (i = 0; i < 0x1000; i++)
