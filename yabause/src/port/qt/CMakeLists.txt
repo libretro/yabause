@@ -186,11 +186,7 @@ set( kronos_qt_SOURCES
 	YabauseThread.cpp
 	Arguments.cpp )
 
-if( OPENGL_SUPPORTED )
 	set( kronos_qt_SOURCES ${kronos_qt_SOURCES} YabauseGL.cpp )
-else()
-	set( kronos_qt_SOURCES ${kronos_qt_SOURCES} YabauseSoftGL.cpp )
-endif()
 
 if(Qt5_FOUND)
 	QT5_ADD_RESOURCES( kronos_qt_RCC_RESOURCES ${kronos_qt_RESOURCES} )

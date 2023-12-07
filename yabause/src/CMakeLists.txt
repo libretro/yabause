@@ -335,7 +335,7 @@ set(KRONOS_LIBRARIES ${KRONOS_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
 # OpenGL
 option(YAB_WANT_OPENGL "use OpenGL for video output (most ports require it)" ON)
-if (YAB_WANT_OPENGL AND (YAB_RGB STREQUAL ""))
+if (YAB_WANT_OPENGL)
 	if (NOT YAB_FORCE_GLES31)
 		include(FindOpenGL)
 	endif (NOT YAB_FORCE_GLES31)
