@@ -236,7 +236,7 @@ void FASTCALL Vdp1FrameBufferWriteWord(SH2_struct *context, u8* mem, u32 addr, u
 void FASTCALL Vdp1FrameBufferWriteLong(SH2_struct *context, u8* mem, u32 addr, u32 val) {
   addr &= 0x3FFFF;
   u32* buf = getVDP1WriteFramebuffer(_Ygl->drawframe);
-  PRINT_FB("W L 0x%x@0x%x line %d(%d) frame %d\\n", val, addr, yabsys.LineCount, yabsys.DecilineCount, _Ygl->drawframe);
+  PRINT_FB("W L 0x%x@0x%x line %d(%d) frame %d\n", val, addr, yabsys.LineCount, yabsys.DecilineCount, _Ygl->drawframe);
   buf[(addr>>1)] = ((val>>16)&0xFFFF)|0xFF000000;
   buf[(addr>>1)+1] = (val&0xFFFF)|0xFF000000;
   syncVdp1FBBuffer(addr>>1);
