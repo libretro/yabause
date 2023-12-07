@@ -145,7 +145,6 @@ static u16 FASTCALL FetchVram(SH2_struct *context, u32 addr)
   return SH2MappedMemoryReadWord(context, addr);
 }
 
-static opcode_func* cacheCode[2][8];
 static const int const cacheSize[8] = {
   0x40000, //Bios
   0x80000, //LowWram
@@ -156,7 +155,6 @@ static const int const cacheSize[8] = {
   0x800, //Data Array
   0x80000 //Undecoded
 };
-
 static const int const cacheMask[8] = {
   0x3FFFF, //Bios
   0x7FFFF, //LowWram
@@ -167,6 +165,47 @@ static const int const cacheMask[8] = {
   0x7FF, //Data Array
   0x7FFFF //Undecoded
 };
+
+static opcode_func cache_master_bios[0x40000];
+static opcode_func cache_slave_bios[0x40000];
+static opcode_func cache_master_lowram[0x80000];
+static opcode_func cache_slave_lowram[0x80000];
+static opcode_func cache_master_cs0[0x200000];
+static opcode_func cache_slave_cs0[0x200000];
+static opcode_func cache_master_sound[0x80000];
+static opcode_func cache_slave_sound[0x80000];
+static opcode_func cache_master_vdp1[0x40000];
+static opcode_func cache_slave_vdp1[0x40000];
+static opcode_func cache_master_hiram[0x80000];
+static opcode_func cache_slave_hiram[0x80000];
+static opcode_func cache_master_array[0x800];
+static opcode_func cache_slave_array[0x800];
+static opcode_func cache_master_undecoded[0x80000];
+static opcode_func cache_slave_undecoded[0x80000];
+
+static opcode_func* cacheCode[2][8] = {
+  {
+    cache_master_bios,
+    cache_master_lowram,
+    cache_master_cs0,
+    cache_master_sound,
+    cache_master_vdp1,
+    cache_master_hiram,
+    cache_master_array,
+    cache_master_undecoded
+  },
+  {
+    cache_slave_bios,
+    cache_slave_lowram,
+    cache_slave_cs0,
+    cache_slave_sound,
+    cache_slave_vdp1,
+    cache_slave_hiram,
+    cache_slave_array,
+    cache_slave_undecoded
+  }
+};
+
 opcode_func BUPEntries[10] = {
   BiosBUPSelectPartition,
   BiosBUPFormat,
@@ -285,21 +324,6 @@ int SH2KronosInterpreterInit(void)
 
    int i,j;
 
-
-   for(i=0; i<8; i++) {
-     if (cacheCode[0][i] != NULL) {
-       free(cacheCode[0][i]);
-       cacheCode[0][i] = NULL;
-     }
-     if (cacheCode[1][i] != NULL) {
-       free(cacheCode[1][i]);
-       cacheCode[1][i] = NULL;
-     }
-     cacheCode[0][i] = (opcode_func *)malloc(cacheSize[i] * sizeof(opcode_func));
-     cacheCode[1][i] = (opcode_func *)malloc(cacheSize[i] * sizeof(opcode_func));
-   }
-
-
    for(i=0; i<7; i++) {
      for(j=0; j<cacheSize[i]; j++) {
        cacheCode[0][i][j] = decode;
@@ -391,17 +415,6 @@ int SH2KronosInterpreterInit(void)
 
 void SH2KronosInterpreterDeInit(void)
 {
-   // DeInitialize any internal variables here
-   for(int i=0; i<8; i++) {
-     if (cacheCode[0][i] != NULL) {
-       free(cacheCode[0][i]);
-       cacheCode[0][i] = NULL;
-     }
-     if (cacheCode[1][i] != NULL) {
-       free(cacheCode[1][i]);
-       cacheCode[1][i] = NULL;
-     }
-  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
