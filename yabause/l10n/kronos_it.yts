@@ -64,7 +64,7 @@ Advanced|Avanzate
 All Files;|
 All Files (*)|
 Always|
-An error occured while writing file.|							 
+An error occured while writing file.|
 Are you sure you want to delete '%1' ?|Sicuro di voler cancellare '%1'?
 Are you sure you want to format '%1' ?|Sicuro di voler formattare '%1'?
 Asia (NTSC)|Asia (NTSC)
@@ -81,7 +81,7 @@ Axis L Trigger|Asse L Grilletto
 Axis R Trigger| Asse R Grilletto
 Backup Ram Manager|Gestione Backup RAM
 Bilinear|
-Bilinear Filtering (Restart required)|Filtro bilineare (necessario riavvio)							  
+Bilinear Filtering (Restart required)|Filtro bilineare (necessario riavvio)
 Binary Files (*.bin)|Binary Files (*.bin)
 Bios|BIOS
 Block Size :|Dimensioni Blocco:
@@ -92,26 +92,26 @@ Byte Write : %1 %2|
 Cancel|
 Cannot initialize Windows SPTI Driver|
 Can't plug in the new controller, cancelling.|
-Can't initialize Kronos.|				
+Can't initialize Kronos.|
 Cart/Memory|Cart/Memoria
 Cartridge|Cartuccia
-CD Images (*.iso *.cue *.bin *.mds *.ccd)|									  
+CD Images (*.iso *.cue *.bin *.mds *.ccd)|
 Cd-Rom|Cd-Rom
 Central/South America (NTSC)|Central/South America (NTSC)
 Central/South America (PAL)|Central/South America (PAL)
-Cheats File|			
+Cheats File|
 Cheat &Search...|Cheat &Search...
 Cheat Search|Cheat Search
 Cheat Type|Tipo di Trucco
 Choose a binary or program file|
 Choose a bios file|
 Choose a cartridge file|
-Choose a cartridge folder|			  
+Choose a cartridge folder|
 Choose a cdrom drive/mount point|Choose a cdrom drive/mount point
 Choose a cheat file to open|Selezionare un file cheat da aprire
 Choose a cheat file to save to|Selezionare un file cheat per salvare
 Choose a file to save your state|Selezionare un file per salvare lo stato
-Choose a folder to store save states|									 
+Choose a folder to store save states|
 Choose a location for binary file|Choose a location for binary file
 Choose a location for your binary file|Scegli un percorso per il tuo file binario
 Choose a location for your bitmap|Scegli una posizione per la tua bitmap
@@ -167,12 +167,11 @@ Eject/Load ISO...|Espulsione / caricamento ISO ...
 ELF Program Files (*elf)|
 End Address:|
 English|Inglese
-Embellishment filter :|Filtro abbellimento:	   
+Embellishment filter :|Filtro abbellimento:
 Enable|Abilita
 Enable Bios Emulation|Abilita l'emulazione del bios
 Enable Code : %1 %2|
 Enable Frame Skip/Limiter|
-Enable Multithreading|Abilita il multithreading
 Enabled|Abilitato
 Enter new assembly code|Inserisci il nuovo codice assembly
 Enter New Value|Inserisci un nuovo valore
@@ -189,28 +188,28 @@ General|Generale
 General Info|General Info
 German|Tedesco
 Goto Address|Goto Address
-GPU Tesselation				
+GPU Tesselation
 Greater then|Greater then
 Gun|Pistola
 Gun Configuration|
-Gun/Mouse Sensitivity|			  
+Gun/Mouse Sensitivity|
 Hex value(s)|Hex value(s)
 Hide Menubar|Hide Menubar
 Hide Toolbar|Hide Toolbar
 Information...|Informazione...
 Inline Assembly|Assemblaggio in linea
 Input|Ingresso
-Internal Backup RAM|			
+Internal Backup RAM|
 Invalid Address|Indirizzo non valido
-Invalid Start/End Address Combination|									  
+Invalid Start/End Address Combination|
 Invalid Value|Valore non valido
-ISO-File Virtual Drive|					   
+ISO-File Virtual Drive|
 Italian|Italiano
 Japan (NTSC)|Japan (NTSC)
 Japanese|Giapponese
 Japanese Modem|Japanese Modem
 Korea (NTSC)|Korea (NTSC)
-Language :|Lingua:		   
+Language :|Lingua:
 L&oad State|L&oad State
 Left|Sinistra
 Left Stick Axis X|
@@ -221,7 +220,7 @@ Less than|
 Log|Log
 Long|Long
 Long Write|Scrivi Log
-Long Write : %1 %2|				   
+Long Write : %1 %2|
 Loop Track Clear|Loop Track Clear
 Loop Track Start|Loop Track Start
 Loop Track Stop|
@@ -240,7 +239,7 @@ Musashi Interface|
 nanovg OSD Interface|
 Native (native resolution of Window)|
 NBG0|
-NBG0/RBG1 Info|			   
+NBG0/RBG1 Info|
 NBG1|NBG1
 NBG1 Info|NBG1 Info
 NBG2|NBG2
@@ -255,7 +254,6 @@ None|
 None|
 Normal format not available, trying alternative|
 North America (NTSC)|
-Number of Threads|
 On fullscreen|On fullscreen
 On message|On message
 Open &CD Rom...|Open &CD Rom...
@@ -297,10 +295,10 @@ Save MD0|Save MD0
 Save MD1|Save MD1
 Save MD2|Save MD2
 Save MD3|Save MD3
-Save Selected|Save Selected			  
+Save Selected|Save Selected
 Save Program|Save Program
 S&ave State|
-Save State|Salva stato		
+Save State|Salva stato
 Save Slot Registers|Save Slot Registers
 Save Tab|
 Screen Enabled|Schermo abilitato
@@ -327,7 +325,7 @@ Settings|Impostazioni
 SH2 Debugger Interpreter|
 SH2 Interpreter|
 SH2 Performance|
-SH2 Registers|		  
+SH2 Registers|
 Shortcuts|Shortcuts
 Show FPS|Show FPS
 Show Log Window|Show Log Window
@@ -339,13 +337,13 @@ Slot Info|Slot Info
 Slot Number:|Slot Number:
 Software OSD Interface|Software OSD Interface
 Software Video Interface|Software Video Interface
-Sound...|		 
+Sound...|
 Sound|Suono
 Sound Core|Sistema Audio
 Spanish|Spagnolo
 ST-V cabinet Configuration|
 ST-V Cabinet|
-STV Rom game|Gioco STV Rom	   			 
+STV Rom game|Gioco STV Rom
 Start|Inizia
 Start Address:|Indirizzo Iniziale:
 Start in Fullscreen|Start in Fullscreen
@@ -359,14 +357,14 @@ Stick Left|
 Stick Right|
 Stick Up|
 Stop|
-Stretch to window|Allungare alla finestra  
+Stretch to window|Allungare alla finestra
 Synchronize Saturn internal clock with set time|Synchronize Saturn internal clock with set time
 Tesselation|Tassellazione
 Text|
 Texture|
 The dummies cores don't need configuration|
 Throttle Down|
-Throttle Up|	
+Throttle Up|
 To File...|Nel file...
 toolBar|
 Trace Logging|
@@ -406,12 +404,12 @@ View|Vista
 Viewer|Viewer
 WAV Files (*.wav)|
 Wheel|Ruota
-Wheel Configuration|Configurazione della ruota				
+Wheel Configuration|Configurazione della ruota
 Window Resolution|Window Resolution
 Windows SPTI Driver|Windows SPTI Driver
 Word|Word
 Word Write|Word Write
-Word Write : %1 %2|				   
+Word Write : %1 %2|
 Write|Write
 Kronos Cheat Files (*.yct);;All Files (*)|
 Kronos Qt GUI|

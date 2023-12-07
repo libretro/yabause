@@ -167,9 +167,6 @@
          </property>
         </widget>
        </item>
-       <item row="37" column="1">
-        <widget class="QSpinBox" name="sbNumberOfThreads"/>
-       </item>
        <item row="0" column="0" colspan="2">
         <widget class="QLabel" name="lBios">
          <property name="font">
@@ -209,13 +206,6 @@
          </property>
         </widget>
        </item>
-       <item row="37" column="0">
-        <widget class="QLabel" name="label_2">
-         <property name="text">
-          <string>Number of Threads</string>
-         </property>
-        </widget>
-       </item>
        <item row="16" column="1">
         <widget class="QToolButton" name="tbScreenshots">
          <property name="text">
@@ -249,13 +239,6 @@
         <widget class="QCheckBox" name="cbEnableBiosEmulation">
          <property name="text">
           <string>Enable Bios Emulation</string>
-         </property>
-        </widget>
-       </item>
-       <item row="36" column="0">
-        <widget class="QCheckBox" name="cbEnableMultiThreading">
-         <property name="text">
-          <string>Enable Multithreading</string>
          </property>
         </widget>
        </item>

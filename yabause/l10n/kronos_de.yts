@@ -200,7 +200,6 @@ Enable|Aktivieren
 Enable Bios Emulation|Aktivieren Sie die Bios-Emulation
 Enable Code : %1 %2|
 Enable Frame Skip/Limiter|Aktiviere Frame überspringen/limitieren
-Enable Multithreading|Aktiviere Multithreading
 Enable vertical synchronization|Aktiviere vertikale synchronisierung
 Enabled|Aktiviert
 Enter new assembly code|Neuen Assemblycode eingeben
@@ -305,7 +304,6 @@ No matches found.|Keine Treffer gefunden.
 None|Keine
 Normal format not available, trying alternative|Standardformat nicht verfügbar, versuche es alternatives
 North America (NTSC)|Nordamerika (NTSC)
-Number of Threads|Anzahl an Threads
 On fullscreen|In Vollbild
 On message|Zu Nachricht
 Open &CD Rom...|&CD-Rom öffnen...

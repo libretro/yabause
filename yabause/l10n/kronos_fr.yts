@@ -194,7 +194,6 @@ Embellishment filter :|Filtre d'Embellissement :
 Enable|Activer
 Enable Bios Emulation|Activer l'Emulation du Bios
 Enable Code : %1 %2|Activer le Code : %1 %2
-Enable Multithreading|Activer les Processus Multiples
 Enable vertical synchronization|Activer la Synchronisation Verticale
 Enabled|Activé
 End Address:|Adresse de Fin :
@@ -302,7 +301,6 @@ No matches found.|Aucune correspondance trouvé.
 None|Aucun
 Normal format not available, trying alternative|Le format normal n'est pas disponible, essayez en un autre
 North America (NTSC)|Amérique du Nord (NTSC)
-Number of Threads|Nombre de Processus
 On fullscreen|Plein Ecran
 On message|Sur le Message
 Open &CD Rom...|Ouvrir un Lecteur &CD Rom...

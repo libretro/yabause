@@ -178,7 +178,6 @@ Enable|
 Enable Bios Emulation|
 Enable Code : %1 %2|
 Enable Frame Skip/Limiter|
-Enable Multithreading|
 Enabled|
 Enter new assembly code|
 Enter New Value|
@@ -271,7 +270,6 @@ None|
 None|
 Normal format not available, trying alternative|
 North America (NTSC)|
-Number of Threads|
 On fullscreen|
 On message|
 Open &CD Rom...|
