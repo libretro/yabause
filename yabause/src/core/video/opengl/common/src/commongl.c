@@ -1098,10 +1098,14 @@ void YglDeInit(void) {
 
    if (YglTM_vdp2 != NULL)    YglTMDeInit(&YglTM_vdp2);
 
-
-
    if (_Ygl)
    {
+       if (_Ygl->cram_tex_buf != NULL) free(_Ygl->cram_tex_buf);
+       _Ygl->cram_tex_buf = NULL;
+
+       if (_Ygl->vdp2buf != NULL) free(_Ygl->vdp2buf);
+       _Ygl->vdp2buf = NULL;
+
       if(_Ygl->mutex) YabThreadFreeMutex(_Ygl->mutex );
 
       if (_Ygl->vdp2levels)

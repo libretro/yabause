@@ -49,7 +49,7 @@ extern OSD_struct * OSDCoreList[];
 #endif
 
 static OSD_struct * OSD = NULL;
-static OSDMessage_struct osdmessages[OSDMSG_COUNT];
+static OSDMessage_struct osdmessages[OSDMSG_COUNT] = {0};
 
 int OSDInit(int coreid)
 {
@@ -81,6 +81,13 @@ void OSDDeInit() {
    if (OSD)
       OSD->DeInit();
    OSD = NULL;
+
+   for (int i =0 ; i<OSDMSG_COUNT; i++) {
+     if (osdmessages[i].message != NULL) {
+       free(osdmessages[i].message);
+       osdmessages[i].message = NULL;
+     }
+   }
 }
 
 int OSDChangeCore(int coreid)
@@ -136,7 +143,10 @@ int OSDDisplayMessages(pixel_t * buffer, int w, int h)
             OSD->DisplayMessage(osdmessages + i, buffer, w, h);
          }
          osdmessages[i].timeleft--;
-         if (osdmessages[i].timeleft == 0) free(osdmessages[i].message);
+         if (osdmessages[i].timeleft == 0) {
+           free(osdmessages[i].message);
+           osdmessages[i].message = NULL;
+         }
       }
 
    return somethingnew;
