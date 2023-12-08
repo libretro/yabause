@@ -169,22 +169,22 @@ static const int const cacheSize[8] = {
   0x80000 //Undecoded
 };
 
-static opcode_func cache_master_bios[0x40000] = {decode};
-static opcode_func cache_slave_bios[0x40000] = {decode};
-static opcode_func cache_master_lowram[0x80000] = {decode};
-static opcode_func cache_slave_lowram[0x80000] = {decode};
-static opcode_func cache_master_cs0[0x200000] = {decode};
-static opcode_func cache_slave_cs0[0x200000] = {decode};
-static opcode_func cache_master_sound[0x80000] = {decode};
-static opcode_func cache_slave_sound[0x80000] = {decode};
-static opcode_func cache_master_vdp1[0x40000] = {decode};
-static opcode_func cache_slave_vdp1[0x40000] = {decode};
-static opcode_func cache_master_hiram[0x80000] = {decode};
-static opcode_func cache_slave_hiram[0x80000] = {decode};
-static opcode_func cache_master_array[0x800] = {decode};
-static opcode_func cache_slave_array[0x800] = {decode};
-static opcode_func cache_master_undecoded[0x80000] = {SH2undecoded};
-static opcode_func cache_slave_undecoded[0x80000] = {SH2undecoded};
+static opcode_func cache_master_bios[0x40000];
+static opcode_func cache_slave_bios[0x40000];
+static opcode_func cache_master_lowram[0x80000];
+static opcode_func cache_slave_lowram[0x80000];
+static opcode_func cache_master_cs0[0x200000];
+static opcode_func cache_slave_cs0[0x200000];
+static opcode_func cache_master_sound[0x80000];
+static opcode_func cache_slave_sound[0x80000];
+static opcode_func cache_master_vdp1[0x40000];
+static opcode_func cache_slave_vdp1[0x40000];
+static opcode_func cache_master_hiram[0x80000];
+static opcode_func cache_slave_hiram[0x80000];
+static opcode_func cache_master_array[0x800];
+static opcode_func cache_slave_array[0x800];
+static opcode_func cache_master_undecoded[0x80000];
+static opcode_func cache_slave_undecoded[0x80000];
 
 static opcode_func* cacheCode[2][8] = {
   {
