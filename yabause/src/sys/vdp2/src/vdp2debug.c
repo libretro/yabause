@@ -1486,6 +1486,7 @@ void Vdp2DebugStatsGeneral(char *outstring, int *isenabled)
    int i;
 
    AddString(outstring, "RAMCTL 0x%x\r\n", Vdp2Regs->RAMCTL);
+   *isenabled = 1;
 
    if ((Vdp2Regs->TVMD & 0x8000)!=0)
    {
@@ -1748,11 +1749,6 @@ void Vdp2DebugStatsGeneral(char *outstring, int *isenabled)
       }
 
       outstring = AddColorOffsetInfo(outstring, 0x0040);
-      *isenabled = 1;
-   }
-   else
-   {
-      *isenabled = 0;
    }
 }
 
