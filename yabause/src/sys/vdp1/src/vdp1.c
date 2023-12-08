@@ -2677,17 +2677,24 @@ static int Vdp1EraseWrite(int id){
 
 static void startField(void) {
   int isrender = 0;
+  updateFBCRMode();
   if (needNewFrame != 1) return;
   needNewFrame = 0;
-  updateFBCRMode();
   yabsys.wait_line_count = -1;
   FRAMELOG("StartField ***** VOUT(T) %d FCM=%d FCT=%d VBE=%d PTMR=%d (%d, %d, %d)*****%d (%d)\n", Vdp1External.swap_frame_buffer, (Vdp1Regs->FBCR & 0x02) >> 1, (Vdp1Regs->FBCR & 0x01), (Vdp1Regs->TVMR >> 3) & 0x01, Vdp1Regs->PTMR, Vdp1External.onecyclemode, Vdp1External.manualchange, Vdp1External.manualerase, yabsys.LineCount, yabsys.DecilineCount);
-
   // Manual Change
   Vdp1External.swap_frame_buffer |= (Vdp1External.manualchange == 1);
   Vdp1External.swap_frame_buffer |= (Vdp1External.onecyclemode == 1);
 
   // Frame Change
+  if ((Vdp1External.manualerase == 1) || (Vdp1External.onecyclemode == 1))
+  {
+    int id = 0;
+    if (_Ygl != NULL) id = _Ygl->readframe;
+    Vdp1EraseWrite(id);
+    FRAMELOG("draw frame %d to be erased\n", id);
+    Vdp1External.manualerase = 0;
+  }
   if (Vdp1External.swap_frame_buffer == 1)
   {
     int switchdelay = yabsys.MaxLineCount;
@@ -2696,15 +2703,6 @@ static void startField(void) {
     addVdp1Framecount();
     FRAMELOG("Swap Line %d (v=%d,m=%d)\n", yabsys.LineCount , yabsys.VBlankLineCount, yabsys.MaxLineCount);
     lastHash = -1;
-    if ((Vdp1External.manualerase == 1) || (Vdp1External.onecyclemode == 1))
-    {
-      int id = 0;
-      if (_Ygl != NULL) id = _Ygl->readframe;
-      Vdp1EraseWrite(id);
-      FRAMELOG("draw frame to be erased\n");
-      FRAMELOG("Draw delay shall be %d (%d)(%d)\n", switchdelay, yabsys.VBlankLineCount, yabsys.MaxLineCount);
-      Vdp1External.manualerase = 0;
-    }
     if (((Vdp1Regs->TVMR >> 3) & 0x01) && (yabsys.LineCount >= yabsys.VBlankLineCount))  {
       //VBE is on going on draw Framebuffer
       switchdelay = yabsys.MaxLineCount;
@@ -2713,14 +2711,19 @@ static void startField(void) {
       Vdp1EraseWrite(id);
       FRAMELOG("read frame to be erased\n");
       FRAMELOG("Draw delay shall be %d (%d)(%d)\n", switchdelay, yabsys.VBlankLineCount, yabsys.MaxLineCount);
+    } else {
+      if (Vdp1External.onecyclemode == 1) {
+        switchdelay = yabsys.LineCount + 1;
+      }
     }
 
     Vdp1External.swap_frame_buffer = 0;
     //only use oneCyclemode only once in a frame
-    if (Vdp1External.onecyclemode == 1)Vdp1External.onecyclemode = 2;
+    if (Vdp1External.onecyclemode == 1){
+      Vdp1External.onecyclemode = 2;
+    }
 
     // if Plot Trigger mode == 0x02 draw start
-
     Vdp1External.status |= VDP1_SWITCH_REQUEST;
     Vdp1External.switch_trigger_line = switchdelay;
   } else {
@@ -2739,7 +2742,10 @@ void Vdp1HBlankIN(void)
 {
   int needToCompose = 0;
   if (yabsys.LineCount == 0) {
-    if (Vdp1External.onecyclemode == 2)Vdp1External.onecyclemode = 1;
+    if (Vdp1External.onecyclemode == 2){
+      Vdp1External.onecyclemode = 1;
+      updateFBCRMode();
+    }
   }
   if ((yabsys.LineCount == yabsys.VBlankLineCount+1) && ((Vdp1Regs->TVMR >> 3) & 0x01)) {
     FRAMELOG("VBlankin line %d (%d) VBlankErase %d => Erase Frame %d\n", yabsys.LineCount, yabsys.DecilineCount, (Vdp1Regs->TVMR >> 3) & 0x01, _Ygl->readframe);
