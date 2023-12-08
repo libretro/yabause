@@ -1488,268 +1488,266 @@ void Vdp2DebugStatsGeneral(char *outstring, int *isenabled)
    AddString(outstring, "RAMCTL 0x%x\r\n", Vdp2Regs->RAMCTL);
    *isenabled = 1;
 
-   if ((Vdp2Regs->TVMD & 0x8000)!=0)
-   {
-      // TVMD stuff
-      AddString(outstring, "Border Color Mode = %s\r\n", Vdp2Regs->TVMD & 0x100 ? "Back screen" : "Black");
+    AddString(outstring, "Screen is %s\n", ((Vdp2Regs->TVMD & 0x8000)!=0)?"enabled":"disabled");
+    // TVMD stuff
+    AddString(outstring, "Border Color Mode = %s\r\n", Vdp2Regs->TVMD & 0x100 ? "Back screen" : "Black");
 
-      AddString(outstring, "Display Resolution = ");
-      switch (Vdp2Regs->TVMD & 0x7)
-      {
-         case 0:
-         case 4:
-            AddString(outstring, "320");
-            break;
-         case 1:
-         case 5:
-            AddString(outstring, "352");
-            break;
-         case 2:
-         case 6:
-            AddString(outstring, "640");
-            break;
-         case 3:
-         case 7:
-            AddString(outstring, "704");
-            break;
-         default:
-            AddString(outstring, "Invalid");
-            break;
-      }
-
-      AddString(outstring, " x ");
-
-      switch ((Vdp2Regs->TVMD >> 4) & 0x3)
-      {
-         case 0:
-            AddString(outstring, "224");
-            break;
-         case 1:
-            AddString(outstring, "240");
-            break;
-         case 2:
-            if (yabsys.IsPal){
-              AddString(outstring, "256");
-            } else {
-              AddString(outstring, "224 - due to invalid");
-            }
-            break;
-         default:
-            AddString(outstring, "Invalid");
-            break;
-      }
-
-      if (Vdp2Regs->TVSTAT & 0x1)
-      {
-         AddString(outstring, "(PAL)\r\n");
-      }
-      else
-      {
-         AddString(outstring, "(NTSC)\r\n");
-      }
-
-      AddString(outstring, "Interlace Mode = ");
-      switch ((Vdp2Regs->TVMD >> 6) & 0x3)
-      {
-         case 0:
-            AddString(outstring, "Non-Interlace\r\n");
-            break;
-         case 2:
-            AddString(outstring, "Single-Density Interlace\r\n");
-            break;
-         case 3:
-            AddString(outstring, "Double-Density Interlace\r\n");
-            break;
-         default:
-            AddString(outstring, "Invalid\r\n");
-            break;
-      }
-
-      // Latch stuff
-      AddString(outstring, "Latches HV counter when %s\r\n", Vdp2Regs->EXTEN & 0x200 ? "external signal triggers it" : "external latch flag is read");
-      if (Vdp2Regs->EXTEN & 0x100)
-      {
-         AddString(outstring, "External Sync is being inputed\r\n");
-      }
-
-      // Screen status stuff
-      if (Vdp2Regs->TVSTAT & 0x200)
-      {
-         AddString(outstring, "HV is latched\r\n");
-      }
-
-      if (Vdp2Regs->TVSTAT & 0x4)
-      {
-         AddString(outstring, "During H-Blank\r\n");
-      }
-
-      if (Vdp2Regs->TVSTAT & 0x8)
-      {
-         AddString(outstring, "During V-Blank\r\n");
-      }
-
-      if ((Vdp2Regs->TVMD >> 6) & 0x2)
-      {
-         AddString(outstring, "During %s Field\r\n", Vdp2Regs->TVSTAT & 0x2 ? "Odd" : "Even");
-      }
-
-      AddString(outstring, "H Counter = %d\r\n", Vdp2Regs->HCNT);
-      AddString(outstring, "V Counter = %d\r\n", Vdp2Regs->VCNT);
-      AddString(outstring, "\r\n");
-
-      // Line color screen stuff
-      AddString(outstring, "Line Color Screen Stuff\r\n");
-      AddString(outstring, "-----------------------\r\n");
-      AddString(outstring, "Mode = %s\r\n", Vdp2Regs->LCTA.part.U & 0x8000 ? "Color per line" : "Single color");
-      AddString(outstring, "Address = %08lX\r\n", 0x05E00000UL | ((Vdp2Regs->LCTA.all & 0x7FFFFUL) * 2));
-      AddString(outstring, "\r\n");
-
-      // Back screen stuff
-      AddString(outstring, "Back Screen Stuff\r\n");
-      AddString(outstring, "-----------------\r\n");
-      AddString(outstring, "Mode = %s\r\n", Vdp2Regs->BKTAU & 0x8000 ? "Color per line" : "Single color");
-      AddString(outstring, "Address = %08X\r\n", 0x05E00000 | (((Vdp2Regs->BKTAU & 0x7) << 16)  | Vdp2Regs->BKTAL) * 2);
-      outstring = AddColorOffsetInfo(outstring, 0x0020);
-      AddString(outstring, "\r\n");
-
-      // Cycle patterns here
-      AddString(outstring, "Cycle Pattern\r\n");
-      AddString(outstring, "-----------------\r\n");
-      AddString(outstring, "A0 = %08X\r\n", (Vdp2Regs->CYCA0L << 16) | (Vdp2Regs->CYCA0U));
-      AddString(outstring, "A1 = %08X\r\n", (Vdp2Regs->CYCA1L << 16) | (Vdp2Regs->CYCA1U));
-      AddString(outstring, "B0 = %08X\r\n", (Vdp2Regs->CYCB0L << 16) | (Vdp2Regs->CYCB0U));
-      AddString(outstring, "B1 = %08X\r\n", (Vdp2Regs->CYCB1L << 16) | (Vdp2Regs->CYCB1U));
-      AddString(outstring, "\r\n");
-
-      // Sprite stuff
-      AddString(outstring, "Sprite Stuff\r\n");
-      AddString(outstring, "------------\r\n");
-      AddString(outstring, "Sprite Type = %X\r\n", Vdp2Regs->SPCTL & 0xF);
-      AddString(outstring, "Screen Mode TVM = ");
-      switch (Vdp1Regs->TVMR & 0x7) {
-        case 0:
-          AddString(outstring, "Normal\n");
+    AddString(outstring, "Display Resolution = ");
+    switch (Vdp2Regs->TVMD & 0x7)
+    {
+       case 0:
+       case 4:
+          AddString(outstring, "320");
           break;
-        case 1:
-          AddString(outstring, "High Resolution\n");
+       case 1:
+       case 5:
+          AddString(outstring, "352");
           break;
-        case 2:
-          AddString(outstring, "Rotation 16\n");
+       case 2:
+       case 6:
+          AddString(outstring, "640");
           break;
-        case 3:
-          AddString(outstring, "Rotation 8\n");
+       case 3:
+       case 7:
+          AddString(outstring, "704");
           break;
-        case 4:
-          AddString(outstring, "HDTV\n");
+       default:
+          AddString(outstring, "Invalid");
           break;
-        default:
-          AddString(outstring, "Prohibited 0x%x\n",Vdp1Regs->TVMR & 0x7);
+    }
+
+    AddString(outstring, " x ");
+
+    switch ((Vdp2Regs->TVMD >> 4) & 0x3)
+    {
+       case 0:
+          AddString(outstring, "224");
           break;
+       case 1:
+          AddString(outstring, "240");
+          break;
+       case 2:
+          if (yabsys.IsPal){
+            AddString(outstring, "256");
+          } else {
+            AddString(outstring, "224 - due to invalid");
+          }
+          break;
+       default:
+          AddString(outstring, "Invalid");
+          break;
+    }
+
+    if (Vdp2Regs->TVSTAT & 0x1)
+    {
+       AddString(outstring, "(PAL)\r\n");
+    }
+    else
+    {
+       AddString(outstring, "(NTSC)\r\n");
+    }
+
+    AddString(outstring, "Interlace Mode = ");
+    switch ((Vdp2Regs->TVMD >> 6) & 0x3)
+    {
+       case 0:
+          AddString(outstring, "Non-Interlace\r\n");
+          break;
+       case 2:
+          AddString(outstring, "Single-Density Interlace\r\n");
+          break;
+       case 3:
+          AddString(outstring, "Double-Density Interlace\r\n");
+          break;
+       default:
+          AddString(outstring, "Invalid\r\n");
+          break;
+    }
+
+    // Latch stuff
+    AddString(outstring, "Latches HV counter when %s\r\n", Vdp2Regs->EXTEN & 0x200 ? "external signal triggers it" : "external latch flag is read");
+    if (Vdp2Regs->EXTEN & 0x100)
+    {
+       AddString(outstring, "External Sync is being inputed\r\n");
+    }
+
+    // Screen status stuff
+    if (Vdp2Regs->TVSTAT & 0x200)
+    {
+       AddString(outstring, "HV is latched\r\n");
+    }
+
+    if (Vdp2Regs->TVSTAT & 0x4)
+    {
+       AddString(outstring, "During H-Blank\r\n");
+    }
+
+    if (Vdp2Regs->TVSTAT & 0x8)
+    {
+       AddString(outstring, "During V-Blank\r\n");
+    }
+
+    if ((Vdp2Regs->TVMD >> 6) & 0x2)
+    {
+       AddString(outstring, "During %s Field\r\n", Vdp2Regs->TVSTAT & 0x2 ? "Odd" : "Even");
+    }
+
+    AddString(outstring, "H Counter = %d\r\n", Vdp2Regs->HCNT);
+    AddString(outstring, "V Counter = %d\r\n", Vdp2Regs->VCNT);
+    AddString(outstring, "\r\n");
+
+    // Line color screen stuff
+    AddString(outstring, "Line Color Screen Stuff\r\n");
+    AddString(outstring, "-----------------------\r\n");
+    AddString(outstring, "Mode = %s\r\n", Vdp2Regs->LCTA.part.U & 0x8000 ? "Color per line" : "Single color");
+    AddString(outstring, "Address = %08lX\r\n", 0x05E00000UL | ((Vdp2Regs->LCTA.all & 0x7FFFFUL) * 2));
+    AddString(outstring, "\r\n");
+
+    // Back screen stuff
+    AddString(outstring, "Back Screen Stuff\r\n");
+    AddString(outstring, "-----------------\r\n");
+    AddString(outstring, "Mode = %s\r\n", Vdp2Regs->BKTAU & 0x8000 ? "Color per line" : "Single color");
+    AddString(outstring, "Address = %08X\r\n", 0x05E00000 | (((Vdp2Regs->BKTAU & 0x7) << 16)  | Vdp2Regs->BKTAL) * 2);
+    outstring = AddColorOffsetInfo(outstring, 0x0020);
+    AddString(outstring, "\r\n");
+
+    // Cycle patterns here
+    AddString(outstring, "Cycle Pattern\r\n");
+    AddString(outstring, "-----------------\r\n");
+    AddString(outstring, "A0 = %08X\r\n", (Vdp2Regs->CYCA0L << 16) | (Vdp2Regs->CYCA0U));
+    AddString(outstring, "A1 = %08X\r\n", (Vdp2Regs->CYCA1L << 16) | (Vdp2Regs->CYCA1U));
+    AddString(outstring, "B0 = %08X\r\n", (Vdp2Regs->CYCB0L << 16) | (Vdp2Regs->CYCB0U));
+    AddString(outstring, "B1 = %08X\r\n", (Vdp2Regs->CYCB1L << 16) | (Vdp2Regs->CYCB1U));
+    AddString(outstring, "\r\n");
+
+    // Sprite stuff
+    AddString(outstring, "Sprite Stuff\r\n");
+    AddString(outstring, "------------\r\n");
+    AddString(outstring, "Sprite Type = %X\r\n", Vdp2Regs->SPCTL & 0xF);
+    AddString(outstring, "Screen Mode TVM = ");
+    switch (Vdp1Regs->TVMR & 0x7) {
+      case 0:
+        AddString(outstring, "Normal\n");
+        break;
+      case 1:
+        AddString(outstring, "High Resolution\n");
+        break;
+      case 2:
+        AddString(outstring, "Rotation 16\n");
+        break;
+      case 3:
+        AddString(outstring, "Rotation 8\n");
+        break;
+      case 4:
+        AddString(outstring, "HDTV\n");
+        break;
+      default:
+        AddString(outstring, "Prohibited 0x%x\n",Vdp1Regs->TVMR & 0x7);
+        break;
+    }
+    AddString(outstring, "VDP1 Framebuffer Data Format = %s\r\n", Vdp2Regs->SPCTL & 0x20 ? "RGB and palette" : "Palette only");
+    AddString(outstring, "Erased Area: EWLR 0x%x EWRR 0x%x\n");
+    {
+      int shift = ((Vdp1Regs->TVMR & 0x1) == 1)?4:3;
+      int limits[4] = {0};
+      limits[0] = ((Vdp1Regs->EWLR>>9)&0x3F)<<shift;
+      limits[1] = ((Vdp1Regs->EWLR)&0x1FF); //TODO: manage double interlace
+      limits[2] = (((Vdp1Regs->EWRR>>9)&0x7F)<<shift) - 1;
+      limits[3] = ((Vdp1Regs->EWRR)&0x1FF); //TODO: manage double interlace
+
+      //Prohibited value - Example Quake first screens
+      if ((limits[2] == -1)||(limits[3] == 0)) {
+        AddString(outstring, "  Prohibited value\n");
       }
-      AddString(outstring, "VDP1 Framebuffer Data Format = %s\r\n", Vdp2Regs->SPCTL & 0x20 ? "RGB and palette" : "Palette only");
-      AddString(outstring, "Erased Area: EWLR 0x%x EWRR 0x%x\n");
-      {
-        int shift = ((Vdp1Regs->TVMR & 0x1) == 1)?4:3;
-        int limits[4] = {0};
-        limits[0] = ((Vdp1Regs->EWLR>>9)&0x3F)<<shift;
-        limits[1] = ((Vdp1Regs->EWLR)&0x1FF); //TODO: manage double interlace
-        limits[2] = (((Vdp1Regs->EWRR>>9)&0x7F)<<shift) - 1;
-        limits[3] = ((Vdp1Regs->EWRR)&0x1FF); //TODO: manage double interlace
 
-        //Prohibited value - Example Quake first screens
-        if ((limits[2] == -1)||(limits[3] == 0)) {
-          AddString(outstring, "  Prohibited value\n");
-        }
-
-        AddString(outstring, "  Erase from (%d,%d) to (%d,%d)\n", limits[0], limits[1], limits[2], limits[3]);
-        if ((limits[0]>=limits[2])||(limits[1]>limits[3])) {
-          AddString(outstring, "    Invalid values\n");
-        }
+      AddString(outstring, "  Erase from (%d,%d) to (%d,%d)\n", limits[0], limits[1], limits[2], limits[3]);
+      if ((limits[0]>=limits[2])||(limits[1]>limits[3])) {
+        AddString(outstring, "    Invalid values\n");
       }
+    }
 
 
-      if (Vdp2Regs->SDCTL & 0x100)
-      {
-         AddString(outstring, "Transparent Shadow Enabled\r\n");
-      }
+    if (Vdp2Regs->SDCTL & 0x100)
+    {
+       AddString(outstring, "Transparent Shadow Enabled\r\n");
+    }
 
-      if (Vdp2Regs->SPCTL & 0x10)
-      {
-         AddString(outstring, "Sprite Window Enabled\r\n");
-         AddString(outstring, "Sprite Gradation Calculation %s\n", (getBlur(Vdp2Regs, SPRITE)==0)?"Disabled":"Enabled");
-      }
+    if (Vdp2Regs->SPCTL & 0x10)
+    {
+       AddString(outstring, "Sprite Window Enabled\r\n");
+       AddString(outstring, "Sprite Gradation Calculation %s\n", (getBlur(Vdp2Regs, SPRITE)==0)?"Disabled":"Enabled");
+    }
 
-      if (Vdp2Regs->LNCLEN & 0x20)
-      {
-        AddString(outstring, "Line Color Screen insertion enabled\n");
-      }
+    if (Vdp2Regs->LNCLEN & 0x20)
+    {
+      AddString(outstring, "Line Color Screen insertion enabled\n");
+    }
 
-      outstring = AddWindowInfoString(outstring, Vdp2Regs->WCTLC >> 8, 1);
+    outstring = AddWindowInfoString(outstring, Vdp2Regs->WCTLC >> 8, 1);
 
-      AddString(outstring, "Color RAM Offset = %X\r\n", (Vdp2Regs->CRAOFB >> 4) & 0x7);
-      AddString(outstring, "Color RAM Mode = %X\r\n", (Vdp2Regs->RAMCTL >> 12) & 0x3);
+    AddString(outstring, "Color RAM Offset = %X\r\n", (Vdp2Regs->CRAOFB >> 4) & 0x7);
+    AddString(outstring, "Color RAM Mode = %X\r\n", (Vdp2Regs->RAMCTL >> 12) & 0x3);
 
-      if (Vdp2Regs->CCCTL & 0x40)
-      {
-         AddString(outstring, "Color Calculation Enabled\r\n");
+    if (Vdp2Regs->CCCTL & 0x40)
+    {
+       AddString(outstring, "Color Calculation Enabled\r\n");
 
-         if (Vdp2Regs->CCCTL & 0x8000 && (Vdp2Regs->CCCTL & 0x0700) == 0)
-         {
-            AddString(outstring, "Gradation Calculation Enabled\r\n");
-         }
-         else if (Vdp2Regs->CCCTL & 0x0400)
-         {
-            AddString(outstring, "Extended Color Calculation Enabled\r\n");
-         }
+       if (Vdp2Regs->CCCTL & 0x8000 && (Vdp2Regs->CCCTL & 0x0700) == 0)
+       {
+          AddString(outstring, "Gradation Calculation Enabled\r\n");
+       }
+       else if (Vdp2Regs->CCCTL & 0x0400)
+       {
+          AddString(outstring, "Extended Color Calculation Enabled\r\n");
+       }
 
-         AddString(outstring, "Color Calculation Condition = ");
+       AddString(outstring, "Color Calculation Condition = ");
 
-         switch ((Vdp2Regs->SPCTL >> 12) & 0x3)
-         {
-             case 0:
-                AddString(outstring, "Priority <= CC Condition Number");
-                break;
-             case 1:
-                AddString(outstring, "Priority == CC Condition Number");
-                break;
-             case 2:
-                AddString(outstring, "Priority >= CC Condition Number");
-                break;
-             case 3:
-                AddString(outstring, "Color Data MSB");
-                break;
-             default: break;
-         }
-         AddString(outstring, "\r\n");
+       switch ((Vdp2Regs->SPCTL >> 12) & 0x3)
+       {
+           case 0:
+              AddString(outstring, "Priority <= CC Condition Number");
+              break;
+           case 1:
+              AddString(outstring, "Priority == CC Condition Number");
+              break;
+           case 2:
+              AddString(outstring, "Priority >= CC Condition Number");
+              break;
+           case 3:
+              AddString(outstring, "Color Data MSB");
+              break;
+           default: break;
+       }
+       AddString(outstring, "\r\n");
 
-         if (((Vdp2Regs->SPCTL >> 12) & 0x3) != 0x3)
-         {
-            AddString(outstring, "Color Calculation Condition Number = %d\r\n", (Vdp2Regs->SPCTL >> 8) & 0x7);
-         }
+       if (((Vdp2Regs->SPCTL >> 12) & 0x3) != 0x3)
+       {
+          AddString(outstring, "Color Calculation Condition Number = %d\r\n", (Vdp2Regs->SPCTL >> 8) & 0x7);
+       }
 
-         for (i = 0; i < 8; i++)
-         {
+       for (i = 0; i < 8; i++)
+       {
 #ifdef WORDS_BIGENDIAN
-            u8 ratio = sprccrlist[i ^ 1] & 0x1F;
+          u8 ratio = sprccrlist[i ^ 1] & 0x1F;
 #else
-            u8 ratio = sprccrlist[i] & 0x1F;
+          u8 ratio = sprccrlist[i] & 0x1F;
 #endif
-            AddString(outstring, "Color Calculation Ratio %d = %d:%d\r\n", i, 31 - ratio, 1 + ratio);
-         }
-      }
+          AddString(outstring, "Color Calculation Ratio %d = %d:%d\r\n", i, 31 - ratio, 1 + ratio);
+       }
+    }
 
-      for (i = 0; i < 8; i++)
-      {
+    for (i = 0; i < 8; i++)
+    {
 #ifdef WORDS_BIGENDIAN
-         int priority = sprprilist[i ^ 1] & 0x7;
+       int priority = sprprilist[i ^ 1] & 0x7;
 #else
-         int priority = sprprilist[i] & 0x7;
+       int priority = sprprilist[i] & 0x7;
 #endif
-         AddString(outstring, "Priority %d = %d\r\n", i, priority);
-      }
+       AddString(outstring, "Priority %d = %d\r\n", i, priority);
+    }
 
-      outstring = AddColorOffsetInfo(outstring, 0x0040);
-   }
+    outstring = AddColorOffsetInfo(outstring, 0x0040);
 }
 
 //////////////////////////////////////////////////////////////////////////////
