@@ -295,7 +295,7 @@ if (cacheId[id] == 7) YabErrorMsg("Decode intstructions from unxpected area @0x%
   opcodeTable[opcode](context);
 }
 
-static void decodeInt(SH2_struct *context) {
+static void executeLastPC(SH2_struct *context) {
   int id = (context->regs.PC >> 20) & 0xFFF;
   u16 opcode = krfetchlist[id](context, context->regs.PC);
   u32 oldPC = context->regs.PC;
@@ -314,12 +314,16 @@ static void decodeInt(SH2_struct *context) {
     SH2HandleTrackInfLoop(context);
   }
   opcodeTable[opcode](context);
+}
+
+static void decodeInt(SH2_struct *context) {
+  executeLastPC(context);
   SH2HandleInterrupts(context);
 }
 
 static void outOfInt(SH2_struct *context) {
   context->interruptReturnAddress = 0;
-  decodeInt(context);
+  executeLastPC(context);
 }
 
 int SH2KronosInterpreterInit(void)
