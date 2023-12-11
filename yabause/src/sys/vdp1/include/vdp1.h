@@ -72,10 +72,9 @@ typedef struct {
    int disptoggle;
    int manualerase;
    int manualchange;
-   int onecyclemode;
+   int onecycleerase;
+   int onecyclechange;
    int useVBlankErase;
-   int swap_frame_buffer;
-   s16 switch_trigger_line;
    s16 plot_trigger_line;
    int plot_trigger_done;
    int current_frame;
@@ -250,7 +249,9 @@ void ToggleVDP1(void);
 
 void Vdp1HBlankIN(void);
 void Vdp1StartVisibleLine(void);
+void Vdp1VBlankOUT(void);
 void Vdp1VBlankIN(void);
+void Vdp1VBlankIN_It(void);
 void Vdp1SwitchFrame(void);
 
 #ifdef __cplusplus

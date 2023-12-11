@@ -585,6 +585,10 @@ void resetFrameSkip(void) {
   nextFrameTime = 0;
 }
 
+void Vdp2VBlankIN_It(void) {
+     ScuSendVBlankIN();
+}
+
 void Vdp2VBlankIN(void) {
   FRAMELOG("***** VIN *****");
 
@@ -622,18 +626,22 @@ void Vdp2VBlankIN(void) {
    VIDCore->Sync();
    Vdp2Regs->TVSTAT |= 0x0008;
 
-   ScuSendVBlankIN();
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
 
+
+void Vdp2HBlankIN_It(void) {
+  if (yabsys.LineCount < yabsys.VBlankLineCount) {
+    ScuSendHBlankIN();
+  }
+}
 void Vdp2HBlankIN(void) {
 
   if (yabsys.LineCount < yabsys.VBlankLineCount) {
     Vdp2Regs->TVSTAT |= 0x0004;
-    ScuSendHBlankIN();
     u32 cell_scroll_table_start_addr = (Vdp2Regs->VCSTA.all & 0x7FFFE) << 1;
     memcpy(Vdp2Lines + yabsys.LineCount, Vdp2Regs, sizeof(Vdp2));
     for (int i = 0; i < 88; i++)
@@ -683,7 +691,11 @@ Vdp2 * Vdp2RestoreRegs(int line, Vdp2* lines) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
+void Vdp2VBlankOUT_It(void) {
+  ScuSendVBlankOUT();
+}
 void Vdp2VBlankOUT(void) {
+
   g_frame_count++;
   yabsys.VBlankLineCount = 225+(Vdp2Regs->TVMD & 0x30);
   if (yabsys.VBlankLineCount > 256) yabsys.VBlankLineCount = 256;
@@ -700,9 +712,6 @@ void Vdp2VBlankOUT(void) {
    }
 
    Vdp2Regs->TVSTAT = ((Vdp2Regs->TVSTAT & ~0x0008) & ~0x0002) | (vdp2_is_odd_frame << 1);
-
-   ScuSendVBlankOUT();
-
 }
 
 //////////////////////////////////////////////////////////////////////////////

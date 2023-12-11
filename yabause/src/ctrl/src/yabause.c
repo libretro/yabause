@@ -194,11 +194,14 @@ void resetSyncVideo(void) {
 // (39375000.0 / 11.0) * 8.0 * 1.0 / (60/1.001) / 263 = 477750cycles/263 lines = 1817 cycles/lines => 35ns/cycle
 #define MIN_STEP_RUN (32)
 
-#define DECILINE_STEP   (16)
-#define HBLANKOUT_STEP  (1)
-#define HBLANKIN_STEP   (11)
-#define VBLANKIN_STEP   (12)
-#define VBLANKOUT_STEP  (13)
+#define DECILINE_STEP     (18)
+#define HBLANKOUT_STEP    (1)
+#define HBLANKIN_IT_STEP  (10)
+#define HBLANKIN_STEP     (11)
+#define VBLANKIN_IT_STEP  (13)
+#define VBLANKIN_STEP     (14)
+#define VBLANKOUT_IT_STEP (15)
+#define VBLANKOUT_STEP    (16)
 
 static const u32 const cycles[DECILINE_STEP][2][2] = {
   {{12,12},{1,1}}, //HBlankout //Start of displayed line
@@ -211,11 +214,13 @@ static const u32 const cycles[DECILINE_STEP][2][2] = {
   {{128,128},{5,4}},
   {{128,128},{5,5}},
   {{128,128},{5,4}},
-  {{128,128},{5,5}},
+  {{25,25},{4,4}},  //HBLANKIN_IT_STEP
+  {{103,103},{5,5}}, //HBLANKIN_STEP
   {{50,50},{1,2}}, //1292 cycles //End of displayed line
-  {{150,150},{6,5}}, // Vblankin on Vblankline
+  {{25,25},{1,1}}, // Vblankin on Vblankline
+  {{125,125},{5,4}}, // Vblankin on Vblankline
   {{40,40},{2,1}}, // Vblankout on MaxLine
-  {{15,25},{1,1}},
+  {{15,25},{1,1}}, // Vblankout on MaxLine
   {{155,260},{5,9}}
 };
 
@@ -778,36 +783,56 @@ int YabauseEmulate(void) {
     if (yabsys.DecilineCount == HBLANKOUT_STEP)
     {
       PROFILE_START("hblankout");
-      // printf("hblankout %d %d\n", yabsys.LineCount, yabsys.DecilineCount);
       Vdp1StartVisibleLine();
       Vdp2StartVisibleLine();
       PROFILE_STOP("hblankout");
+    }
+    if(yabsys.DecilineCount == HBLANKIN_IT_STEP) //Hblankin
+    {
+      // HBlankIN
+      PROFILE_START("hblankin");
+      Vdp2HBlankIN_It();
+      PROFILE_STOP("hblankin");
     }
     if(yabsys.DecilineCount == HBLANKIN_STEP) //Hblankin
     {
       // HBlankIN
       PROFILE_START("hblankin");
-      // printf("hblankin %d %d\n", yabsys.LineCount, yabsys.DecilineCount);
       Vdp1HBlankIN();
       Vdp2HBlankIN();
       PROFILE_STOP("hblankin");
     }
-    if ((yabsys.DecilineCount == VBLANKIN_STEP) && (yabsys.LineCount == (yabsys.VBlankLineCount)))
+    if ((yabsys.DecilineCount == VBLANKIN_IT_STEP) && (yabsys.LineCount == yabsys.VBlankLineCount))
     {
 
       PROFILE_START("vblankin");
       // VBlankIN
       SmpcINTBACKEnd();
+      Vdp2VBlankIN_It();
+      Vdp1VBlankIN_It();
+      PROFILE_STOP("vblankin");
+    }
+    if ((yabsys.DecilineCount == VBLANKIN_STEP) && (yabsys.LineCount == yabsys.VBlankLineCount))
+    {
+      PROFILE_START("vblankin_out");
       Vdp2VBlankIN();
       Vdp1VBlankIN();
-      PROFILE_STOP("vblankin");
+      PROFILE_STOP("vblankin_out");
       CheatDoPatches(MSH2);
     }
-    if ((yabsys.DecilineCount == VBLANKOUT_STEP) && (yabsys.LineCount == (yabsys.MaxLineCount-1)))
-    {
+
+    if ((yabsys.DecilineCount == VBLANKOUT_IT_STEP) && (yabsys.LineCount == (yabsys.MaxLineCount-2))) {
+      // VBlankOUT
+      PROFILE_START("VDP2");
+      Vdp2VBlankOUT_It();
+      PROFILE_STOP("VDP2");
+    }
+
+    if ((yabsys.DecilineCount == VBLANKOUT_STEP) && (yabsys.LineCount == (yabsys.MaxLineCount-2))) {
       // VBlankOUT
       PROFILE_START("VDP2");
       Vdp2VBlankOUT();
+      Vdp1VBlankOUT();
       PROFILE_STOP("VDP2");
     }
 
@@ -840,10 +865,6 @@ int YabauseEmulate(void) {
       }
       PROFILE_STOP("Total Emulation");
    }
-
-   PROFILE_START("VDP1");
-   Vdp1SwitchFrame();
-   PROFILE_STOP("VDP1");
 
    syncVideoMode();
    FPSDisplay();

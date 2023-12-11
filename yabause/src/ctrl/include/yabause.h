@@ -126,7 +126,6 @@ typedef struct
    u64 tickfreq;
    int emulatebios;
    int usequickload;
-   int wait_line_count;
    u32 frame_count;
    int usecache;
    int vsyncon;

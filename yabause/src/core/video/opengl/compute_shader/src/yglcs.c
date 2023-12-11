@@ -112,15 +112,17 @@ void VIDCSRenderVDP1(void) {
 
 void VIDCSFrameChangeVdp1(){
   u32 current_drawframe = 0;
+  if (_Ygl->shallVdp1Erase[_Ygl->readframe] != 0) {
+    FRAMELOG("FB %d is erased now\n", _Ygl->readframe);
+    _Ygl->shallVdp1Erase[_Ygl->readframe] = 0;
+    VIDCSEraseWriteVdp1(_Ygl->readframe);
+    clearVDP1Framebuffer(_Ygl->readframe);
+  }
   VIDCSRenderVDP1();
   current_drawframe = _Ygl->drawframe;
   _Ygl->drawframe = _Ygl->readframe;
   _Ygl->readframe = current_drawframe;
-  if (_Ygl->shallVdp1Erase[_Ygl->drawframe] != 0) {
-    _Ygl->shallVdp1Erase[_Ygl->drawframe] = 0;
-    VIDCSEraseWriteVdp1(_Ygl->drawframe);
-    clearVDP1Framebuffer(_Ygl->drawframe);
-  }
+  _Ygl->vdp1fb_read_buf[_Ygl->drawframe] = NULL;
 
   FRAMELOG("VIDCSFrameChangeVdp1: swap drawframe =%d readframe = %d (%d)\n", _Ygl->drawframe, _Ygl->readframe, yabsys.LineCount);
 }

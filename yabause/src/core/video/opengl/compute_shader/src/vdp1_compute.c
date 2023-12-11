@@ -567,7 +567,7 @@ int vdp1_add(vdp1cmd_struct* cmd, int clipcmd) {
 		vdp1_compute();
 		if (_Ygl->vdp1IsNotEmpty[_Ygl->drawframe] != -1) {
 			vdp1_write();
-			_Ygl->vdp1IsNotEmpty[_Ygl->drawframe] != -1;
+			_Ygl->vdp1IsNotEmpty[_Ygl->drawframe] = -1;
 		}
   }
   return 0;
@@ -721,6 +721,7 @@ void vdp1_compute() {
   }
   if (needRender == 0) {
 		nbCmdToProcess = 0;
+		VDP1CPRINT("No cmd to draw\n");
 		return;
 	}
 
@@ -731,7 +732,7 @@ void vdp1_compute() {
 
 	glUseProgram(prg_vdp1[progId]);
 
-	VDP1CPRINT("Draw VDP1\n");
+	VDP1CPRINT("Draw VDP1 on %d\n", _Ygl->drawframe);
 	if ((oldProg != -1) && (oldProg != progId)) {
 		//CleanUp mesh texture
 		vdp1_clear_mesh();

@@ -38,7 +38,8 @@
 
 
 // #define DEBUG_CMD_LIST
-
+// #define FRAMELOG printf
+#define FRAMELOG_CMD //printf
 #define PRINT_FB //printf
 
 u8 * Vdp1Ram;
@@ -54,7 +55,6 @@ extern void YglGenerate();
 extern void syncVdp1FBBuffer(u32 addr);
 
 static int getVdp1CyclesPerLine(void);
-static void startField(void);
 
 VideoInterface_struct *VIDCore=NULL;
 extern VideoInterface_struct *VIDCoreList[];
@@ -65,8 +65,6 @@ Vdp1External_struct Vdp1External;
 vdp1cmdctrl_struct cmdBufferBeingProcessed[CMD_QUEUE_SIZE];
 
 int vdp1_clock = 0;
-
-static u8 needNewFrame = 1;
 
 static int nbCmdToProcess = 0;
 static int CmdListInLoop = 0;
@@ -95,8 +93,6 @@ static void checkFBSync();
 
 static void RequestVdp1ToDraw() {
   if (needVdp1draw == 0){
-    FRAMELOG("Shift EDSR\n");
-    Vdp1Regs->EDSR >>= 1;
     needVdp1draw = 1;
     CmdListInLoop = 0;
   }
@@ -139,8 +135,11 @@ u32 FASTCALL Vdp1RamReadLong(SH2_struct *context, u8* mem, u32 addr) {
 
 //////////////////////////////////////////////////////////////////////////////
 
+static int Vdp1LoopAddr = -1;
+
 void FASTCALL Vdp1RamWriteByte(SH2_struct *context, u8* mem, u32 addr, u8 val) {
    addr &= 0x7FFFF;
+   // printf("Write 0x%x @ 0x%x (%d %d)\n", val, addr, yabsys.LineCount, yabsys.DecilineCount);
    Vdp1External.updateVdp1Ram = 1;
    if( (Vdp1External.status&VDP1_STATUS_MASK) == VDP1_STATUS_RUNNING) vdp1_clock -= 1;
    if (vdp1Ram_update_start > addr) vdp1Ram_update_start = addr;
@@ -152,6 +151,7 @@ void FASTCALL Vdp1RamWriteByte(SH2_struct *context, u8* mem, u32 addr, u8 val) {
 
 void FASTCALL Vdp1RamWriteWord(SH2_struct *context, u8* mem, u32 addr, u16 val) {
    addr &= 0x7FFFF;
+   // printf("Write 0x%x @ 0x%x (%d %d)\n", val, addr, yabsys.LineCount, yabsys.DecilineCount);
    Vdp1External.updateVdp1Ram = 1;
    if( (Vdp1External.status&VDP1_STATUS_MASK) == VDP1_STATUS_RUNNING) vdp1_clock -= 2;
    if (vdp1Ram_update_start > addr) vdp1Ram_update_start = addr;
@@ -163,6 +163,7 @@ void FASTCALL Vdp1RamWriteWord(SH2_struct *context, u8* mem, u32 addr, u16 val) 
 
 void FASTCALL Vdp1RamWriteLong(SH2_struct *context, u8* mem, u32 addr, u32 val) {
    addr &= 0x7FFFF;
+   // printf("Write 0x%x @ 0x%x (%d %d)\n", val, addr, yabsys.LineCount, yabsys.DecilineCount);
    Vdp1External.updateVdp1Ram = 1;
    if( (Vdp1External.status&VDP1_STATUS_MASK) == VDP1_STATUS_RUNNING) vdp1_clock -= 4;
    if (vdp1Ram_update_start > addr) vdp1Ram_update_start = addr;
@@ -236,7 +237,7 @@ void FASTCALL Vdp1FrameBufferWriteWord(SH2_struct *context, u8* mem, u32 addr, u
 void FASTCALL Vdp1FrameBufferWriteLong(SH2_struct *context, u8* mem, u32 addr, u32 val) {
   addr &= 0x3FFFF;
   u32* buf = getVDP1WriteFramebuffer(_Ygl->drawframe);
-  PRINT_FB("W L 0x%x@0x%x line %d(%d) frame %d\n", val, addr, yabsys.LineCount, yabsys.DecilineCount, _Ygl->drawframe);
+  PRINT_FB("W L 0x%x@0x%x line %d(%d) frame %d %s\n", val, addr, yabsys.LineCount, yabsys.DecilineCount, _Ygl->drawframe, (context==NULL)?"DMA":"CPU");
   buf[(addr>>1)] = ((val>>16)&0xFFFF)|0xFF000000;
   buf[(addr>>1)+1] = (val&0xFFFF)|0xFF000000;
   syncVdp1FBBuffer(addr>>1);
@@ -280,7 +281,6 @@ int Vdp1Init(void) {
    _Ygl->shallVdp1Erase[0] = 1;
    _Ygl->shallVdp1Erase[1] = 1;
 
-   needNewFrame = 1;
    return 0;
 }
 
@@ -361,7 +361,6 @@ void Vdp1Reset(void) {
    VDP1_MASK = 0xFFFF;
    VIDCore->Vdp1Reset();
    vdp1_clock = 0;
-   needNewFrame = 1;
 }
 
 int VideoSetSetting( int type, int value )
@@ -423,59 +422,70 @@ void FASTCALL Vdp1WriteByte(SH2_struct *context, u8* mem, u32 addr, UNUSED u8 va
 
 //////////////////////////////////////////////////////////////////////////////
 
-static void updateTVMRMode() {
-  Vdp1External.useVBlankErase = 0;
-  if (((Vdp1Regs->FBCR & 3) == 3) && (((Vdp1Regs->TVMR >> 3) & 0x01) == 1)) {
-    Vdp1External.useVBlankErase = 1;
-  } else {
-    if ((((Vdp1Regs->TVMR >> 3) & 0x01) == 1)) {
-      //VBE can be one only when FCM and FCT are 1
-      LOG("Prohibited FBCR/TVMR values\n");
-      // Assume prohibited modes behave like if VBE/FCT/FCM were all 1
-      Vdp1External.manualchange = 1;
-      Vdp1External.useVBlankErase = 1;
-    }
-  }
-}
-
-static u8 FBCRUpdated = 0;
-static void updateFBCRMode() {
-  if (FBCRUpdated == 0) return;
-  int oldOneCycle = Vdp1External.onecyclemode;
+static u8 FBCRChangeUpdated = 0;
+static void updateFBCRChange() {
+  if (FBCRChangeUpdated == 0) return;
   Vdp1External.manualchange = 0;
-  Vdp1External.onecyclemode = 0;
-  Vdp1External.useVBlankErase = 0;
+  Vdp1External.onecyclechange = 0;
   if (((Vdp1Regs->TVMR >> 3) & 0x01) == 1){ //VBE is set
     if ((Vdp1Regs->FBCR & 3) == 3) {
       Vdp1External.manualchange = 1;
-      Vdp1External.useVBlankErase = 1;
     } else {
       //VBE can be one only when FCM and FCT are 1
       LOG("Prohibited FBCR/TVMR values\n");
       // Assume prohibited modes behave like if VBE/FCT/FCM were all 1
       Vdp1External.manualchange = 1;
-      Vdp1External.useVBlankErase = 1;
     }
   } else {
     //Manual erase shall not be reseted but need to save its current value
     // Only at frame change the order is executed.
     //This allows to have both a manual clear and a manual change at the same frame without continuously clearing the VDP1
     //The mechanism is used by the official bios animation
-    Vdp1External.onecyclemode = ((Vdp1Regs->FBCR & 3) == 0) || ((Vdp1Regs->FBCR & 3) == 1);
-    Vdp1External.manualerase |= ((Vdp1Regs->FBCR & 3) == 2);
+    Vdp1External.onecyclechange = ((Vdp1Regs->FBCR & 3) == 0) || ((Vdp1Regs->FBCR & 3) == 1);
     Vdp1External.manualchange = ((Vdp1Regs->FBCR & 3) == 3);
   }
+  FBCRChangeUpdated = 0;
+}
 
-  if ((Vdp1External.onecyclemode != 0) && (oldOneCycle != 0)) {
-    Vdp1External.onecyclemode = oldOneCycle; //Do not reinit onecyclemode if alreadu processed on the frame
+static u8 FBCREraseUpdated = 0;
+static void updateFBCRErase() {
+  if (FBCREraseUpdated == 0) return;
+  Vdp1External.onecycleerase = 0;
+  Vdp1External.manualerase = 0;
+  if (((Vdp1Regs->TVMR >> 3) & 0x01) != 1){ //VBE is not set
+    //Manual erase shall not be reseted but need to save its current value
+    // Only at frame change the order is executed.
+    //This allows to have both a manual clear and a manual change at the same frame without continuously clearing the VDP1
+    //The mechanism is used by the official bios animation
+    Vdp1External.onecycleerase = ((Vdp1Regs->FBCR & 3) == 0) || ((Vdp1Regs->FBCR & 3) == 1);
+    Vdp1External.manualerase = ((Vdp1Regs->FBCR & 3) == 2);
   }
-  FBCRUpdated = 0;
+  FBCREraseUpdated = 0;
+}
+static void updateFBCRVBE() {
+  Vdp1External.useVBlankErase = 0;
+  if (((Vdp1Regs->TVMR >> 3) & 0x01) == 1){ //VBE is set
+    if ((Vdp1Regs->FBCR & 3) == 3) {
+      Vdp1External.useVBlankErase = 1;
+    } else {
+      //VBE can be one only when FCM and FCT are 1
+      LOG("Prohibited FBCR/TVMR values\n");
+      // Assume prohibited modes behave like if VBE/FCT/FCM were all 1
+      Vdp1External.useVBlankErase = 1;
+    }
+  }
 }
 
 static void Vdp1TryDraw(void) {
-  if ((oldNeedVdp1draw == 0) && (needVdp1draw!=0)) checkFBSync();
+  if ((oldNeedVdp1draw == 0) && (needVdp1draw != 0)) {
+    FRAMELOG("Shift EDSR\n");
+    Vdp1Regs->EDSR >>= 1;
+    checkFBSync();
+    FRAMELOG("Will drawn on frame %d\n",_Ygl->drawframe);
+  }
   oldNeedVdp1draw = needVdp1draw;
   if ((needVdp1draw == 1)) {
+    CmdListInLoop = 0;
     needVdp1draw = Vdp1Draw();
   }
 }
@@ -507,25 +517,16 @@ void FASTCALL Vdp1WriteWord(SH2_struct *context, u8* mem, u32 addr, u16 val) {
     case 0x0:
       if ((Vdp1Regs->FBCR & 3) != 3) val = (val & (~0x4));
       Vdp1Regs->TVMR = val;
-      updateTVMRMode();
       FRAMELOG("TVMR => Write VBE=%d FCM=%d FCT=%d line = %d (%d)\n", (Vdp1Regs->TVMR >> 3) & 0x01, (Vdp1Regs->FBCR & 0x02) >> 1, (Vdp1Regs->FBCR & 0x01),  yabsys.LineCount, yabsys.DecilineCount);
     break;
     case 0x2:
       Vdp1Regs->FBCR = val;
       FRAMELOG("FBCR => Write %x VBE=%d FCM=%d FCT=%d line = %d (%d) (VBlank %d, max %d)\n", val, (Vdp1Regs->TVMR >> 3) & 0x01, (Vdp1Regs->FBCR & 0x02) >> 1, (Vdp1Regs->FBCR & 0x01),  yabsys.LineCount, yabsys.DecilineCount, yabsys.VBlankLineCount, yabsys.MaxLineCount);
-      FBCRUpdated = 1;
-      if (((yabsys.LineCount >= yabsys.VBlankLineCount) && (yabsys.LineCount <= ((Vdp1External.switch_trigger_line + yabsys.MaxLineCount -1)%yabsys.MaxLineCount)))||(yabsys.LineCount == 0))
-      {
-        //Can not switch after VblankIn if erase is on going or at Line 0
-        startField();
-      }
+      FBCREraseUpdated = 1;
+      FBCRChangeUpdated = 1;
       break;
     case 0x4:
-      FRAMELOG("Write PTMR %X line = %d (%d) %d\n", val, yabsys.LineCount, yabsys.DecilineCount, yabsys.VBlankLineCount);
-      if ((Vdp1External.status & VDP1_SWITCHING) != 0) {
-        YuiMsg("Non allowed PTMR access during frame switch\n");
-        // return;
-      }
+      FRAMELOG("Write PTMR = %X line = %d (%d) %d\n", val, yabsys.LineCount, yabsys.DecilineCount, yabsys.VBlankLineCount);
       if ((val & 0x3)==0x3) {
         //Skeleton warriors is writing 0xFFF to PTMR. It looks like the behavior is 0x2
           val = 0x2;
@@ -543,13 +544,6 @@ void FASTCALL Vdp1WriteWord(SH2_struct *context, u8* mem, u32 addr, u16 val) {
         RequestVdp1ToDraw();
         Vdp1TryDraw();
         Vdp1External.plot_trigger_done = 1;
-      }
-      if ((val == 0x2) && (yabsys.LineCount == 0)){
-        //We are a t the frame start so start automatically
-        FRAMELOG("[VDP1] PTMR == 0x2 start drawing immidiatly\n");
-        checkFBSync();
-        abortVdp1();
-        RequestVdp1ToDraw();
       }
       break;
       case 0x6:
@@ -1348,7 +1342,7 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
     u16 command = Vdp1RamReadWord(NULL, ram, regs->addr);
 
 
-   FRAMELOG("Command is 0x%x @ 0x%x available cycles %d %d(%d)\n", command, regs->addr, vdp1_clock, yabsys.LineCount, yabsys.DecilineCount);
+   FRAMELOG_CMD("Command is 0x%x @ 0x%x available cycles %d %d(%d)\n", command, regs->addr, vdp1_clock, yabsys.LineCount, yabsys.DecilineCount);
 
    Vdp1External.updateVdp1Ram = 0;
    vdp1Ram_update_start = 0x80000;
@@ -1383,7 +1377,7 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
              ret = Vdp1NormalSpriteDraw(&ctrl->cmd, ram, regs, back_framebuffer);
              if (ret == 1) nbCmdToProcess++;
              else {
-               FRAMELOG("Reset vdp1_clock %d %d\n", yabsys.LineCount, __LINE__);
+               FRAMELOG_CMD("Reset vdp1_clock %d %d\n", yabsys.LineCount, __LINE__);
                vdp1_clock = 0; //Incorrect command, wait next line to continue
              }
              setupSpriteLimit(ctrl);
@@ -1400,7 +1394,7 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
              ret = Vdp1ScaledSpriteDraw(&ctrl->cmd, ram, regs, back_framebuffer);
              if (ret == 1) nbCmdToProcess++;
              else {
-               FRAMELOG("Reset vdp1_clock %d %d\n", yabsys.LineCount, __LINE__);
+               FRAMELOG_CMD("Reset vdp1_clock %d %d\n", yabsys.LineCount, __LINE__);
                vdp1_clock = 0; //Incorrect command, wait next line to continue
              }
              setupSpriteLimit(ctrl);
@@ -1419,7 +1413,7 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
              ret = Vdp1DistortedSpriteDraw(&ctrl->cmd, ram, regs, back_framebuffer);
              if (ret == 1) nbCmdToProcess++;
              else {
-               FRAMELOG("Reset vdp1_clock %d %d\n", yabsys.LineCount, __LINE__);
+               FRAMELOG_CMD("Reset vdp1_clock %d %d\n", yabsys.LineCount, __LINE__);
                vdp1_clock = 0; //Incorrect command, wait next line to continue
              }
              setupSpriteLimit(ctrl);
@@ -1516,8 +1510,9 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
             //The next adress is the same as the old adress and the command is skipped => Exit
             //The next adress is the start of the command list. It means the list has an infinte loop => Exit (used by Burning Rangers)
             //another example is Kanzen Chuukei Pro Yakyuu
+            Vdp1LoopAddr = regs->addr + 2;
             regs->lCOPR = (regs->addr & 0x7FFFF) >> 3;
-            FRAMELOG("Reset vdp1_clock %d %d\n", yabsys.LineCount, __LINE__);
+            FRAMELOG_CMD("Reset vdp1_clock addr = %x %d %d\n", regs->addr, yabsys.LineCount, __LINE__);
             vdp1_clock = 0;
             CmdListInLoop = 1;
             CmdListLimit = MAX((regs->addr & 0x7FFFF), regs->addr);
@@ -1543,7 +1538,7 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
       }
 
       command = Vdp1RamReadWord(NULL,ram, regs->addr);
-      FRAMELOG("Command is 0x%x @ 0x%x\n", command, regs->addr);
+      FRAMELOG_CMD("Command is 0x%x @ 0x%x\n", command, regs->addr);
       CmdListLimit = MAX((regs->addr & 0x7FFFF), regs->addr);
       //If we change directly CPR to last value, scorcher will not boot.
       //If we do not change it, Noon will not start
@@ -1558,6 +1553,7 @@ void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer)
         regs->lCOPR = (regs->addr & 0x7FFFF) >> 3;
         FRAMELOG("Set EDSR\n");
         regs->EDSR |= 2;
+        Vdp1LoopAddr = -1;
    }
    CmdListLimit = MAX((regs->addr & 0x7FFFF), regs->addr);
    checkClipCmd(&sysClipCmd, &usrClipCmd, &localCoordCmd, ram, regs);
@@ -1641,7 +1637,7 @@ void Vdp1FakeDrawCommands(u8 * ram, Vdp1 * regs)
 
 static int Vdp1Draw(void)
 {
-  FRAMELOG("Vdp1Draw %d\n", yabsys.LineCount);
+  FRAMELOG_CMD("Vdp1Draw %d\n", yabsys.LineCount);
   VIDCore->Vdp1Draw();
    if ((Vdp1External.status&VDP1_STATUS_MASK) == VDP1_STATUS_IDLE) {
      FRAMELOG("Vdp1Draw end at line %d \n", yabsys.LineCount);
@@ -2652,7 +2648,7 @@ void ToggleVDP1(void)
 }
 //////////////////////////////////////////////////////////////////////////////
 
-static int getVdp1ErasePixelNb() {
+static int getVdp1ErasePixelLine() {
   int shift = ((Vdp1Regs->TVMR & 0x1) == 1)?4:3;
   int limits[4] = {0};
   limits[0] = ((Vdp1Regs->EWLR>>9)&0x3F)<<shift;
@@ -2666,124 +2662,69 @@ static int getVdp1ErasePixelNb() {
   if ((limits[0]>=limits[2])||(limits[1]>limits[3])) {
     return 0; //No erase write when invalid area - Should be done only for one dot but no idea of which dot it shall be
   }
-  return ((limits[2]-limits[0])*(limits[3]-limits[1]))>>(Vdp1Regs->TVMR & 0x1);
+  int nbPix = ((limits[2]-limits[0])*(limits[3]-limits[1]))>>(Vdp1Regs->TVMR & 0x1);
+  if (yabsys.IsPal == 0) {
+    return nbPix/(1820 - 200);
+  } else {
+    return nbPix/(1708 - 200);
+  }
 }
 
 static int Vdp1EraseWrite(int id){
   lastHash = -1;
   _Ygl->shallVdp1Erase[id] = 1;
-  FRAMELOG("Erase fb %d\n", id);
-}
-
-static void startField(void) {
-  int isrender = 0;
-  updateFBCRMode();
-  if (needNewFrame != 1) return;
-  needNewFrame = 0;
-  yabsys.wait_line_count = -1;
-  FRAMELOG("StartField ***** VOUT(T) %d FCM=%d FCT=%d VBE=%d PTMR=%d (%d, %d, %d)*****%d (%d)\n", Vdp1External.swap_frame_buffer, (Vdp1Regs->FBCR & 0x02) >> 1, (Vdp1Regs->FBCR & 0x01), (Vdp1Regs->TVMR >> 3) & 0x01, Vdp1Regs->PTMR, Vdp1External.onecyclemode, Vdp1External.manualchange, Vdp1External.manualerase, yabsys.LineCount, yabsys.DecilineCount);
-  // Manual Change
-  Vdp1External.swap_frame_buffer |= (Vdp1External.manualchange == 1);
-  Vdp1External.swap_frame_buffer |= (Vdp1External.onecyclemode == 1);
-
-  // Frame Change
-  if ((Vdp1External.manualerase == 1) || (Vdp1External.onecyclemode == 1))
-  {
-    int id = 0;
-    if (_Ygl != NULL) id = _Ygl->readframe;
-    Vdp1EraseWrite(id);
-    FRAMELOG("draw frame %d to be erased\n", id);
-    Vdp1External.manualerase = 0;
-  }
-  if (Vdp1External.swap_frame_buffer == 1)
-  {
-    int switchdelay = yabsys.MaxLineCount;
-    if (yabsys.LineCount == 0) switchdelay = 0;
-    checkFBSync();
-    addVdp1Framecount();
-    FRAMELOG("Swap Line %d (v=%d,m=%d)\n", yabsys.LineCount , yabsys.VBlankLineCount, yabsys.MaxLineCount);
-    lastHash = -1;
-    if (((Vdp1Regs->TVMR >> 3) & 0x01) && (yabsys.LineCount >= yabsys.VBlankLineCount))  {
-      //VBE is on going on draw Framebuffer
-      switchdelay = yabsys.MaxLineCount;
-      int id = 0;
-      if (_Ygl != NULL) id = _Ygl->readframe;
-      Vdp1EraseWrite(id);
-      FRAMELOG("read frame to be erased\n");
-      FRAMELOG("Draw delay shall be %d (%d)(%d)\n", switchdelay, yabsys.VBlankLineCount, yabsys.MaxLineCount);
-    } else {
-      if (Vdp1External.onecyclemode == 1) {
-        switchdelay = yabsys.LineCount + 1;
-      }
-    }
-
-    Vdp1External.swap_frame_buffer = 0;
-    //only use oneCyclemode only once in a frame
-    if (Vdp1External.onecyclemode == 1){
-      Vdp1External.onecyclemode = 2;
-    }
-
-    // if Plot Trigger mode == 0x02 draw start
-    Vdp1External.status |= VDP1_SWITCH_REQUEST;
-    Vdp1External.switch_trigger_line = switchdelay;
-  } else {
-    Vdp1External.switch_trigger_line = 0;
-  }
-
-  if (Vdp1External.status & VDP1_SWITCH_REQUEST) FRAMELOG("End StartField => will switch on line %d\n", Vdp1External.switch_trigger_line);
-  else FRAMELOG("End StartField => No need to switch\n");
-
-  Vdp1External.manualchange = 0;
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
 void Vdp1HBlankIN(void)
 {
+  int changeDelay = 0;
+  if (yabsys.LineCount == (yabsys.VBlankLineCount + 1)) {
+    //First HBlankIn after VBlankIn // Evaluate erase
+    updateFBCRVBE();
+    int eraseId = 0;
+    if (_Ygl != NULL) eraseId = _Ygl->readframe;
+    if (Vdp1External.useVBlankErase != 0) {
+      //Vblank time - VBE on, erase read frame
+      FRAMELOG("##### VBlank on %d (%d %d)\n", eraseId, yabsys.LineCount, yabsys.DecilineCount);
+      Vdp1EraseWrite(eraseId);
+      changeDelay = getVdp1ErasePixelLine();
+      if ((yabsys.VBlankLineCount + 1 + changeDelay) > (yabsys.MaxLineCount - 1)) {
+        changeDelay = yabsys.MaxLineCount - 1 - (yabsys.VBlankLineCount + 1);
+      }
+      updateFBCRChange();
+    }
+  }
+  if (yabsys.LineCount == (yabsys.MaxLineCount - 1)) {
+
+    FRAMELOG("### Update FBCR for next field %d %d\n", yabsys.LineCount, yabsys.DecilineCount);
+    updateFBCRErase();
+    updateFBCRChange();
+    int swap_frame_buffer = (Vdp1External.manualchange == 1);
+    swap_frame_buffer |= (Vdp1External.onecyclechange == 1);
+    // Frame Change
+    if (swap_frame_buffer == 1)
+    {
+      addVdp1Framecount();
+      FRAMELOG("####Swap Line %d (v=%d,m=%d)\n", yabsys.LineCount , yabsys.VBlankLineCount, yabsys.MaxLineCount);
+      lastHash = -1;
+      Vdp1SwitchFrame();
+    }
+    Vdp1External.manualchange = 0;
+
+    int eraseId = 0;
+    if (_Ygl != NULL) eraseId = _Ygl->readframe;
+    //Vblank time - VBE of, erase read frame if erase mode or oncyclemode
+    if ((Vdp1External.manualerase == 1) || (Vdp1External.onecycleerase == 1))
+    {
+      FRAMELOG("########frame %d was erased in this field\n", eraseId);
+      Vdp1EraseWrite(eraseId);
+    }
+    Vdp1External.manualerase = 0;
+  }
   int needToCompose = 0;
-  if (yabsys.LineCount == 0) {
-    if (Vdp1External.onecyclemode == 2){
-      Vdp1External.onecyclemode = 1;
-      updateFBCRMode();
-    }
-  }
-  if ((yabsys.LineCount == yabsys.VBlankLineCount+1) && ((Vdp1Regs->TVMR >> 3) & 0x01)) {
-    FRAMELOG("VBlankin line %d (%d) VBlankErase %d => Erase Frame %d\n", yabsys.LineCount, yabsys.DecilineCount, (Vdp1Regs->TVMR >> 3) & 0x01, _Ygl->readframe);
-    int id = 0;
-    if (_Ygl != NULL) id = _Ygl->readframe;
-    Vdp1EraseWrite(id);
-  }
 
-  if (((Vdp1External.status & VDP1_SWITCH_REQUEST) != 0) && (Vdp1External.switch_trigger_line == yabsys.LineCount)) {
-    Vdp1External.status &= ~VDP1_SWITCH_REQUEST;
-    FRAMELOG("Change frames before draw %d, read %d (%d)\n", _Ygl->drawframe, _Ygl->readframe, yabsys.LineCount);
-    checkFBSync();
-    FRAMELOG("Frame change VDP1 %d(%d)\n", yabsys.LineCount, yabsys.DecilineCount);
-    VIDCore->Vdp1FrameChange();
-    FRAMELOG("Change frames now draw %d, read %d (%d)\n", _Ygl->drawframe, _Ygl->readframe, yabsys.LineCount);
-    Vdp1External.current_frame = !Vdp1External.current_frame;
-    Vdp1Regs->LOPR = Vdp1Regs->COPR;
-    Vdp1Regs->COPR = 0;
-    Vdp1Regs->lCOPR = 0;
-
-    FRAMELOG("[VDP1] Displayed framebuffer changed. EDSR=%02X\n", Vdp1Regs->EDSR);
-
-    if (Vdp1Regs->PTMR == 0x2) {
-      FRAMELOG("[VDP1] PTMR == 0x2 start drawing immidiatly %d %d EDSR %x\n", yabsys.LineCount, yabsys.DecilineCount, Vdp1Regs->EDSR);
-      int cylesPerLine = getVdp1CyclesPerLine();
-      checkFBSync();
-      abortVdp1();
-      vdp1_clock = (vdp1_clock + cylesPerLine)%(cylesPerLine+1);
-      RequestVdp1ToDraw();
-      Vdp1TryDraw();
-    } else {
-      Vdp1Regs->EDSR >>= 1;
-    }
-  }
-  if (yabsys.LineCount == 0) {
-    Vdp1External.status |= VDP1_SWITCHING;
-  }
-  if (yabsys.LineCount == 1) Vdp1External.status &= ~VDP1_SWITCHING;
   if (nbCmdToProcess > 0) {
     for (int i = 0; i<nbCmdToProcess; i++) {
       if (cmdBufferBeingProcessed[i].ignitionLine == (yabsys.LineCount+1)) {
@@ -2825,7 +2766,7 @@ void Vdp1HBlankIN(void)
     }
   }
 
-int cyclesPerLine  = getVdp1CyclesPerLine();
+  int cyclesPerLine  = getVdp1CyclesPerLine();
   if (vdp1_clock > 0) vdp1_clock = 0;
   vdp1_clock += cyclesPerLine;
   Vdp1TryDraw();
@@ -2839,41 +2780,45 @@ void Vdp1StartVisibleLine(void)
 //////////////////////////////////////////////////////////////////////////////
 void Vdp1VBlankIN(void)
 {
+}
+void Vdp1VBlankOUT(void) {
+  //at field change, frame is changing in case of VblankErase - one cyclemode or manualchange
+  // if (yabsys.LineCount == (yabsys.MaxLineCount - 1)) {
+    //First blankin after VBlankOut
+    //Evaluate FBCR
+  // }
+}
+
+void Vdp1VBlankIN_It(void)
+{
   FRAMELOG("VBLANKIn line %d (%d)\n", yabsys.LineCount, yabsys.DecilineCount);
   checkFBSync();
 
   if (Vdp1Regs->PTMR == 0x1) Vdp1External.plot_trigger_done = 0;
-  //Game test: Akumajou, Dragon Force, Alone in the dark2
-  startField();
-  needNewFrame = 1;
+
 }
 
 void Vdp1SwitchFrame(void)
 {
-  if (((Vdp1External.status & VDP1_SWITCH_REQUEST) != 0) && (Vdp1External.switch_trigger_line == yabsys.MaxLineCount)) {
-    Vdp1External.status &= ~VDP1_SWITCH_REQUEST;
-    FRAMELOG("Change frames before draw %d, read %d (%d)\n", _Ygl->drawframe, _Ygl->readframe, yabsys.LineCount);
+  FRAMELOG("Change frames before draw %d, read %d (%d)\n", _Ygl->drawframe, _Ygl->readframe, yabsys.LineCount);
+  checkFBSync();
+  FRAMELOG("Switch Frame change VDP1 %d(%d)\n", yabsys.LineCount, yabsys.DecilineCount);
+  VIDCore->Vdp1FrameChange();
+  FRAMELOG("Change frames now draw %d, read %d (%d)\n", _Ygl->drawframe, _Ygl->readframe, yabsys.LineCount);
+  Vdp1External.current_frame = !Vdp1External.current_frame;
+  Vdp1Regs->LOPR = Vdp1Regs->COPR;
+  Vdp1Regs->COPR = 0;
+  Vdp1Regs->lCOPR = 0;
+
+  if (Vdp1Regs->PTMR == 0x2) {
+    FRAMELOG("[VDP1] PTMR == 0x2 start drawing immidiatly %d %d EDSR %x PTMR %x\n", yabsys.LineCount, yabsys.DecilineCount, Vdp1Regs->EDSR,  Vdp1Regs->PTMR);
+    int cylesPerLine = getVdp1CyclesPerLine();
     checkFBSync();
-    FRAMELOG("Switch Frame change VDP1 %d(%d)\n", yabsys.LineCount, yabsys.DecilineCount);
-    VIDCore->Vdp1FrameChange();
-    FRAMELOG("Change frames now draw %d, read %d (%d)\n", _Ygl->drawframe, _Ygl->readframe, yabsys.LineCount);
-    Vdp1External.current_frame = !Vdp1External.current_frame;
-    Vdp1Regs->LOPR = Vdp1Regs->COPR;
-    Vdp1Regs->COPR = 0;
-    Vdp1Regs->lCOPR = 0;
-
-    FRAMELOG("[VDP1] Displayed framebuffer changed. EDSR=%02X\n", Vdp1Regs->EDSR);
-
-    if (Vdp1Regs->PTMR == 0x2) {
-      FRAMELOG("[VDP1] PTMR == 0x2 start drawing immidiatly %d %d EDSR %x PTMR %x\n", yabsys.LineCount, yabsys.DecilineCount, Vdp1Regs->EDSR,  Vdp1Regs->PTMR);
-      int cylesPerLine = getVdp1CyclesPerLine();
-      checkFBSync();
-      abortVdp1();
-      vdp1_clock = (vdp1_clock + cylesPerLine)%(cylesPerLine+1);
-      RequestVdp1ToDraw();
-      Vdp1TryDraw();
-    } else {
-      Vdp1Regs->EDSR >>= 1;
-    }
+    abortVdp1();
+    vdp1_clock = (vdp1_clock + cylesPerLine)%(cylesPerLine+1);
+    RequestVdp1ToDraw();
+    // Vdp1TryDraw();
+  } else {
+    Vdp1Regs->EDSR >>= 1;
   }
 }
