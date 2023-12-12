@@ -33,20 +33,21 @@ UIDebugVDP2::UIDebugVDP2( QWidget* p )
 	// setup dialog
 	setupUi( this );
 	viewer = new UIDebugVDP2Viewer( this );
-	debugItem_s items[7] = {
+	debugItem_s items[8] = {
 		{Vdp2DebugStatsNBG0, NBG0Debug, pteNBG0Info},
 		{Vdp2DebugStatsNBG1, NBG1Debug, pteNBG1Info},
 		{Vdp2DebugStatsNBG2, NBG2Debug, pteNBG2Info},
 		{Vdp2DebugStatsNBG3, NBG3Debug, pteNBG3Info},
 		{Vdp2DebugStatsRBG0, RBG0Debug, pteRBG0Info},
 		{Vdp2DebugStatsRBG1, RBG1Debug, pteRBG1Info},
+		{Vdp2DebugStatsSprite, SPRITEDebug, pteSPRITEInfo},
 		{Vdp2DebugStatsGeneral, GeneralDebug, pteGeneralInfo}
 	};
 
    if (Vdp2Regs)
    {
 		 	int index = 0;
-			for (int i=0; i<7; i++) {
+			for (int i=0; i<8; i++) {
 				DebugGrid->removeWidget(items[i].cb);
 				bool isVisible = updateInfoDisplay(items[i].debugStats, items[i].cb, items[i].pte);
 				if (isVisible) {
@@ -63,7 +64,7 @@ UIDebugVDP2::UIDebugVDP2( QWidget* p )
 
 bool UIDebugVDP2::updateInfoDisplay(void (*debugStats)(char *, int *), QGroupBox *cb, QPlainTextEdit *pte)
 {
-   char tempstr[2048];
+   char tempstr[2048] = {0};
    int isScreenEnabled=false;
 
    debugStats(tempstr, &isScreenEnabled);

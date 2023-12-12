@@ -113,6 +113,22 @@
       </widget>
      </item>
      <item row="2" column="0">
+      <widget class="QGroupBox" name="SPRITEDebug">
+       <property name="title">
+        <string>Sprite Info</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="QPlainTextEdit" name="pteSPRITEInfo">
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item row="2" column="1">
       <widget class="QGroupBox" name="GeneralDebug">
        <property name="title">
         <string>General Info</string>

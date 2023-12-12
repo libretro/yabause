@@ -44,6 +44,9 @@ void UIDebugVDP2Viewer::addItem(int id) {
 		case RBG1:
 			cbScreen->addItem("RBG1", RBG1);
 		break;
+		case SPRITE:
+			cbScreen->addItem("SPRITE", SPRITE);
+		break;
 		default:
 		break;
 	}
@@ -89,8 +92,11 @@ void UIDebugVDP2Viewer::displayCurrentScreen()
 		}
 		QImage img((uchar *)vdp2texture, width, height, format);
 
-		QPixmap pixmap = QPixmap::fromImage(img.mirrored(false, true).rgbSwapped());
+		bool YMirrored = true;
+		if (cbScreen->currentIndex() == SPRITE) YMirrored = false;
+		QPixmap pixmap = QPixmap::fromImage(img.mirrored(false, YMirrored).rgbSwapped());
 		scene->clear();
+		scene->setBackgroundBrush(Qt::Dense7Pattern);
 		scene->addPixmap(pixmap);
 		scene->setSceneRect(scene->itemsBoundingRect());
 	}
@@ -122,8 +128,10 @@ void UIDebugVDP2Viewer::on_pbSaveAsBitmap_clicked ()
 	if (cbOpaque->isChecked()) {
 		format = QImage::Format_RGB32;
 	}
+	bool YMirrored = true;
+	if (cbScreen->currentIndex() == SPRITE) YMirrored = false;
    QImage img((uchar *)vdp2texture, width, width, format);
-   img = img.mirrored(false, true).rgbSwapped();
+   img = img.mirrored(false, YMirrored).rgbSwapped();
 
 	// request a file to save to to user
 	const QString s = CommonDialogs::getSaveFileName( QString(), QtYabause::translate( "Choose a location for your bitmap" ), filters.join( ";;" ) );

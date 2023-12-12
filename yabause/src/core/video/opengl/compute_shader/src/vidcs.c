@@ -54,6 +54,8 @@ static int isEnabled(int id, Vdp2* varVdp2Regs);
 static void VIDCSVdp2DrawScreens(void);
 static void Vdp2SetResolution(u16 TVMD);
 
+extern GLuint GetCSVDP1fb(int id);
+
 static Vdp2 baseVdp2Regs;
 
 static int vdp1_interlace = 0;
@@ -4424,6 +4426,19 @@ static pixel_t *VIDCSGetVdp2ScreenExtract(u32 screen, int * w, int * h)
     glBindTexture(GL_TEXTURE_2D, _Ygl->rbg_compute_fbotex[screen-RBG0]);
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     glBindTexture(GL_TEXTURE_2D, 0);
+    return pixels;
+  }
+  if (screen == SPRITE)
+  {
+    pixel_t* pixels = (pixel_t*)malloc(_Ygl->vdp1width*_Ygl->vdp1height * sizeof(pixel_t));
+    *w = _Ygl->vdp1width;
+    *h = _Ygl->vdp1height;
+    glBindTexture(GL_TEXTURE_2D, GetCSVDP1fb(0));
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    for (int i = 0; i<_Ygl->vdp1width*_Ygl->vdp1height; i++) {
+      if (pixels[i] != 0) pixels[i] |= 0xFF000000;
+    }
     return pixels;
   }
 }
