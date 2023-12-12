@@ -93,7 +93,7 @@ void UIDebugVDP2Viewer::displayCurrentScreen()
 		QImage img((uchar *)vdp2texture, width, height, format);
 
 		bool YMirrored = true;
-		if (cbScreen->currentIndex() == SPRITE) YMirrored = false;
+		if (index == SPRITE) YMirrored = false;
 		QPixmap pixmap = QPixmap::fromImage(img.mirrored(false, YMirrored).rgbSwapped());
 		scene->clear();
 		scene->setBackgroundBrush(Qt::Dense7Pattern);
@@ -114,6 +114,7 @@ void UIDebugVDP2Viewer::showEvent(QShowEvent *) {
 void UIDebugVDP2Viewer::on_pbSaveAsBitmap_clicked ()
 {
 	QStringList filters;
+	int index = cbScreen->itemData( cbScreen->currentIndex() ).toInt();
 	foreach ( QByteArray ba, QImageWriter::supportedImageFormats() )
 		if ( !filters.contains( ba, Qt::CaseInsensitive ) )
 			filters << QString( ba ).toLower();
@@ -129,7 +130,7 @@ void UIDebugVDP2Viewer::on_pbSaveAsBitmap_clicked ()
 		format = QImage::Format_RGB32;
 	}
 	bool YMirrored = true;
-	if (cbScreen->currentIndex() == SPRITE) YMirrored = false;
+	if (index == SPRITE) YMirrored = false;
    QImage img((uchar *)vdp2texture, width, width, format);
    img = img.mirrored(false, YMirrored).rgbSwapped();
 
