@@ -680,7 +680,6 @@ void Vdp2StartVisibleLine(void) {
   }
   if (yabsys.LineCount == 1) {
     VDP2genVRamCyclePattern();
-    Vdp2External.frame_render_flg = 0;
   }
 }
 
