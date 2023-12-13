@@ -1481,6 +1481,9 @@ void Vdp2DebugStatsNBG3(char *outstring, int *isenabled)
 
 void Vdp2DebugStatsSprite(char *outstring, int *isenabled)
 {
+  u8 *sprprilist = (u8 *)&Vdp2Regs->PRISA;
+  u8 *sprccrlist = (u8 *)&Vdp2Regs->CCRSA;
+
   *isenabled = 1;
 
   // Sprite stuff
@@ -1526,13 +1529,89 @@ void Vdp2DebugStatsSprite(char *outstring, int *isenabled)
       AddString(outstring, "    Invalid values\n");
     }
   }
+  if (Vdp2Regs->SDCTL & 0x100)
+  {
+     AddString(outstring, "Transparent Shadow Enabled\r\n");
+  }
 
+  if (Vdp2Regs->SPCTL & 0x10)
+  {
+     AddString(outstring, "Sprite Window Enabled\r\n");
+     AddString(outstring, "Sprite Gradation Calculation %s\n", (getBlur(Vdp2Regs, SPRITE)==0)?"Disabled":"Enabled");
+  }
+
+  if (Vdp2Regs->LNCLEN & 0x20)
+  {
+    AddString(outstring, "Line Color Screen insertion enabled\n");
+  }
+
+  outstring = AddWindowInfoString(outstring, Vdp2Regs->WCTLC >> 8, 1);
+
+  AddString(outstring, "Color RAM Offset = %X\r\n", (Vdp2Regs->CRAOFB >> 4) & 0x7);
+  if (Vdp2Regs->CCCTL & 0x40)
+  {
+     AddString(outstring, "Color Calculation Enabled\r\n");
+
+     if (Vdp2Regs->CCCTL & 0x8000 && (Vdp2Regs->CCCTL & 0x0700) == 0)
+     {
+        AddString(outstring, "Gradation Calculation Enabled\r\n");
+     }
+     else if (Vdp2Regs->CCCTL & 0x0400)
+     {
+        AddString(outstring, "Extended Color Calculation Enabled\r\n");
+     }
+
+     AddString(outstring, "Color Calculation Condition = ");
+
+     switch ((Vdp2Regs->SPCTL >> 12) & 0x3)
+     {
+         case 0:
+            AddString(outstring, "Priority <= CC Condition Number");
+            break;
+         case 1:
+            AddString(outstring, "Priority == CC Condition Number");
+            break;
+         case 2:
+            AddString(outstring, "Priority >= CC Condition Number");
+            break;
+         case 3:
+            AddString(outstring, "Color Data MSB");
+            break;
+         default: break;
+     }
+     AddString(outstring, "\r\n");
+
+     if (((Vdp2Regs->SPCTL >> 12) & 0x3) != 0x3)
+     {
+        AddString(outstring, "Color Calculation Condition Number = %d\r\n", (Vdp2Regs->SPCTL >> 8) & 0x7);
+     }
+
+     for (int i = 0; i < 8; i++)
+     {
+#ifdef WORDS_BIGENDIAN
+        u8 ratio = sprccrlist[i ^ 1] & 0x1F;
+#else
+        u8 ratio = sprccrlist[i] & 0x1F;
+#endif
+        AddString(outstring, "Color Calculation Ratio %d = %d:%d\r\n", i, 31 - ratio, 1 + ratio);
+     }
+  }
+
+  for (int i = 0; i < 8; i++)
+  {
+#ifdef WORDS_BIGENDIAN
+     int priority = sprprilist[i ^ 1] & 0x7;
+#else
+     int priority = sprprilist[i] & 0x7;
+#endif
+     AddString(outstring, "Priority %d = %d\r\n", i, priority);
+  }
+
+  outstring = AddColorOffsetInfo(outstring, 0x0040);
 }
 
 void Vdp2DebugStatsGeneral(char *outstring, int *isenabled)
 {
-   u8 *sprprilist = (u8 *)&Vdp2Regs->PRISA;
-   u8 *sprccrlist = (u8 *)&Vdp2Regs->CCRSA;
    int i;
 
    AddString(outstring, "RAMCTL 0x%x\r\n", Vdp2Regs->RAMCTL);
@@ -1670,88 +1749,12 @@ void Vdp2DebugStatsGeneral(char *outstring, int *isenabled)
     AddString(outstring, "B1 = %08X\r\n", (Vdp2Regs->CYCB1L << 16) | (Vdp2Regs->CYCB1U));
     AddString(outstring, "\r\n");
 
-
-    if (Vdp2Regs->SDCTL & 0x100)
-    {
-       AddString(outstring, "Transparent Shadow Enabled\r\n");
-    }
-
-    if (Vdp2Regs->SPCTL & 0x10)
-    {
-       AddString(outstring, "Sprite Window Enabled\r\n");
-       AddString(outstring, "Sprite Gradation Calculation %s\n", (getBlur(Vdp2Regs, SPRITE)==0)?"Disabled":"Enabled");
-    }
-
-    if (Vdp2Regs->LNCLEN & 0x20)
-    {
-      AddString(outstring, "Line Color Screen insertion enabled\n");
-    }
-
-    outstring = AddWindowInfoString(outstring, Vdp2Regs->WCTLC >> 8, 1);
-
-    AddString(outstring, "Color RAM Offset = %X\r\n", (Vdp2Regs->CRAOFB >> 4) & 0x7);
+    // Cycle patterns here
+    AddString(outstring, "Color RAM\r\n");
+    AddString(outstring, "-----------------\r\n");
     AddString(outstring, "Color RAM Mode = %X\r\n", (Vdp2Regs->RAMCTL >> 12) & 0x3);
 
-    if (Vdp2Regs->CCCTL & 0x40)
-    {
-       AddString(outstring, "Color Calculation Enabled\r\n");
 
-       if (Vdp2Regs->CCCTL & 0x8000 && (Vdp2Regs->CCCTL & 0x0700) == 0)
-       {
-          AddString(outstring, "Gradation Calculation Enabled\r\n");
-       }
-       else if (Vdp2Regs->CCCTL & 0x0400)
-       {
-          AddString(outstring, "Extended Color Calculation Enabled\r\n");
-       }
-
-       AddString(outstring, "Color Calculation Condition = ");
-
-       switch ((Vdp2Regs->SPCTL >> 12) & 0x3)
-       {
-           case 0:
-              AddString(outstring, "Priority <= CC Condition Number");
-              break;
-           case 1:
-              AddString(outstring, "Priority == CC Condition Number");
-              break;
-           case 2:
-              AddString(outstring, "Priority >= CC Condition Number");
-              break;
-           case 3:
-              AddString(outstring, "Color Data MSB");
-              break;
-           default: break;
-       }
-       AddString(outstring, "\r\n");
-
-       if (((Vdp2Regs->SPCTL >> 12) & 0x3) != 0x3)
-       {
-          AddString(outstring, "Color Calculation Condition Number = %d\r\n", (Vdp2Regs->SPCTL >> 8) & 0x7);
-       }
-
-       for (i = 0; i < 8; i++)
-       {
-#ifdef WORDS_BIGENDIAN
-          u8 ratio = sprccrlist[i ^ 1] & 0x1F;
-#else
-          u8 ratio = sprccrlist[i] & 0x1F;
-#endif
-          AddString(outstring, "Color Calculation Ratio %d = %d:%d\r\n", i, 31 - ratio, 1 + ratio);
-       }
-    }
-
-    for (i = 0; i < 8; i++)
-    {
-#ifdef WORDS_BIGENDIAN
-       int priority = sprprilist[i ^ 1] & 0x7;
-#else
-       int priority = sprprilist[i] & 0x7;
-#endif
-       AddString(outstring, "Priority %d = %d\r\n", i, priority);
-    }
-
-    outstring = AddColorOffsetInfo(outstring, 0x0040);
 }
 
 //////////////////////////////////////////////////////////////////////////////
