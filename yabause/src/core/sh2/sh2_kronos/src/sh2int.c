@@ -283,7 +283,7 @@ void decode(SH2_struct *context) {
   int id = (context->regs.PC >> 20) & 0xFFF;
   u16 opcode = krfetchlist[id](context, context->regs.PC);
 
-if (cacheId[id] == 6) YabErrorMsg("Decode intstructions from Data array\n");
+// if (cacheId[id] == 6) YabErrorMsg("Decode intstructions from Data array\n");
 if (cacheId[id] == 7) YabErrorMsg("Decode intstructions from unxpected area @0x%x\n", context->regs.PC);
   cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[opcode];
   context->instruction = opcode;
