@@ -586,7 +586,8 @@ void resetFrameSkip(void) {
 }
 
 void Vdp2VBlankIN_It(void) {
-     ScuSendVBlankIN();
+  Vdp2Regs->TVSTAT |= 0x0008;
+  ScuSendVBlankIN();
 }
 
 void Vdp2VBlankIN(void) {
@@ -624,7 +625,6 @@ void Vdp2VBlankIN(void) {
    nextFrameTime  += yabsys.OneFrameTime;
 
    VIDCore->Sync();
-   Vdp2Regs->TVSTAT |= 0x0008;
 
 }
 
@@ -635,13 +635,13 @@ void Vdp2VBlankIN(void) {
 
 void Vdp2HBlankIN_It(void) {
   if (yabsys.LineCount < yabsys.VBlankLineCount) {
+    Vdp2Regs->TVSTAT |= 0x0004;
     ScuSendHBlankIN();
   }
 }
 void Vdp2HBlankIN(void) {
 
   if (yabsys.LineCount < yabsys.VBlankLineCount) {
-    Vdp2Regs->TVSTAT |= 0x0004;
     u32 cell_scroll_table_start_addr = (Vdp2Regs->VCSTA.all & 0x7FFFE) << 1;
     memcpy(Vdp2Lines + yabsys.LineCount, Vdp2Regs, sizeof(Vdp2));
     for (int i = 0; i < 88; i++)
@@ -691,6 +691,7 @@ Vdp2 * Vdp2RestoreRegs(int line, Vdp2* lines) {
 
 //////////////////////////////////////////////////////////////////////////////
 void Vdp2VBlankOUT_It(void) {
+  Vdp2Regs->TVSTAT = ((Vdp2Regs->TVSTAT & ~0x0008) & ~0x0002) | (vdp2_is_odd_frame << 1);
   ScuSendVBlankOUT();
 }
 void Vdp2VBlankOUT(void) {
@@ -710,7 +711,6 @@ void Vdp2VBlankOUT(void) {
        vdp2_is_odd_frame = 1;
    }
 
-   Vdp2Regs->TVSTAT = ((Vdp2Regs->TVSTAT & ~0x0008) & ~0x0002) | (vdp2_is_odd_frame << 1);
 }
 
 //////////////////////////////////////////////////////////////////////////////
