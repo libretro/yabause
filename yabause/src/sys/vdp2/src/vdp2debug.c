@@ -280,25 +280,28 @@ static INLINE char *AddMapInfo(char *outstring, int patternwh, u16 PNC, u8 PLSZ,
 
 static INLINE char *AddColorCalcInfo(char *outstring, u16 calcenab, u16 gradnum, u16 calcratio, u16 sfcnum)
 {
-   if (Vdp2Regs->CCCTL & calcenab)
-   {
-      AddString(outstring, "Color Calculation Enabled\r\n");
+   if ((Vdp2Regs->CCCTL & 0x200) == 0) {
+     if (Vdp2Regs->CCCTL & calcenab)
+     {
+       AddString(outstring, "Color Calculation Enabled\r\n");
 
-      if (Vdp2Regs->CCCTL & 0x8000 && (Vdp2Regs->CCCTL & 0x0700) == gradnum)
-      {
+       if ((Vdp2Regs->CCCTL & 0x8000) && (Vdp2Regs->CCCTL & 0x0700) == gradnum)
+       {
          AddString(outstring, "Gradation Calculation Enabled\r\n");
-      }
-      else if (Vdp2Regs->CCCTL & 0x0400)
-      {
+       }
+       else if (Vdp2Regs->CCCTL & 0x0400)
+       {
          AddString(outstring, "Extended Color Calculation Enabled\r\n");
-      }
-      else
-      {
+       }
+       else
+       {
          AddString(outstring, "Special Color Calculation Mode = %d\r\n", sfcnum);
-      }
-
-      AddString(outstring, "Color Calculation Ratio = %d:%d\r\n", 31 - calcratio, 1 + calcratio);
+       }
+     }
+   } else {
+      AddString(outstring, "Color calculation per second screen\r\n");
    }
+   AddString(outstring, "Color Calculation Ratio = %d:%d\r\n", 31 - calcratio, 1 + calcratio);
 
    return outstring;
 }
@@ -1730,6 +1733,18 @@ void Vdp2DebugStatsGeneral(char *outstring, int *isenabled)
     AddString(outstring, "-----------------------\r\n");
     AddString(outstring, "Mode = %s\r\n", Vdp2Regs->LCTA.part.U & 0x8000 ? "Color per line" : "Single color");
     AddString(outstring, "Address = %08lX\r\n", 0x05E00000UL | ((Vdp2Regs->LCTA.all & 0x7FFFFUL) * 2));
+    if ((Vdp2Regs->CCCTL & 0x200) == 0) {
+      if (Vdp2Regs->CCCTL & 0x0020)
+      {
+        AddString(outstring, "Color Calculation Enabled\r\n");
+      }
+    } else {
+       AddString(outstring, "Color calculation per second screen\r\n");
+    }
+    {
+      u16 calcratio = Vdp2Regs->CCRLB & 0x1F;
+      AddString(outstring, "Color Calculation Ratio = %d:%d\r\n", 31 - calcratio, 1 + calcratio);
+    }
     AddString(outstring, "\r\n");
 
     // Back screen stuff
@@ -1738,6 +1753,13 @@ void Vdp2DebugStatsGeneral(char *outstring, int *isenabled)
     AddString(outstring, "Mode = %s\r\n", Vdp2Regs->BKTAU & 0x8000 ? "Color per line" : "Single color");
     AddString(outstring, "Address = %08X\r\n", 0x05E00000 | (((Vdp2Regs->BKTAU & 0x7) << 16)  | Vdp2Regs->BKTAL) * 2);
     outstring = AddColorOffsetInfo(outstring, 0x0020);
+    if ((Vdp2Regs->CCCTL & 0x200) != 0) {
+       AddString(outstring, "Color calculation per second screen\r\n");
+    }
+    {
+      u16 calcratio = (Vdp2Regs->CCRLB>>8) & 0x1F;
+      AddString(outstring, "Color Calculation Ratio = %d:%d\r\n", 31 - calcratio, 1 + calcratio);
+    }
     AddString(outstring, "\r\n");
 
     // Cycle patterns here
@@ -1753,7 +1775,6 @@ void Vdp2DebugStatsGeneral(char *outstring, int *isenabled)
     AddString(outstring, "Color RAM\r\n");
     AddString(outstring, "-----------------\r\n");
     AddString(outstring, "Color RAM Mode = %X\r\n", (Vdp2Regs->RAMCTL >> 12) & 0x3);
-
 
 }
 
