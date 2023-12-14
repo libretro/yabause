@@ -50,7 +50,7 @@ Smpc * SmpcRegs;
 SmpcInternal * SmpcInternalVars;
 
 static u8 * SmpcRegsT;
-static int intback_wait_for_line = 0;
+static int intback_wait_for_vblankout = 0;
 static u8 bustmp = 0;
 static const char *smpcfilename = NULL;
 
@@ -579,7 +579,7 @@ static void SmpcRESDISA(void) {
 
 //////////////////////////////////////////////////////////////////////////////
 static void processCommand(void) {
-  intback_wait_for_line = 0;
+  intback_wait_for_vblankout = 0;
   switch(SmpcRegs->COMREG) {
      case 0x0:
         SMPCLOG("smpc\t: MSHON not implemented\n");
@@ -660,21 +660,24 @@ static void processCommand(void) {
 }
 
 void SmpcExec(s32 t) {
-   if (SmpcInternalVars->timing > 0) {
+  if (intback_wait_for_vblankout != 0)
+  {
+    if (yabsys.LineCount == 0)
+    {
+      SmpcInternalVars->timing = t;
+      intback_wait_for_vblankout = 0;
+    }
+  } else {
+    if (SmpcInternalVars->timing > 0) {
 
-      if (intback_wait_for_line)
-      {
-         if (yabsys.LineCount == 207)
-         {
-            SmpcInternalVars->timing = -1;
-            intback_wait_for_line = 0;
-         }
-      }
       SmpcInternalVars->timing -= t;
       if (SmpcInternalVars->timing <= 0) {
-         processCommand();
+        processCommand();
       }
-   }
+    }
+
+  }
+
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -778,8 +781,7 @@ static void SmpcSetTiming(void) {
          return;
       case 0x10:
           if (SmpcInternalVars->firstPeri == 1) {
-            SmpcInternalVars->timing = 1400; //350 ms => 64*350/16
-            intback_wait_for_line = 1;
+            intback_wait_for_vblankout = 1;
           } else {
             // Calculate timing based on what data is being retrieved
 
@@ -796,8 +798,7 @@ static void SmpcSetTiming(void) {
             else if ((SmpcRegs->IREG[0] == 0) && (SmpcRegs->IREG[1] & 0x8))
             {
                //peripheral only
-               SmpcInternalVars->timing = 1400;
-               intback_wait_for_line = 1;
+               intback_wait_for_vblankout = 1;
             }
             else SmpcInternalVars->timing = 1;
          }
