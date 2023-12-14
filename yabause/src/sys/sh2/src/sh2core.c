@@ -49,8 +49,6 @@ void InvalidateCache(SH2_struct *ctx);
 void DMATransferCycles(SH2_struct *context, Dmac * dmac, int cycles);
 int DMAProc(SH2_struct *context, int cycles );
 
-void (*SH2InterruptibleExec)(SH2_struct *context, u32 cycles);
-
 //////////////////////////////////////////////////////////////////////////////
 
 void SH2IntcSetIrl(SH2_struct *sh, u8 irl, u8 d)
@@ -146,26 +144,35 @@ static void SH2BlockableExec(SH2_struct *context, u32 cycles) {
   }
 }
 
-void SH2SetCPUConcurrency(u8 on) {
-  if ((on!=0) && (SH2InterruptibleExec != SH2BlockableExec)) {
-    MSH2->isAccessingCPUBUS = 0;
-    SSH2->isAccessingCPUBUS = 0;
-    SH2InterruptibleExec = SH2BlockableExec;
+static void updateSH2BlockedState(SH2_struct *context) {
+  if ((context->blockingMask != 0) && (context->SH2InterruptibleExec != SH2BlockableExec)) {
+    context->SH2InterruptibleExec = SH2BlockableExec;
   }
-  if ((on==0) && (SH2InterruptibleExec != SH2StandardExec)) {
-    MSH2->isAccessingCPUBUS = 0;
-    SSH2->isAccessingCPUBUS = 0;
-    SH2InterruptibleExec = SH2StandardExec;
+  if ((context->blockingMask == 0) && (context->SH2InterruptibleExec != SH2StandardExec)) {
+    context->SH2InterruptibleExec = SH2StandardExec;
   }
+}
+
+void SH2SetCPUConcurrency(SH2_struct *context, u8 mask) {
+  context->blockingMask |= mask;
+  if (mask == A_BUS_ACCESS) context->isAccessingCPUBUS &= ~mask;
+  else context->isAccessingCPUBUS |= mask;
+  updateSH2BlockedState(context);
+}
+
+void SH2ClearCPUConcurrency(SH2_struct *context, u8 mask) {
+  context->blockingMask &= ~mask;
+  context->isAccessingCPUBUS &= ~mask;
+  updateSH2BlockedState(context);
 }
 
 int SH2Init(int coreid)
 {
    int i;
-   SH2InterruptibleExec = SH2StandardExec;
    // MSH2
    if ((MSH2 = (SH2_struct *)calloc(1, sizeof(SH2_struct))) == NULL)
       return -1;
+  MSH2->SH2InterruptibleExec = SH2StandardExec;
 
    if (SH2TrackInfLoopInit(MSH2) != 0)
       return -1;
@@ -192,6 +199,8 @@ int SH2Init(int coreid)
    // SSH2
    if ((SSH2 = (SH2_struct *)calloc(1, sizeof(SH2_struct))) == NULL)
       return -1;
+
+  SSH2->SH2InterruptibleExec = SH2StandardExec;
 
    if (SH2TrackInfLoopInit(SSH2) != 0)
       return -1;
@@ -280,7 +289,7 @@ void SH2Reset(SH2_struct *context)
 {
    int i;
 CACHE_LOG("%s reset\n", (context==SSH2)?"SSH2":"MSH2" );
-   SH2InterruptibleExec = SH2StandardExec;
+   context->SH2InterruptibleExec = SH2StandardExec;
    SH2Core->Reset(context);
 
    // Reset general registers
@@ -344,7 +353,7 @@ void FASTCALL SH2TestExec(SH2_struct *context, u32 cycles)
 void FASTCALL SH2Exec(SH2_struct *context, u32 cycles)
 {
    int sh2start = context->cycles;
-   SH2InterruptibleExec(context, cycles);
+   context->SH2InterruptibleExec(context, cycles);
    FRTExec(context);
    WDTExec(context);
    DMAProc(context, context->cycles-sh2start);
@@ -1566,7 +1575,7 @@ static u8 getLRU(SH2_struct *context, u32 tag, u8 line) {
 }
 
 static inline void CacheWriteThrough(SH2_struct *context, u8* mem, u32 addr, u32 val, u8 size) {
-  context->isAccessingCPUBUS = 1; //When cpu access CPU-BUs at the same time as SCU, there might be a penalty
+  context->isAccessingCPUBUS |= A_BUS_ACCESS; //When cpu access CPU-BUs at the same time as SCU, there might be a penalty
   switch(size) {
   case 1:
     WriteByteList[(addr >> 16) & 0xFFF](context, mem, addr, val);
@@ -1710,7 +1719,7 @@ void disableCache(SH2_struct *context) {
 void CacheFetch(SH2_struct *context, u8* memory, u32 addr, u8 way) {
   u8 line = (addr>>4)&0x3F;
   u32 tag = (addr>>10)&0x7FFFF;
-  context->isAccessingCPUBUS = 1; //When cpu access CPU-BUs at the same time as SCU, there might be a penalty
+  context->isAccessingCPUBUS |= A_BUS_ACCESS; //When cpu access CPU-BUs at the same time as SCU, there might be a penalty
   UpdateLRU(context, line, way);
   context->tagWay[line][tag] = way;
   context->cacheTagArray[line][way] = tag;

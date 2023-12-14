@@ -340,6 +340,14 @@ typedef struct SH2_struct_s SH2_struct;
 
 #define MAX_BREAKPOINTS 10
 
+
+#define A_BUS_ACCESS 0x1
+#define VDP2_RAM_A0_LOCK 0x2
+#define VDP2_RAM_A1_LOCK 0x4
+#define VDP2_RAM_B0_LOCK 0x8
+#define VDP2_RAM_B1_LOCK 0x10
+#define VDP2_RAM_LOCK (VDP2_RAM_A0_LOCK|VDP2_RAM_A1_LOCK|VDP2_RAM_B0_LOCK|VDP2_RAM_B1_LOCK)
+
 typedef void (FASTCALL *writebytefunc)(SH2_struct *context, u8*, u32, u8);
 typedef void (FASTCALL *writewordfunc)(SH2_struct *context, u8*, u32, u16);
 typedef void (FASTCALL *writelongfunc)(SH2_struct *context, u8*, u32, u32);
@@ -499,6 +507,8 @@ typedef struct SH2_struct_s
              };
           } stepOverOut;
     u32 BUPTableAddr;
+    void (*SH2InterruptibleExec)(struct SH2_struct_s *context, u32 cycles);
+    u32 blockingMask;
 //ENd debug
 } SH2_struct;
 
@@ -590,7 +600,8 @@ void SH2TrackInfLoopClear(SH2_struct *context);
 void SH2Disasm(u32 v_addr, u16 op, int mode, sh2regs_struct *r, char *string);
 void SH2DumpHistory(SH2_struct *context);
 
-void SH2SetCPUConcurrency(u8 on);
+void SH2SetCPUConcurrency(SH2_struct *context, u8 on);
+void SH2ClearCPUConcurrency(SH2_struct *context, u8 on);
 
 int BackupHandled(SH2_struct * sh, u32 addr);
 int isBackupHandled(u32 addr);

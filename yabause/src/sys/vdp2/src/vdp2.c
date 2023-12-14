@@ -48,22 +48,6 @@ Vdp2External_struct Vdp2External;
 int addrToUpdate[0x1000];
 int nbAddrToUpdate = 0;
 
-INLINE int getVramCycle(u32 addr) {
-  if (yabsys.LineCount >= yabsys.VBlankLineCount) {
-    return 2;
-  }
-  if ((addr & 0x000F0000) < 0x00040000) {
-   return Vdp2External.cpu_cycle_a;
-	return 0;
-  }
-  else {
-   return Vdp2External.cpu_cycle_b;
-	return 0;
-  }
-  return 2;
-}
-
-
 static u8 AC_VRAM[4][8] = {0}; //4 banks, 8 timings
 
 extern void waitVdp2DrawScreensEnd(int sync);
@@ -93,66 +77,106 @@ u8 Vdp2RamIsUpdated(void)
   return A0_Updated | (A1_Updated << 1) | (B0_Updated << 2) | (B1_Updated << 3);
 }
 
+static void vdp2RamAccessCheck(SH2_struct *context, u32 addr, int update){
+  int A0BlockedAccess = 0;
+  int A1BlockedAccess = 0;
+  int B0BlockedAccess = 0;
+  int B1BlockedAccess = 0;
+
+  if (context == NULL) return;
+
+  if (addr >= 0 && addr < (0x20000<<(Vdp2Regs->VRSIZE>>15))){
+    A0BlockedAccess = 1;
+    for (int i = 0; i<8; i++) {
+      if(Vdp2External.AC_VRAM[0][i] == 0xE) A0BlockedAccess = 0;
+    }
+    A0_Updated |= update;
+  }
+  else if (addr >= (0x20000<<(Vdp2Regs->VRSIZE>>15)) && addr < (0x40000<<(Vdp2Regs->VRSIZE>>15))){
+    A1BlockedAccess = 1;
+    for (int i = 0; i<8; i++) {
+      if(Vdp2External.AC_VRAM[1][i] == 0xE) A1BlockedAccess = 0;
+    }
+    A1_Updated |= update;
+  }
+  else if (addr >= (0x40000<<(Vdp2Regs->VRSIZE>>15)) && addr < (0x60000<<(Vdp2Regs->VRSIZE>>15))){
+    B0BlockedAccess = 1;
+    for (int i = 0; i<8; i++) {
+      if(Vdp2External.AC_VRAM[2][i] == 0xE) B0BlockedAccess = 0;
+    }
+    B0_Updated |= update;
+  }
+  else if (addr >= (0x60000<<(Vdp2Regs->VRSIZE>>15)) && addr < (0x80000<<(Vdp2Regs->VRSIZE>>15))){
+    B1BlockedAccess = 1;
+    for (int i = 0; i<8; i++) {
+      if(Vdp2External.AC_VRAM[3][i] == 0xE) B1BlockedAccess = 0;
+    }
+    B1_Updated |= update;
+  }
+
+  if ((context != NULL) && (yabsys.LineCount < yabsys.VBlankLineCount) && (Vdp2Regs->TVSTAT & 0x0004 == 0)) {
+    //Visible area, cpu shall have a valid time slot, otherwise it is blocked
+    if (A0BlockedAccess) {
+      SH2SetCPUConcurrency(context, VDP2_RAM_A0_LOCK);
+    }
+    if (A1BlockedAccess) {
+      SH2SetCPUConcurrency(context, VDP2_RAM_A1_LOCK);
+    }
+    if (B0BlockedAccess) {
+      SH2SetCPUConcurrency(context, VDP2_RAM_B0_LOCK);
+    }
+    if (B1BlockedAccess) {
+      SH2SetCPUConcurrency(context, VDP2_RAM_B1_LOCK);
+    }
+  }
+}
+
 u8 FASTCALL Vdp2RamReadByte(SH2_struct *context, u8* mem, u32 addr) {
-  // if (context != NULL){
-  //   context->cycles += getVramCycle(addr);;
-  // }
   if (Vdp2Regs->VRSIZE & 0x8000)
     addr &= 0xEFFFF;
   else
     addr &= 0x7FFFF;
+
+   vdp2RamAccessCheck(context, addr, 0);
+
    return T1ReadByte(mem, addr);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
 u16 FASTCALL Vdp2RamReadWord(SH2_struct *context, u8* mem, u32 addr) {
-  // if (context != NULL){
-  //   context->cycles += getVramCycle(addr);;
-  // }
   if (Vdp2Regs->VRSIZE & 0x8000)
     addr &= 0xEFFFF;
   else
     addr &= 0x7FFFF;
+
+    vdp2RamAccessCheck(context, addr, 0);
+
    return T1ReadWord(mem, addr);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
 u32 FASTCALL Vdp2RamReadLong(SH2_struct *context, u8* mem, u32 addr) {
-  // if (context != NULL){
-  //   context->cycles += getVramCycle(addr);;
-  // }
   if (Vdp2Regs->VRSIZE & 0x8000)
     addr &= 0xEFFFF;
   else
     addr &= 0x7FFFF;
+
+   vdp2RamAccessCheck(context, addr, 0);
+
    return T1ReadLong(mem, addr);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
 void FASTCALL Vdp2RamWriteByte(SH2_struct *context, u8* mem, u32 addr, u8 val) {
-  // if (context != NULL){
-  //   context->cycles += getVramCycle(addr);;
-  // }
   if (Vdp2Regs->VRSIZE & 0x8000)
     addr &= 0xEFFFF;
   else
     addr &= 0x7FFFF;
 
-   if (A0_Updated == 0 && addr >= 0 && addr < (0x20000<<(Vdp2Regs->VRSIZE>>15))){
-     A0_Updated = 1;
-   }
-   else if (A1_Updated == 0 &&  addr >= (0x20000<<(Vdp2Regs->VRSIZE>>15)) && addr < (0x40000<<(Vdp2Regs->VRSIZE>>15))){
-     A1_Updated = 1;
-   }
-   else if (B0_Updated == 0 && addr >= (0x40000<<(Vdp2Regs->VRSIZE>>15)) && addr < (0x60000<<(Vdp2Regs->VRSIZE>>15))){
-     B0_Updated = 1;
-   }
-   else if (B1_Updated == 0 && addr >= (0x60000<<(Vdp2Regs->VRSIZE>>15)) && addr < (0x80000<<(Vdp2Regs->VRSIZE>>15))){
-     B1_Updated = 1;
-   }
+    vdp2RamAccessCheck(context, addr, 1);
 
    T1WriteByte(mem, addr, val);
 }
@@ -160,26 +184,16 @@ void FASTCALL Vdp2RamWriteByte(SH2_struct *context, u8* mem, u32 addr, u8 val) {
 //////////////////////////////////////////////////////////////////////////////
 
 void FASTCALL Vdp2RamWriteWord(SH2_struct *context, u8* mem, u32 addr, u16 val) {
-  // if (context != NULL){
-  //   context->cycles += getVramCycle(addr);;
-  // }
+  int A0BlockedAccess = 0;
+  int A1BlockedAccess = 0;
+  int B0BlockedAccess = 0;
+  int B1BlockedAccess = 0;
   if (Vdp2Regs->VRSIZE & 0x8000)
     addr &= 0xEFFFF;
   else
     addr &= 0x7FFFF;
 
-   if (A0_Updated == 0 && addr >= 0 && addr < (0x20000<<(Vdp2Regs->VRSIZE>>15))){
-     A0_Updated = 1;
-   }
-   else if (A1_Updated == 0 &&  addr >= (0x20000<<(Vdp2Regs->VRSIZE>>15)) && addr < (0x40000<<(Vdp2Regs->VRSIZE>>15))){
-     A1_Updated = 1;
-   }
-   else if (B0_Updated == 0 && addr >= (0x40000<<(Vdp2Regs->VRSIZE>>15)) && addr < (0x60000<<(Vdp2Regs->VRSIZE>>15))){
-     B0_Updated = 1;
-   }
-   else if (B1_Updated == 0 && addr >= (0x60000<<(Vdp2Regs->VRSIZE>>15)) && addr < (0x80000<<(Vdp2Regs->VRSIZE>>15))){
-     B1_Updated = 1;
-   }
+   vdp2RamAccessCheck(context, addr, 1);
 
    T1WriteWord(mem, addr, val);
 }
@@ -187,26 +201,12 @@ void FASTCALL Vdp2RamWriteWord(SH2_struct *context, u8* mem, u32 addr, u16 val) 
 //////////////////////////////////////////////////////////////////////////////
 
 void FASTCALL Vdp2RamWriteLong(SH2_struct *context, u8* mem, u32 addr, u32 val) {
-  // if (context != NULL){
-  //   context->cycles += getVramCycle(addr);;
-  // }
   if (Vdp2Regs->VRSIZE & 0x8000)
     addr &= 0xEFFFF;
   else
     addr &= 0x7FFFF;
 
-   if (A0_Updated == 0 && addr >= 0 && addr < (0x20000<<(Vdp2Regs->VRSIZE>>15))){
-     A0_Updated = 1;
-   }
-   else if (A1_Updated == 0 &&  addr >= (0x20000<<(Vdp2Regs->VRSIZE>>15)) && addr < (0x40000<<(Vdp2Regs->VRSIZE>>15))){
-     A1_Updated = 1;
-   }
-   else if (B0_Updated == 0 && addr >= (0x40000<<(Vdp2Regs->VRSIZE>>15)) && addr < (0x60000<<(Vdp2Regs->VRSIZE>>15))){
-     B0_Updated = 1;
-   }
-   else if (B1_Updated == 0 && addr >= (0x60000<<(Vdp2Regs->VRSIZE>>15)) && addr < (0x80000<<(Vdp2Regs->VRSIZE>>15))){
-     B1_Updated = 1;
-   }
+    vdp2RamAccessCheck(context, addr, 1);
 
    T1WriteLong(mem, addr, val);
 }
@@ -413,8 +413,6 @@ void Vdp2Reset(void) {
    Vdp2Internal.ColorMode = 0;
 
    Vdp2External.disptoggle = 0xFF;
-   Vdp2External.cpu_cycle_a = 0;
-   Vdp2External.cpu_cycle_b = 0;
 
    nextFrameTime = 0;
 
@@ -435,8 +433,6 @@ static int checkFrameSkip(void) {
 }
 
 void VDP2genVRamCyclePattern() {
-  int cpu_cycle_a = 0;
-  int cpu_cycle_b = 0;
   int i = 0;
 
   Vdp2External.AC_VRAM[0][0] = (Vdp2Regs->CYCA0L >> 12) & 0x0F;
@@ -447,17 +443,6 @@ void VDP2genVRamCyclePattern() {
   Vdp2External.AC_VRAM[0][5] = (Vdp2Regs->CYCA0U >> 8) & 0x0F;
   Vdp2External.AC_VRAM[0][6] = (Vdp2Regs->CYCA0U >> 4) & 0x0F;
   Vdp2External.AC_VRAM[0][7] = (Vdp2Regs->CYCA0U >> 0) & 0x0F;
-
-  for (i = 0; i < 8; i++) {
-    if (Vdp2External.AC_VRAM[0][i] >= 0x0E) {
-      cpu_cycle_a++;
-    }
-    else if (Vdp2External.AC_VRAM[0][i] >= 4 && Vdp2External.AC_VRAM[0][i] <= 7) {
-      if ((Vdp2Regs->BGON & (1 << (Vdp2External.AC_VRAM[0][i] - 4))) == 0) {
-        cpu_cycle_a++;
-      }
-    }
-  }
 
   if (Vdp2Regs->RAMCTL & 0x100) {
     int fcnt = 0;
@@ -470,23 +455,6 @@ void VDP2genVRamCyclePattern() {
     Vdp2External.AC_VRAM[1][6] = (Vdp2Regs->CYCA1U >> 4) & 0x0F;
     Vdp2External.AC_VRAM[1][7] = (Vdp2Regs->CYCA1U >> 0) & 0x0F;
 
-    for (i = 0; i < 8; i++) {
-      if (Vdp2External.AC_VRAM[0][i] == 0x0E) {
-        if (Vdp2External.AC_VRAM[1][i] != 0x0E) {
-          cpu_cycle_a--;
-        }
-        else {
-          if (fcnt == 0) {
-            cpu_cycle_a--;
-          }
-        }
-      }
-      if (Vdp2External.AC_VRAM[1][i] == 0x0F) {
-        fcnt++;
-      }
-    }
-    if (fcnt == 0)cpu_cycle_a = 0;
-    if (cpu_cycle_a < 0)cpu_cycle_a = 0;
   }
   else {
     Vdp2External.AC_VRAM[1][0] = Vdp2External.AC_VRAM[0][0];
@@ -508,18 +476,6 @@ void VDP2genVRamCyclePattern() {
   Vdp2External.AC_VRAM[2][6] = (Vdp2Regs->CYCB0U >> 4) & 0x0F;
   Vdp2External.AC_VRAM[2][7] = (Vdp2Regs->CYCB0U >> 0) & 0x0F;
 
-  for (i = 0; i < 8; i++) {
-    if (Vdp2External.AC_VRAM[2][i] >= 0x0E) {
-      cpu_cycle_b++;
-    }
-    else if (Vdp2External.AC_VRAM[2][i] >= 4 && Vdp2External.AC_VRAM[2][i] <= 7) {
-      if ((Vdp2Regs->BGON & (1 << (Vdp2External.AC_VRAM[2][i] - 4))) == 0) {
-        cpu_cycle_b++;
-      }
-    }
-  }
-
-
   if (Vdp2Regs->RAMCTL & 0x200) {
     int fcnt = 0;
     Vdp2External.AC_VRAM[3][0] = (Vdp2Regs->CYCB1L >> 12) & 0x0F;
@@ -530,24 +486,6 @@ void VDP2genVRamCyclePattern() {
     Vdp2External.AC_VRAM[3][5] = (Vdp2Regs->CYCB1U >> 8) & 0x0F;
     Vdp2External.AC_VRAM[3][6] = (Vdp2Regs->CYCB1U >> 4) & 0x0F;
     Vdp2External.AC_VRAM[3][7] = (Vdp2Regs->CYCB1U >> 0) & 0x0F;
-
-    for (i = 0; i < 8; i++) {
-      if (Vdp2External.AC_VRAM[2][i] == 0x0E) {
-        if (Vdp2External.AC_VRAM[3][i] != 0x0E) {
-          cpu_cycle_b--;
-        }
-        else {
-          if (fcnt == 0) {
-            cpu_cycle_b--;
-          }
-        }
-      }
-      if (Vdp2External.AC_VRAM[3][i] == 0x0F) {
-        fcnt++;
-      }
-    }
-    if (fcnt == 0)cpu_cycle_b = 0;
-    if (cpu_cycle_b < 0)cpu_cycle_b = 0;
   }
   else {
     Vdp2External.AC_VRAM[3][0] = Vdp2External.AC_VRAM[2][0];
@@ -559,25 +497,33 @@ void VDP2genVRamCyclePattern() {
     Vdp2External.AC_VRAM[3][6] = Vdp2External.AC_VRAM[2][6];
     Vdp2External.AC_VRAM[3][7] = Vdp2External.AC_VRAM[2][7];
   }
-
-  if (cpu_cycle_a == 0) {
-    Vdp2External.cpu_cycle_a = 200;
+  //unblock A0
+  for (int i = 0; i<8; i++) {
+    if(Vdp2External.AC_VRAM[0][i] == 0xE) {
+      SH2ClearCPUConcurrency(MSH2, VDP2_RAM_A0_LOCK);
+      SH2ClearCPUConcurrency(SSH2, VDP2_RAM_A0_LOCK);;
+    }
   }
-  else if (Vdp2External.cpu_cycle_a == 1) {
-    Vdp2External.cpu_cycle_a = 24;
+  //unblock A1
+  for (int i = 0; i<8; i++) {
+    if(Vdp2External.AC_VRAM[1][i] == 0xE) {
+      SH2ClearCPUConcurrency(MSH2, VDP2_RAM_A1_LOCK);
+      SH2ClearCPUConcurrency(SSH2, VDP2_RAM_A1_LOCK);;
+    }
   }
-  else {
-    Vdp2External.cpu_cycle_a = 2;
+  //unblock B0
+  for (int i = 0; i<8; i++) {
+    if(Vdp2External.AC_VRAM[2][i] == 0xE) {
+      SH2ClearCPUConcurrency(MSH2, VDP2_RAM_B0_LOCK);
+      SH2ClearCPUConcurrency(SSH2, VDP2_RAM_B0_LOCK);;
+    }
   }
-
-  if (cpu_cycle_b == 0) {
-    Vdp2External.cpu_cycle_b = 200;
-  }
-  else if (Vdp2External.cpu_cycle_a == 1) {
-    Vdp2External.cpu_cycle_b = 24;
-  }
-  else {
-    Vdp2External.cpu_cycle_b = 2;
+  //unblock B1
+  for (int i = 0; i<8; i++) {
+    if(Vdp2External.AC_VRAM[3][i] == 0xE) {
+      SH2ClearCPUConcurrency(MSH2, VDP2_RAM_B1_LOCK);
+      SH2ClearCPUConcurrency(SSH2, VDP2_RAM_B1_LOCK);;
+    }
   }
 }
 
@@ -638,6 +584,10 @@ void Vdp2HBlankIN_It(void) {
     Vdp2Regs->TVSTAT |= 0x0004;
     ScuSendHBlankIN();
   }
+  MSH2->isAccessingCPUBUS = 0;
+  SSH2->isAccessingCPUBUS = 0;
+  SH2ClearCPUConcurrency(MSH2, VDP2_RAM_LOCK);
+  SH2ClearCPUConcurrency(SSH2, VDP2_RAM_LOCK);
 }
 void Vdp2HBlankIN(void) {
 

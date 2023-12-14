@@ -1113,7 +1113,13 @@ static void setupBusConcurrency(scudmainfo_struct * dma) {
      }
   }
   if (accessCPUBus != oldaccessCPUBus) {
-    SH2SetCPUConcurrency(accessCPUBus != 0);
+    if (accessCPUBus != 0) {
+      SH2SetCPUConcurrency(MSH2,A_BUS_ACCESS);
+      SH2SetCPUConcurrency(SSH2,A_BUS_ACCESS);
+    } else {
+      SH2ClearCPUConcurrency(MSH2,A_BUS_ACCESS);
+      SH2ClearCPUConcurrency(SSH2,A_BUS_ACCESS);
+    }
   }
 }
 
