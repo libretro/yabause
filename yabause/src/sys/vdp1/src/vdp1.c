@@ -677,21 +677,6 @@ static int Vdp1NormalSpriteDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* 
   cmd->CMDYD = cmd->CMDYA + MAX(1,cmd->h);
 
   int area = abs((cmd->CMDXA*cmd->CMDYB - cmd->CMDXB*cmd->CMDYA) + (cmd->CMDXB*cmd->CMDYC - cmd->CMDXC*cmd->CMDYB) + (cmd->CMDXC*cmd->CMDYD - cmd->CMDXD*cmd->CMDYC) + (cmd->CMDXD*cmd->CMDYA - cmd->CMDXA *cmd->CMDYD))/2;
-  switch ((cmd->CMDPMOD >> 3) & 0x7) {
-    case 0:
-    case 1:
-      // 4 pixels per 16 bits
-      area  = area >> 2;
-      break;
-    case 2:
-    case 3:
-    case 4:
-      // 2 pixels per 16 bits
-      area = area >> 1;
-      break;
-    default:
-      break;
-  }
   yabsys.vdp1cycles+= area;
 
   memset(cmd->G, 0, sizeof(float)*16);
@@ -853,24 +838,7 @@ static int Vdp1ScaledSpriteDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* 
   default: break;
   }
 
-
-
   int area = abs((cmd->CMDXA*cmd->CMDYB - cmd->CMDXB*cmd->CMDYA) + (cmd->CMDXB*cmd->CMDYC - cmd->CMDXC*cmd->CMDYB) + (cmd->CMDXC*cmd->CMDYD - cmd->CMDXD*cmd->CMDYC) + (cmd->CMDXD*cmd->CMDYA - cmd->CMDXA *cmd->CMDYD))/2;
-  switch ((cmd->CMDPMOD >> 3) & 0x7) {
-    case 0:
-    case 1:
-      // 4 pixels per 16 bits
-      area  = area >> 2;
-      break;
-    case 2:
-    case 3:
-    case 4:
-      // 2 pixels per 16 bits
-      area = area >> 1;
-      break;
-    default:
-      break;
-  }
   yabsys.vdp1cycles+= area;
 
   //gouraud
@@ -929,21 +897,6 @@ static int Vdp1DistortedSpriteDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u
   cmd->CMDYD += regs->localY;
 
   int area = abs((cmd->CMDXA*cmd->CMDYB - cmd->CMDXB*cmd->CMDYA) + (cmd->CMDXB*cmd->CMDYC - cmd->CMDXC*cmd->CMDYB) + (cmd->CMDXC*cmd->CMDYD - cmd->CMDXD*cmd->CMDYC) + (cmd->CMDXD*cmd->CMDYA - cmd->CMDXA *cmd->CMDYD))/2;
-  switch ((cmd->CMDPMOD >> 3) & 0x7) {
-    case 0:
-    case 1:
-      // 4 pixels per 16 bits
-      area  = area >> 2;
-      break;
-    case 2:
-    case 3:
-    case 4:
-      // 2 pixels per 16 bits
-      area = area >> 1;
-      break;
-    default:
-      break;
-  }
   //mission 1 of burning rangers is loading a lot the vdp1.
   yabsys.vdp1cycles+= area;
 
@@ -986,7 +939,7 @@ static int Vdp1PolygonDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* back_
 
   int w = (sqrt((cmd->CMDXA - cmd->CMDXB)*(cmd->CMDXA - cmd->CMDXB)) + sqrt((cmd->CMDXD - cmd->CMDXC)*(cmd->CMDXD - cmd->CMDXC)))/2;
   int h = (sqrt((cmd->CMDYA - cmd->CMDYD)*(cmd->CMDYA - cmd->CMDYD)) + sqrt((cmd->CMDYB - cmd->CMDYC)*(cmd->CMDYB - cmd->CMDYC)))/2;
-  yabsys.vdp1cycles += (w*h)>>2; //MIN(1000, 16 + (w * h) + (w * 2));
+  yabsys.vdp1cycles += (w*h); //MIN(1000, 16 + (w * h) + (w * 2));
   //gouraud
   memset(cmd->G, 0, sizeof(float)*16);
   if ((cmd->CMDPMOD & 4))
