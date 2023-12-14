@@ -102,7 +102,7 @@ void YabSetError(int type, const void *extra)
                           (long)sh->regs.R[9], (long)sh->regs.PR,
                           (long)sh->regs.R[10], (long)sh->regs.PC,
                           (long)sh->regs.R[11]);
-         YuiErrorMsg(tempstr);
+         YuiMsg(tempstr);
          break;
       case YAB_ERR_SH2READ:
          YuiErrorMsg(_("SH2 read error")); // fix me

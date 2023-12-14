@@ -65,8 +65,7 @@ void SH2undecoded(SH2_struct * sh)
          return;
    }
 
-   YuiMsg(YAB_ERR_SH2INVALIDOPCODE, sh);
-   // YabSetError(YAB_ERR_SH2INVALIDOPCODE, sh);
+   YabSetError(YAB_ERR_SH2INVALIDOPCODE, sh);
 
    // Save regs.SR on stack
    sh->regs.R[15]-=4;
