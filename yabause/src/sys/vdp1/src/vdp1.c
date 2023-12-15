@@ -1104,11 +1104,18 @@ static void setupSpriteLimit(vdp1cmdctrl_struct *ctrl){
    }
 }
 
+static int rasterValue = 1708;
+
+void Vdp1SetRaster(int is352) {
+  if (is352)
+    rasterValue = 1820;
+  else
+    rasterValue = 1708;
+}
+
 static int getVdp1CyclesPerLine(void)
 {
-  if (yabsys.IsPal)
-    return 1820;
-  else return 1708;
+  return rasterValue;
 }
 
 static u32 returnAddr = 0xffffffff;
