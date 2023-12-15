@@ -75,8 +75,6 @@ typedef struct {
    int onecycleerase;
    int onecyclechange;
    int useVBlankErase;
-   s16 plot_trigger_line;
-   int plot_trigger_done;
    int current_frame;
    int updateVdp1Ram;
    int checkEDSR;

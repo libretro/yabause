@@ -540,17 +540,13 @@ void FASTCALL Vdp1WriteWord(SH2_struct *context, u8* mem, u32 addr, u16 val) {
       }
       oldVal = Vdp1Regs->PTMR;
       Vdp1Regs->PTMR = val;
-      Vdp1External.plot_trigger_line = -1;
-      Vdp1External.plot_trigger_done = 0;
       if (val == 1){
         FRAMELOG("VDP1: VDPEV_DIRECT_DRAW\n");
-        Vdp1External.plot_trigger_line = yabsys.LineCount;
         checkFBSync();
         abortVdp1();
         vdp1_clock += getVdp1CyclesPerLine();
         RequestVdp1ToDraw();
         Vdp1TryDraw();
-        Vdp1External.plot_trigger_done = 1;
       }
       break;
       case 0x6:
@@ -2902,20 +2898,6 @@ void Vdp1HBlankIN(void)
       Vdp1Regs->COPR = Vdp1Regs->lCOPR;
     }
   }
-  if (Vdp1Regs->PTMR == 0x1){
-    if (Vdp1External.plot_trigger_line == yabsys.LineCount){
-      if(Vdp1External.plot_trigger_done == 0) {
-        FRAMELOG("Draw due to PTMR\n");
-        vdp1_clock = 0;
-        RequestVdp1ToDraw();
-        if ((Vdp1External.status&VDP1_STATUS_MASK) == VDP1_STATUS_RUNNING) {
-          FRAMELOG("Set EDSR\n");
-          Vdp1Regs->EDSR |= 0x2; //strange we need this. It maybe due to timing
-        }
-        Vdp1External.plot_trigger_done = 1;
-      }
-    }
-  }
 
   int cyclesPerLine  = getVdp1CyclesPerLine();
   if (vdp1_clock > 0) vdp1_clock = 0;
@@ -2944,9 +2926,6 @@ void Vdp1VBlankIN_It(void)
 {
   FRAMELOG("VBLANKIn line %d (%d)\n", yabsys.LineCount, yabsys.DecilineCount);
   checkFBSync();
-
-  if (Vdp1Regs->PTMR == 0x1) Vdp1External.plot_trigger_done = 0;
-
 }
 
 void Vdp1SwitchFrame(void)
