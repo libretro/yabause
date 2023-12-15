@@ -36,7 +36,7 @@
 #include "ygl.h"
 #include "yui.h"
 
-
+#define CAP(L,A,M) (((A)<(L))?(L):(((A)>(M))?(M):(A)))
 // #define DEBUG_CMD_LIST
 // #define FRAMELOG printf
 #define FRAMELOG_CMD //printf
@@ -88,11 +88,11 @@ static inline int CONVERTCMD(s32 *A) {
   else (*A) &= ~0xF800;
   ((*A) = (s32)(s16)(*A));
   if (((*A)) < -2048) {
-    DEBUG_BAD_COORD("Bad(-1024) %x (%d, 0x%x)\n", (*A), (*A), toto);
+    DEBUG_BAD_COORD("Bad(-2048) %x (%d, 0x%x)\n", (*A), (*A), toto);
     return 1;
   }
   if (((*A)) > 2047) {
-    DEBUG_BAD_COORD("Bad(1023) %x (%d, 0x%x)\n", (*A), (*A), toto);
+    DEBUG_BAD_COORD("Bad(207) %x (%d, 0x%x)\n", (*A), (*A), toto);
     return 1;
   }
   return 0;
@@ -662,16 +662,16 @@ static int getScaledCycles(vdp1cmd_struct *cmd) {
     default:
       break;
   }
-  int rh = cmd->CMDYD - cmd->CMDYA;
-  int rw = cmd->CMDXC - cmd->CMDXC;
+  int rh = CAP(-1023,cmd->CMDYD,1024) - CAP(-1023,cmd->CMDYA,1024);
+  int rw = CAP(-1023,cmd->CMDXC,1024) - CAP(-1023,cmd->CMDXC,1024);
   if (Vdp1Regs->TVMR & 0x1) rw >>= 1;
   if (((cmd->CMDPMOD>>12)&0x1) && (rw < cmd->w)) cmdW >>= 1; //HSS
   return MAX(rw, cmdW) * MAX(rh, 1);
 }
 
 static int getDistortedCycles(vdp1cmd_struct *cmd) {
-  int rw = (abs(cmd->CMDXB-cmd->CMDXA)
-          + abs(cmd->CMDXC-cmd->CMDXD)
+  int rw = (abs(CAP(-1023,cmd->CMDXB,1024)-CAP(-1023,cmd->CMDXA,1024))
+          + abs(CAP(-1023,cmd->CMDXC, 1024)-CAP(-1023,cmd->CMDXD, 1024))
            )/2;
   if (Vdp1Regs->TVMR & 0x1) rw >>= 1;
   int cmdW = cmd->w;
@@ -692,21 +692,20 @@ static int getDistortedCycles(vdp1cmd_struct *cmd) {
  }
   if (((cmd->CMDPMOD>>12)&0x1) && (rw < cmd->w))  cmdW >>= 1; //HSS
   rw = MAX(cmdW, rw);
-  int rh = MAX(abs(cmd->CMDYA-cmd->CMDYD),
-               abs(cmd->CMDYC-cmd->CMDYB)
+  int rh = MAX(abs(CAP(-1023,cmd->CMDYA,1024)-CAP(-1023,cmd->CMDYD,1024)),
+               abs(CAP(-1023,cmd->CMDYC,1024)-CAP(-1023,cmd->CMDYB,1024))
               );
-
 
   return (int)((float)MAX(rw, 1) * (float)MAX(rh, 1));
 }
 
 static int getPolygonCycles(vdp1cmd_struct *cmd) {
-  int rw = (abs(cmd->CMDXB-cmd->CMDXA)
-          + abs(cmd->CMDXC-cmd->CMDXD)
+  int rw = (abs(CAP(-1023,cmd->CMDXB,1024)-CAP(-1023,cmd->CMDXA,1024))
+          + abs(CAP(-1023,cmd->CMDXC,1024)-CAP(-1023,cmd->CMDXD,1024))
            )/2;
   if (Vdp1Regs->TVMR & 0x1) rw >>= 1;
-  int rh = MAX(abs(cmd->CMDYA-cmd->CMDYD),
-               abs(cmd->CMDYC-cmd->CMDYB)
+  int rh = MAX(abs(CAP(-1023,cmd->CMDYA,1024)-CAP(-1023,cmd->CMDYD,1024)),
+               abs(CAP(-1023,cmd->CMDYC,1024)-CAP(-1023,cmd->CMDYB,1024))
               );
   return (int)((float)MAX(rw, 1) * (float)MAX(rh, 1));
 }
