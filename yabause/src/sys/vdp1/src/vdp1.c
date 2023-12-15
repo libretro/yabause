@@ -673,7 +673,7 @@ static int getScaledCycles(vdp1cmd_struct *cmd) {
       break;
   }
   int rh = CAP(ly,cmd->CMDYD,hy) - CAP(ly,cmd->CMDYA,hy);
-  int rw = CAP(lx,cmd->CMDXC,hx) - CAP(ly,cmd->CMDXC,hx);
+  int rw = CAP(lx,cmd->CMDXB,hx) - CAP(ly,cmd->CMDXA,hx);
   if (Vdp1Regs->TVMR & 0x1) rw >>= 1;
   if (((cmd->CMDPMOD>>12)&0x1) && (rw < cmd->w)) cmdW >>= 1; //HSS
   return MAX(rw, cmdW) * MAX(rh, 1);
