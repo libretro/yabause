@@ -643,6 +643,41 @@ static void checkClipCmd(vdp1cmd_struct **sysClipCmd, vdp1cmd_struct **usrClipCm
   }
 }
 
+static int getNormalCycles(vdp1cmd_struct *cmd) {
+  return cmd->w * cmd->h;
+}
+
+static int getScaledCycles(vdp1cmd_struct *cmd) {
+  int cmdW = cmd->w;
+  int rh = cmd->CMDYD - cmd->CMDYA;
+  int rw = cmd->CMDXC - cmd->CMDXC;
+  if (((cmd->CMDPMOD>>12)&0x1) && (rw < cmd->w)) cmdW >>= 1; //HSS
+  return MAX(rw, cmdW) * rh;
+}
+
+static int getDistortedCycles(vdp1cmd_struct *cmd) {
+  int rw = (sqrt((cmd->CMDXB-cmd->CMDXA)*(cmd->CMDXB-cmd->CMDXA) + (cmd->CMDYB-cmd->CMDYA)*(cmd->CMDYB-cmd->CMDYA))
+          + sqrt((cmd->CMDXC-cmd->CMDXD)*(cmd->CMDXC-cmd->CMDXD) + (cmd->CMDYC-cmd->CMDYD)*(cmd->CMDYC-cmd->CMDYD))
+           )/2;
+  int cmdW = cmd->w;
+  if (((cmd->CMDPMOD>>12)&0x1) && (rw < cmd->w))  cmdW >>= 1; //HSS
+  rw = MAX(cmdW, rw);
+  int rh = MAX(sqrt((cmd->CMDXA-cmd->CMDXD)*(cmd->CMDXA-cmd->CMDXD) + (cmd->CMDYA-cmd->CMDYD)*(cmd->CMDYA-cmd->CMDYD)),
+               sqrt((cmd->CMDXC-cmd->CMDXB)*(cmd->CMDXC-cmd->CMDXB) + (cmd->CMDYC-cmd->CMDYB)*(cmd->CMDYC-cmd->CMDYB))
+              );
+  return rw * rh;
+}
+
+static int getPolygonCycles(vdp1cmd_struct *cmd) {
+  int rw = (sqrt((cmd->CMDXB-cmd->CMDXA)*(cmd->CMDXB-cmd->CMDXA) + (cmd->CMDYB-cmd->CMDYA)*(cmd->CMDYB-cmd->CMDYA))
+          + sqrt((cmd->CMDXC-cmd->CMDXD)*(cmd->CMDXC-cmd->CMDXD) + (cmd->CMDYC-cmd->CMDYD)*(cmd->CMDYC-cmd->CMDYD))
+           )/2;
+  int rh = MAX(sqrt((cmd->CMDXA-cmd->CMDXD)*(cmd->CMDXA-cmd->CMDXD) + (cmd->CMDYA-cmd->CMDYD)*(cmd->CMDYA-cmd->CMDYD)),
+               sqrt((cmd->CMDXC-cmd->CMDXB)*(cmd->CMDXC-cmd->CMDXB) + (cmd->CMDYC-cmd->CMDYB)*(cmd->CMDYC-cmd->CMDYB))
+              );
+  return rw * rh;
+}
+
 static int Vdp1NormalSpriteDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* back_framebuffer){
   Vdp2 *varVdp2Regs = &Vdp2Lines[0];
   int ret = 1;
@@ -688,8 +723,7 @@ static int Vdp1NormalSpriteDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* 
   cmd->CMDXD = cmd->CMDXA;
   cmd->CMDYD = cmd->CMDYA + MAX(1,cmd->h);
 
-  int area = abs((cmd->CMDXA*cmd->CMDYB - cmd->CMDXB*cmd->CMDYA) + (cmd->CMDXB*cmd->CMDYC - cmd->CMDXC*cmd->CMDYB) + (cmd->CMDXC*cmd->CMDYD - cmd->CMDXD*cmd->CMDYC) + (cmd->CMDXD*cmd->CMDYA - cmd->CMDXA *cmd->CMDYD))/2;
-  yabsys.vdp1cycles+= area;
+  yabsys.vdp1cycles+= getNormalCycles(cmd);
 
   memset(cmd->G, 0, sizeof(float)*16);
   if ((cmd->CMDPMOD & 4))
@@ -853,9 +887,8 @@ static int Vdp1ScaledSpriteDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* 
   default: break;
   }
 
-  int area = abs((cmd->CMDXA*cmd->CMDYB - cmd->CMDXB*cmd->CMDYA) + (cmd->CMDXB*cmd->CMDYC - cmd->CMDXC*cmd->CMDYB) + (cmd->CMDXC*cmd->CMDYD - cmd->CMDXD*cmd->CMDYC) + (cmd->CMDXD*cmd->CMDYA - cmd->CMDXA *cmd->CMDYD))/2;
-  if (((cmd->CMDPMOD>>12)&0x1) && (rw < cmd->w)) area >>= 1; //HSS
-  yabsys.vdp1cycles+= area;
+  //mission 1 of burning rangers is loading a lot the vdp1.
+  yabsys.vdp1cycles+= getScaledCycles(cmd);
 
   //gouraud
   memset(cmd->G, 0, sizeof(float)*16);
@@ -915,11 +948,8 @@ static int Vdp1DistortedSpriteDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u
   cmd->CMDXD += regs->localX;
   cmd->CMDYD += regs->localY;
 
-  int area = abs((cmd->CMDXA*cmd->CMDYB - cmd->CMDXB*cmd->CMDYA) + (cmd->CMDXB*cmd->CMDYC - cmd->CMDXC*cmd->CMDYB) + (cmd->CMDXC*cmd->CMDYD - cmd->CMDXD*cmd->CMDYC) + (cmd->CMDXD*cmd->CMDYA - cmd->CMDXA *cmd->CMDYD))/2;
   //mission 1 of burning rangers is loading a lot the vdp1.
-  int rw = MAX(hypot(cmd->CMDXB-cmd->CMDXA, cmd->CMDYB-cmd->CMDYA), hypot(cmd->CMDXC-cmd->CMDXD, cmd->CMDYC-cmd->CMDYD));
-  if (((cmd->CMDPMOD>>12)&0x1) && (rw < cmd->w))  area >>= 1; //HSS
-  yabsys.vdp1cycles+= area;
+  yabsys.vdp1cycles+= getDistortedCycles(cmd);
 
   memset(cmd->G, 0, sizeof(float)*16);
   if ((cmd->CMDPMOD & 4))
@@ -961,9 +991,7 @@ static int Vdp1PolygonDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* back_
   cmd->CMDXD += regs->localX;
   cmd->CMDYD += regs->localY;
 
-  int w = (sqrt((cmd->CMDXA - cmd->CMDXB)*(cmd->CMDXA - cmd->CMDXB)) + sqrt((cmd->CMDXD - cmd->CMDXC)*(cmd->CMDXD - cmd->CMDXC)))/2;
-  int h = (sqrt((cmd->CMDYA - cmd->CMDYD)*(cmd->CMDYA - cmd->CMDYD)) + sqrt((cmd->CMDYB - cmd->CMDYC)*(cmd->CMDYB - cmd->CMDYC)))/2;
-  yabsys.vdp1cycles += (w*h); //MIN(1000, 16 + (w * h) + (w * 2));
+  yabsys.vdp1cycles += getPolygonCycles(cmd);
   //gouraud
   memset(cmd->G, 0, sizeof(float)*16);
   if ((cmd->CMDPMOD & 4))
@@ -1907,6 +1935,8 @@ void Vdp1DebugCommand(u32 number, char *outstring)
            AddString(outstring, "Invalid coordinates - Not drawn\n");
          } else {
            AddString(outstring, "x = %d, y = %d\r\n", (s16)cmd.CMDXA, (s16)cmd.CMDYA);
+           int cycles = getNormalCycles(&cmd);
+           AddString(outstring, "estimated cycles=%d\n", cycles);
          }
 
          break;
@@ -1950,31 +1980,109 @@ void Vdp1DebugCommand(u32 number, char *outstring)
             default: break;
          }
 
-         if (((cmd.CMDCTRL >> 8) & 0xF) == 0)
-         {
-           AddString(outstring, "CMDXA = 0x%04x, CMDYA = 0x%04x\r\n", cmd.CMDXA&0xFFFF, cmd.CMDYA&0xFFFF);
-           AddString(outstring, "CMDXC = 0x%04x, CMDYC = 0x%04x\r\n", cmd.CMDXC&0xFFFF, cmd.CMDYC&0xFFFF);
-           invalid = CONVERTCMD(&cmd.CMDXA) || CONVERTCMD(&cmd.CMDYA);
-           invalid |= CONVERTCMD(&cmd.CMDXC) || CONVERTCMD(&cmd.CMDYC);
-           if (invalid) {
-             AddString(outstring, "Invalid coordinates - Not drawn\n");
-           } else {
-             AddString(outstring, "xa = %d, ya = %d, xc = %d, yc = %d\r\n", (s16)cmd.CMDXA, (s16)cmd.CMDYA, (s16)cmd.CMDXC, (s16)cmd.CMDYC);
+         AddString(outstring, "CMDXA = 0x%04x, CMDYA = 0x%04x\r\n", cmd.CMDXA&0xFFFF, cmd.CMDYA&0xFFFF);
+         AddString(outstring, "CMDXB = 0x%04x, CMDYB = 0x%04x\r\n", cmd.CMDXB&0xFFFF, cmd.CMDYB&0xFFFF);
+         AddString(outstring, "CMDXC = 0x%04x, CMDYC = 0x%04x\r\n", cmd.CMDXC&0xFFFF, cmd.CMDYC&0xFFFF);
+         invalid = CONVERTCMD(&cmd.CMDXA) || CONVERTCMD(&cmd.CMDYA);
+         invalid |= CONVERTCMD(&cmd.CMDXB) || CONVERTCMD(&cmd.CMDYB);
+         if (invalid) {
+           AddString(outstring, "Invalid coordinates - Not drawn\n");
+         } else {
+           s16 x = cmd.CMDXA;
+           s16 y = cmd.CMDYA;
+           s16 rh = 0;
+           s16 rw = 0;
+           // Setup Zoom Point
+           switch ((cmd.CMDCTRL & 0xF00) >> 8)
+           {
+           case 0x0: // Only two coordinates
+             rw = cmd.CMDXC - cmd.CMDXA;
+             rh = cmd.CMDYC - cmd.CMDYA;
+             break;
+           case 0x5: // Upper-left
+             rw = cmd.CMDXB;
+             rh = cmd.CMDYB;
+             if ((rw < 0)||(rh <0)) {
+               return 0;
+             }
+             break;
+           case 0x6: // Upper-Center
+             rw = cmd.CMDXB;
+             rh = cmd.CMDYB;
+             x = x - rw / 2;
+             if ((rw < 0)||(rh <0)) {
+               return 0;
+             }
+             break;
+           case 0x7: // Upper-Right
+             rw = cmd.CMDXB;
+             rh = cmd.CMDYB;
+             x = x - rw;
+             if ((rw < 0)||(rh <0)) {
+               return 0;
+             }
+             break;
+           case 0x9: // Center-left
+             rw = cmd.CMDXB;
+             rh = cmd.CMDYB;
+             y = y - rh / 2;
+             if ((rw < 0)||(rh <0)) {
+               return 0;
+             }
+             break;
+           case 0xA: // Center-center
+             rw = cmd.CMDXB;
+             rh = cmd.CMDYB;
+             x = x - rw / 2;
+             y = y - rh / 2;
+             break;
+           case 0xB: // Center-right
+             rw = cmd.CMDXB;
+             rh = cmd.CMDYB;
+             x = x - rw;
+             y = y - rh / 2;
+             if ((rw < 0)||(rh <0)) {
+               return 0;
+             }
+             break;
+           case 0xD: // Lower-left
+             rw = cmd.CMDXB;
+             rh = cmd.CMDYB;
+             y = y - rh;
+             if ((rw < 0)||(rh <0)) {
+               return 0;
+             }
+             break;
+           case 0xE: // Lower-center
+             rw = cmd.CMDXB;
+             rh = cmd.CMDYB;
+             x = x - rw / 2;
+             y = y - rh;
+             break;
+           case 0xF: // Lower-right
+             rw = cmd.CMDXB;
+             rh = cmd.CMDYB;
+             x = x - rw;
+             y = y - rh;
+             if ((rw < 0)||(rh <0)) {
+               return 0;
+             }
+             break;
+           default: break;
            }
+           cmd.CMDXA = x;
+           cmd.CMDYA = y;
+           cmd.CMDXB = x + rw;
+           cmd.CMDYB = y;
+           cmd.CMDXC = x + rw;
+           cmd.CMDYC = y + rh;
+           cmd.CMDXD = x;
+           cmd.CMDYD = y + rh;
+           AddString(outstring, "x1 = %d, y1 = %d, x2 = %d, y2 = %d\r\n", (s16)cmd.CMDXA, (s16)cmd.CMDYA, (s16)cmd.CMDXB, (s16)cmd.CMDYB);
+           AddString(outstring, "x3 = %d, y3 = %d, x4 = %d, y4 = %d\r\n", (s16)cmd.CMDXC, (s16)cmd.CMDYC, (s16)cmd.CMDXD, (s16)cmd.CMDYD);
+           int cycles = getScaledCycles(&cmd);
+           AddString(outstring, "estimated cycles=%d\n", cycles);
          }
-         else
-         {
-           AddString(outstring, "CMDXA = 0x%04x, CMDYA = 0x%04x\r\n", cmd.CMDXA&0xFFFF, cmd.CMDYA&0xFFFF);
-           AddString(outstring, "CMDXB = 0x%04x, CMDYB = 0x%04x\r\n", cmd.CMDXB&0xFFFF, cmd.CMDYB&0xFFFF);
-           invalid = CONVERTCMD(&cmd.CMDXA) || CONVERTCMD(&cmd.CMDYA);
-           invalid |= CONVERTCMD(&cmd.CMDXB) || CONVERTCMD(&cmd.CMDYB);
-           if (invalid) {
-             AddString(outstring, "Invalid coordinates - Not drawn\n");
-           } else {
-            AddString(outstring, "xa = %d, ya = %d, xb = %d, yb = %d\r\n", (s16)cmd.CMDXA, (s16)cmd.CMDYA, (s16)cmd.CMDXB, (s16)cmd.CMDYB);
-           }
-         }
-
          break;
       case 2:
          AddString(outstring, "Distorted Sprite\r\n");
@@ -1991,6 +2099,8 @@ void Vdp1DebugCommand(u32 number, char *outstring)
          } else {
            AddString(outstring, "x1 = %d, y1 = %d, x2 = %d, y2 = %d\r\n", (s16)cmd.CMDXA, (s16)cmd.CMDYA, (s16)cmd.CMDXB, (s16)cmd.CMDYB);
            AddString(outstring, "x3 = %d, y3 = %d, x4 = %d, y4 = %d\r\n", (s16)cmd.CMDXC, (s16)cmd.CMDYC, (s16)cmd.CMDXD, (s16)cmd.CMDYD);
+           int cycles = getDistortedCycles(&cmd);
+           AddString(outstring, "estimated cycles=%d\n", cycles);
          }
          break;
       case 3:
@@ -2008,6 +2118,8 @@ void Vdp1DebugCommand(u32 number, char *outstring)
          } else {
            AddString(outstring, "x1 = %d, y1 = %d, x2 = %d, y2 = %d\r\n", (s16)cmd.CMDXA, (s16)cmd.CMDYA, (s16)cmd.CMDXB, (s16)cmd.CMDYB);
            AddString(outstring, "x3 = %d, y3 = %d, x4 = %d, y4 = %d\r\n", (s16)cmd.CMDXC, (s16)cmd.CMDYC, (s16)cmd.CMDXD, (s16)cmd.CMDYD);
+           int cycles = getDistortedCycles(&cmd);
+           AddString(outstring, "estimated cycles=%d\n", cycles);
          }
          break;
       case 4:
@@ -2025,6 +2137,8 @@ void Vdp1DebugCommand(u32 number, char *outstring)
          } else {
            AddString(outstring, "x1 = %d, y1 = %d, x2 = %d, y2 = %d\r\n", (s16)cmd.CMDXA, (s16)cmd.CMDYA, (s16)cmd.CMDXB, (s16)cmd.CMDYB);
            AddString(outstring, "x3 = %d, y3 = %d, x4 = %d, y4 = %d\r\n", (s16)cmd.CMDXC, (s16)cmd.CMDYC, (s16)cmd.CMDXD, (s16)cmd.CMDYD);
+           int cycles = getPolygonCycles(&cmd);
+           AddString(outstring, "estimated cycles=%d\n", cycles);
          }
          break;
       case 5:
