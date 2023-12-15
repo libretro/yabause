@@ -1899,21 +1899,19 @@ void Vdp1DebugCommand(u32 number, char *outstring)
      int h = cmd.CMDSIZE & 0xFF;
    }
 
-   if ((cmd.CMDYA & 0x400)) cmd.CMDYA |= 0xFC00; else cmd.CMDYA &= ~(0xFC00);
-   if ((cmd.CMDYC & 0x400)) cmd.CMDYC |= 0xFC00; else cmd.CMDYC &= ~(0xFC00);
-   if ((cmd.CMDYB & 0x400)) cmd.CMDYB |= 0xFC00; else cmd.CMDYB &= ~(0xFC00);
-   if ((cmd.CMDYD & 0x400)) cmd.CMDYD |= 0xFC00; else cmd.CMDYD &= ~(0xFC00);
-
-   if ((cmd.CMDXA & 0x400)) cmd.CMDXA |= 0xFC00; else cmd.CMDXA &= ~(0xFC00);
-   if ((cmd.CMDXC & 0x400)) cmd.CMDXC |= 0xFC00; else cmd.CMDXC &= ~(0xFC00);
-   if ((cmd.CMDXB & 0x400)) cmd.CMDXB |= 0xFC00; else cmd.CMDXB &= ~(0xFC00);
-   if ((cmd.CMDXD & 0x400)) cmd.CMDXD |= 0xFC00; else cmd.CMDXD &= ~(0xFC00);
-
+   int invalid = 0;
    switch (cmd.CMDCTRL & 0x000F)
    {
       case 0:
          AddString(outstring, "Normal Sprite\r\n");
-         AddString(outstring, "x = %d, y = %d\r\n", (s16)cmd.CMDXA, (s16)cmd.CMDYA);
+         AddString(outstring, "CMDXA = 0x%04x, CMDYA = 0x%04x\r\n", cmd.CMDXA&0xFFFF, cmd.CMDYA&0xFFFF);
+         invalid = CONVERTCMD(&cmd.CMDXA) || CONVERTCMD(&cmd.CMDYA);
+         if (invalid) {
+           AddString(outstring, "Invalid coordinates - Not drawn\n");
+         } else {
+           AddString(outstring, "x = %d, y = %d\r\n", (s16)cmd.CMDXA, (s16)cmd.CMDYA);
+         }
+
          break;
       case 1:
          AddString(outstring, "Scaled Sprite\r\n");
@@ -1957,42 +1955,126 @@ void Vdp1DebugCommand(u32 number, char *outstring)
 
          if (((cmd.CMDCTRL >> 8) & 0xF) == 0)
          {
-            AddString(outstring, "xa = %d, ya = %d, xc = %d, yc = %d\r\n", (s16)cmd.CMDXA, (s16)cmd.CMDYA, (s16)cmd.CMDXC, (s16)cmd.CMDYC);
+           AddString(outstring, "CMDXA = 0x%04x, CMDYA = 0x%04x\r\n", cmd.CMDXA&0xFFFF, cmd.CMDYA&0xFFFF);
+           AddString(outstring, "CMDXC = 0x%04x, CMDYC = 0x%04x\r\n", cmd.CMDXC&0xFFFF, cmd.CMDYC&0xFFFF);
+           invalid = CONVERTCMD(&cmd.CMDXA) || CONVERTCMD(&cmd.CMDYA);
+           invalid |= CONVERTCMD(&cmd.CMDXC) || CONVERTCMD(&cmd.CMDYC);
+           if (invalid) {
+             AddString(outstring, "Invalid coordinates - Not drawn\n");
+           } else {
+             AddString(outstring, "xa = %d, ya = %d, xc = %d, yc = %d\r\n", (s16)cmd.CMDXA, (s16)cmd.CMDYA, (s16)cmd.CMDXC, (s16)cmd.CMDYC);
+           }
          }
          else
          {
+           AddString(outstring, "CMDXA = 0x%04x, CMDYA = 0x%04x\r\n", cmd.CMDXA&0xFFFF, cmd.CMDYA&0xFFFF);
+           AddString(outstring, "CMDXB = 0x%04x, CMDYB = 0x%04x\r\n", cmd.CMDXB&0xFFFF, cmd.CMDYB&0xFFFF);
+           invalid = CONVERTCMD(&cmd.CMDXA) || CONVERTCMD(&cmd.CMDYA);
+           invalid |= CONVERTCMD(&cmd.CMDXB) || CONVERTCMD(&cmd.CMDYB);
+           if (invalid) {
+             AddString(outstring, "Invalid coordinates - Not drawn\n");
+           } else {
             AddString(outstring, "xa = %d, ya = %d, xb = %d, yb = %d\r\n", (s16)cmd.CMDXA, (s16)cmd.CMDYA, (s16)cmd.CMDXB, (s16)cmd.CMDYB);
+           }
          }
 
          break;
       case 2:
          AddString(outstring, "Distorted Sprite\r\n");
-         AddString(outstring, "x1 = %d, y1 = %d, x2 = %d, y2 = %d\r\n", (s16)cmd.CMDXA, (s16)cmd.CMDYA, (s16)cmd.CMDXB, (s16)cmd.CMDYB);
-         AddString(outstring, "x3 = %d, y3 = %d, x4 = %d, y4 = %d\r\n", (s16)cmd.CMDXC, (s16)cmd.CMDYC, (s16)cmd.CMDXD, (s16)cmd.CMDYD);
+         AddString(outstring, "CMDXA = 0x%04x, CMDYA = 0x%04x\r\n", cmd.CMDXA&0xFFFF, cmd.CMDYA&0xFFFF);
+         AddString(outstring, "CMDXB = 0x%04x, CMDYB = 0x%04x\r\n", cmd.CMDXB&0xFFFF, cmd.CMDYB&0xFFFF);
+         AddString(outstring, "CMDXC = 0x%04x, CMDYC = 0x%04x\r\n", cmd.CMDXC&0xFFFF, cmd.CMDYC&0xFFFF);
+         AddString(outstring, "CMDXD = 0x%04x, CMDYD = 0x%04x\r\n", cmd.CMDXD&0xFFFF, cmd.CMDYD&0xFFFF);
+         invalid = CONVERTCMD(&cmd.CMDXA) || CONVERTCMD(&cmd.CMDYA);
+         invalid |= CONVERTCMD(&cmd.CMDXB) || CONVERTCMD(&cmd.CMDYB);
+         invalid |= CONVERTCMD(&cmd.CMDXC) || CONVERTCMD(&cmd.CMDYC);
+         invalid |= CONVERTCMD(&cmd.CMDXD) || CONVERTCMD(&cmd.CMDYD);
+         if (invalid) {
+           AddString(outstring, "Invalid coordinates - Not drawn\n");
+         } else {
+           AddString(outstring, "x1 = %d, y1 = %d, x2 = %d, y2 = %d\r\n", (s16)cmd.CMDXA, (s16)cmd.CMDYA, (s16)cmd.CMDXB, (s16)cmd.CMDYB);
+           AddString(outstring, "x3 = %d, y3 = %d, x4 = %d, y4 = %d\r\n", (s16)cmd.CMDXC, (s16)cmd.CMDYC, (s16)cmd.CMDXD, (s16)cmd.CMDYD);
+         }
          break;
       case 3:
          AddString(outstring, "Distorted Sprite *\r\n");
-         AddString(outstring, "x1 = %d, y1 = %d, x2 = %d, y2 = %d\r\n", (s16)cmd.CMDXA, (s16)cmd.CMDYA, (s16)cmd.CMDXB, (s16)cmd.CMDYB);
-         AddString(outstring, "x3 = %d, y3 = %d, x4 = %d, y4 = %d\r\n", (s16)cmd.CMDXC, (s16)cmd.CMDYC, (s16)cmd.CMDXD, (s16)cmd.CMDYD);
+         AddString(outstring, "CMDXA = 0x%04x, CMDYA = 0x%04x\r\n", cmd.CMDXA&0xFFFF, cmd.CMDYA&0xFFFF);
+         AddString(outstring, "CMDXB = 0x%04x, CMDYB = 0x%04x\r\n", cmd.CMDXB&0xFFFF, cmd.CMDYB&0xFFFF);
+         AddString(outstring, "CMDXC = 0x%04x, CMDYC = 0x%04x\r\n", cmd.CMDXC&0xFFFF, cmd.CMDYC&0xFFFF);
+         AddString(outstring, "CMDXD = 0x%04x, CMDYD = 0x%04x\r\n", cmd.CMDXD&0xFFFF, cmd.CMDYD&0xFFFF);
+         invalid = CONVERTCMD(&cmd.CMDXA) || CONVERTCMD(&cmd.CMDYA);
+         invalid |= CONVERTCMD(&cmd.CMDXB) || CONVERTCMD(&cmd.CMDYB);
+         invalid |= CONVERTCMD(&cmd.CMDXC) || CONVERTCMD(&cmd.CMDYC);
+         invalid |= CONVERTCMD(&cmd.CMDXD) || CONVERTCMD(&cmd.CMDYD);
+         if (invalid) {
+           AddString(outstring, "Invalid coordinates - Not drawn\n");
+         } else {
+           AddString(outstring, "x1 = %d, y1 = %d, x2 = %d, y2 = %d\r\n", (s16)cmd.CMDXA, (s16)cmd.CMDYA, (s16)cmd.CMDXB, (s16)cmd.CMDYB);
+           AddString(outstring, "x3 = %d, y3 = %d, x4 = %d, y4 = %d\r\n", (s16)cmd.CMDXC, (s16)cmd.CMDYC, (s16)cmd.CMDXD, (s16)cmd.CMDYD);
+         }
          break;
       case 4:
          AddString(outstring, "Polygon\r\n");
-         AddString(outstring, "x1 = %d, y1 = %d, x2 = %d, y2 = %d\r\n", (s16)cmd.CMDXA, (s16)cmd.CMDYA, (s16)cmd.CMDXB, (s16)cmd.CMDYB);
-         AddString(outstring, "x3 = %d, y3 = %d, x4 = %d, y4 = %d\r\n", (s16)cmd.CMDXC, (s16)cmd.CMDYC, (s16)cmd.CMDXD, (s16)cmd.CMDYD);
+         AddString(outstring, "CMDXA = 0x%04x, CMDYA = 0x%04x\r\n", cmd.CMDXA&0xFFFF, cmd.CMDYA&0xFFFF);
+         AddString(outstring, "CMDXB = 0x%04x, CMDYB = 0x%04x\r\n", cmd.CMDXB&0xFFFF, cmd.CMDYB&0xFFFF);
+         AddString(outstring, "CMDXC = 0x%04x, CMDYC = 0x%04x\r\n", cmd.CMDXC&0xFFFF, cmd.CMDYC&0xFFFF);
+         AddString(outstring, "CMDXD = 0x%04x, CMDYD = 0x%04x\r\n", cmd.CMDXD&0xFFFF, cmd.CMDYD&0xFFFF);
+         invalid = CONVERTCMD(&cmd.CMDXA) || CONVERTCMD(&cmd.CMDYA);
+         invalid |= CONVERTCMD(&cmd.CMDXB) || CONVERTCMD(&cmd.CMDYB);
+         invalid |= CONVERTCMD(&cmd.CMDXC) || CONVERTCMD(&cmd.CMDYC);
+         invalid |= CONVERTCMD(&cmd.CMDXD) || CONVERTCMD(&cmd.CMDYD);
+         if (invalid) {
+           AddString(outstring, "Invalid coordinates - Not drawn\n");
+         } else {
+           AddString(outstring, "x1 = %d, y1 = %d, x2 = %d, y2 = %d\r\n", (s16)cmd.CMDXA, (s16)cmd.CMDYA, (s16)cmd.CMDXB, (s16)cmd.CMDYB);
+           AddString(outstring, "x3 = %d, y3 = %d, x4 = %d, y4 = %d\r\n", (s16)cmd.CMDXC, (s16)cmd.CMDYC, (s16)cmd.CMDXD, (s16)cmd.CMDYD);
+         }
          break;
       case 5:
          AddString(outstring, "Polyline\r\n");
-         AddString(outstring, "x1 = %d, y1 = %d, x2 = %d, y2 = %d\r\n", (s16)cmd.CMDXA, (s16)cmd.CMDYA, (s16)cmd.CMDXB, (s16)cmd.CMDYB);
-         AddString(outstring, "x3 = %d, y3 = %d, x4 = %d, y4 = %d\r\n", (s16)cmd.CMDXC, (s16)cmd.CMDYC, (s16)cmd.CMDXD, (s16)cmd.CMDYD);
+         AddString(outstring, "CMDXA = 0x%04x, CMDYA = 0x%04x\r\n", cmd.CMDXA&0xFFFF, cmd.CMDYA&0xFFFF);
+         AddString(outstring, "CMDXB = 0x%04x, CMDYB = 0x%04x\r\n", cmd.CMDXB&0xFFFF, cmd.CMDYB&0xFFFF);
+         AddString(outstring, "CMDXC = 0x%04x, CMDYC = 0x%04x\r\n", cmd.CMDXC&0xFFFF, cmd.CMDYC&0xFFFF);
+         AddString(outstring, "CMDXD = 0x%04x, CMDYD = 0x%04x\r\n", cmd.CMDXD&0xFFFF, cmd.CMDYD&0xFFFF);
+         invalid = CONVERTCMD(&cmd.CMDXA) || CONVERTCMD(&cmd.CMDYA);
+         invalid |= CONVERTCMD(&cmd.CMDXB) || CONVERTCMD(&cmd.CMDYB);
+         invalid |= CONVERTCMD(&cmd.CMDXC) || CONVERTCMD(&cmd.CMDYC);
+         invalid |= CONVERTCMD(&cmd.CMDXD) || CONVERTCMD(&cmd.CMDYD);
+         if (invalid) {
+           AddString(outstring, "Invalid coordinates - Not drawn\n");
+         } else {
+           AddString(outstring, "x1 = %d, y1 = %d, x2 = %d, y2 = %d\r\n", (s16)cmd.CMDXA, (s16)cmd.CMDYA, (s16)cmd.CMDXB, (s16)cmd.CMDYB);
+           AddString(outstring, "x3 = %d, y3 = %d, x4 = %d, y4 = %d\r\n", (s16)cmd.CMDXC, (s16)cmd.CMDYC, (s16)cmd.CMDXD, (s16)cmd.CMDYD);
+         }
          break;
       case 6:
          AddString(outstring, "Line\r\n");
-         AddString(outstring, "x1 = %d, y1 = %d, x2 = %d, y2 = %d\r\n", (s16)cmd.CMDXA, (s16)cmd.CMDYA, (s16)cmd.CMDXB, (s16)cmd.CMDYB);
+         AddString(outstring, "CMDXA = 0x%04x, CMDYA = 0x%04x\r\n", cmd.CMDXA&0xFFFF, cmd.CMDYA&0xFFFF);
+         AddString(outstring, "CMDXB = 0x%04x, CMDYB = 0x%04x\r\n", cmd.CMDXB&0xFFFF, cmd.CMDYB&0xFFFF);
+         invalid = CONVERTCMD(&cmd.CMDXA) || CONVERTCMD(&cmd.CMDYA);
+         invalid |= CONVERTCMD(&cmd.CMDXB) || CONVERTCMD(&cmd.CMDYB);
+         if (invalid) {
+           AddString(outstring, "Invalid coordinates - Not drawn\n");
+         } else {
+           AddString(outstring, "x1 = %d, y1 = %d, x2 = %d, y2 = %d\r\n", (s16)cmd.CMDXA, (s16)cmd.CMDYA, (s16)cmd.CMDXB, (s16)cmd.CMDYB);
+         }
          break;
       case 7:
          AddString(outstring, "Polyline *\r\n");
-         AddString(outstring, "x1 = %d, y1 = %d, x2 = %d, y2 = %d\r\n", (s16)cmd.CMDXA, (s16)cmd.CMDYA, (s16)cmd.CMDXB, (s16)cmd.CMDYB);
-         AddString(outstring, "x3 = %d, y3 = %d, x4 = %d, y4 = %d\r\n", (s16)cmd.CMDXC, (s16)cmd.CMDYC, (s16)cmd.CMDXD, (s16)cmd.CMDYD);
+         AddString(outstring, "CMDXA = 0x%04x, CMDYA = 0x%04x\r\n", cmd.CMDXA&0xFFFF, cmd.CMDYA&0xFFFF);
+         AddString(outstring, "CMDXB = 0x%04x, CMDYB = 0x%04x\r\n", cmd.CMDXB&0xFFFF, cmd.CMDYB&0xFFFF);
+         AddString(outstring, "CMDXC = 0x%04x, CMDYC = 0x%04x\r\n", cmd.CMDXC&0xFFFF, cmd.CMDYC&0xFFFF);
+         AddString(outstring, "CMDXD = 0x%04x, CMDYD = 0x%04x\r\n", cmd.CMDXD&0xFFFF, cmd.CMDYD&0xFFFF);
+         invalid = CONVERTCMD(&cmd.CMDXA) || CONVERTCMD(&cmd.CMDYA);
+         invalid |= CONVERTCMD(&cmd.CMDXB) || CONVERTCMD(&cmd.CMDYB);
+         invalid |= CONVERTCMD(&cmd.CMDXC) || CONVERTCMD(&cmd.CMDYC);
+         invalid |= CONVERTCMD(&cmd.CMDXD) || CONVERTCMD(&cmd.CMDYD);
+         if (invalid) {
+           AddString(outstring, "Invalid coordinates - Not drawn\n");
+         } else {
+           AddString(outstring, "x1 = %d, y1 = %d, x2 = %d, y2 = %d\r\n", (s16)cmd.CMDXA, (s16)cmd.CMDYA, (s16)cmd.CMDXB, (s16)cmd.CMDYB);
+           AddString(outstring, "x3 = %d, y3 = %d, x4 = %d, y4 = %d\r\n", (s16)cmd.CMDXC, (s16)cmd.CMDYC, (s16)cmd.CMDXD, (s16)cmd.CMDYD);
+         }
          break;
       case 8:
          AddString(outstring, "User Clipping\r\n");
