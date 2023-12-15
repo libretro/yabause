@@ -1916,8 +1916,8 @@ void Vdp1DebugCommand(u32 number, char *outstring)
    Vdp1ReadCommand(&cmd, addr, Vdp1Ram);
 
    if ((cmd.CMDCTRL & 0x000F) < 4) {
-     int w = ((cmd.CMDSIZE >> 8) & 0x3F) * 8;
-     int h = cmd.CMDSIZE & 0xFF;
+     cmd.w = ((cmd.CMDSIZE >> 8) & 0x3F) * 8;
+     cmd.h = cmd.CMDSIZE & 0xFF;
    }
 
    int invalid = 0;
