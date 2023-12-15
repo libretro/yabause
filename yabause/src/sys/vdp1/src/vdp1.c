@@ -694,7 +694,6 @@ static int Vdp1NormalSpriteDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* 
   memset(cmd->G, 0, sizeof(float)*16);
   if ((cmd->CMDPMOD & 4))
   {
-    yabsys.vdp1cycles+= 232;
     for (int i = 0; i < 4; i++){
       u16 color2 = Vdp1RamReadWord(NULL, ram, (Vdp1RamReadWord(NULL, ram, regs->addr + 0x1C) << 3) + (i << 1));
       cmd->G[(i << 2) + 0] = (float)((color2 & 0x001F)) / (float)(0x1F) - 0.5f;
@@ -862,7 +861,6 @@ static int Vdp1ScaledSpriteDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* 
   memset(cmd->G, 0, sizeof(float)*16);
   if ((cmd->CMDPMOD & 4))
   {
-    yabsys.vdp1cycles+= 232;
     for (int i = 0; i < 4; i++){
       u16 color2 = Vdp1RamReadWord(NULL, Vdp1Ram, (Vdp1RamReadWord(NULL, Vdp1Ram, regs->addr + 0x1C) << 3) + (i << 1));
       cmd->G[(i << 2) + 0] = (float)((color2 & 0x001F)) / (float)(0x1F) - 0.5f;
@@ -926,7 +924,6 @@ static int Vdp1DistortedSpriteDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u
   memset(cmd->G, 0, sizeof(float)*16);
   if ((cmd->CMDPMOD & 4))
   {
-    yabsys.vdp1cycles+= 232;
     for (int i = 0; i < 4; i++){
       u16 color2 = Vdp1RamReadWord(NULL, Vdp1Ram, (Vdp1RamReadWord(NULL, Vdp1Ram, regs->addr + 0x1C) << 3) + (i << 1));
       cmd->G[(i << 2) + 0] = (float)((color2 & 0x001F)) / (float)(0x1F) - 0.5f;
@@ -971,7 +968,6 @@ static int Vdp1PolygonDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* back_
   memset(cmd->G, 0, sizeof(float)*16);
   if ((cmd->CMDPMOD & 4))
   {
-    yabsys.vdp1cycles+= 232;
     for (int i = 0; i < 4; i++){
       u16 color2 = Vdp1RamReadWord(NULL, Vdp1Ram, (Vdp1RamReadWord(NULL, Vdp1Ram, regs->addr + 0x1C) << 3) + (i << 1));
       cmd->G[(i << 2) + 0] = (float)((color2 & 0x001F)) / (float)(0x1F) - 0.5f;
