@@ -82,13 +82,20 @@ static void checkFBSync();
 
 #define DEBUG_BAD_COORD //YuiMsg
 
-#define  CONVERTCMD(A) {\
-  s32 toto = (A);\
-  if (((A)&0x7000) != 0) (A) |= 0xF000;\
-  else (A) &= ~0xF800;\
-  ((A) = (s32)(s16)(A));\
-  if (((A)) < -1024) { DEBUG_BAD_COORD("Bad(-1024) %x (%d, 0x%x)\n", (A), (A), toto);}\
-  if (((A)) > 1023) { DEBUG_BAD_COORD("Bad(1023) %x (%d, 0x%x)\n", (A), (A), toto);}\
+static inline int CONVERTCMD(s32 *A) {
+  s32 toto = (*A);
+  if (((*A)&0xF800) != 0) (*A) |= 0xF800;
+  else (*A) &= ~0xF800;
+  ((*A) = (s32)(s16)(*A));
+  if (((*A)) < -1024) {
+    DEBUG_BAD_COORD("Bad(-1024) %x (%d, 0x%x)\n", (*A), (*A), toto);
+    return 1;
+  }
+  if (((*A)) > 1023) {
+    DEBUG_BAD_COORD("Bad(1023) %x (%d, 0x%x)\n", (*A), (*A), toto);
+    return 1;
+  }
+  return 0;
 }
 
 static void RequestVdp1ToDraw() {
@@ -664,8 +671,13 @@ static int Vdp1NormalSpriteDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* 
   cmd->flip = (cmd->CMDCTRL & 0x30) >> 4;
   cmd->priority = 0;
 
-  CONVERTCMD(cmd->CMDXA);
-  CONVERTCMD(cmd->CMDYA);
+  if ( CONVERTCMD(&cmd->CMDXA) ||
+       CONVERTCMD(&cmd->CMDYA)) {
+         // damaged data
+         yabsys.vdp1cycles += 70;
+         return -1;
+       }
+
   cmd->CMDXA += regs->localX;
   cmd->CMDYA += regs->localY;
 
@@ -717,12 +729,16 @@ static int Vdp1ScaledSpriteDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* 
   cmd->flip = (cmd->CMDCTRL & 0x30) >> 4;
   cmd->priority = 0;
 
-  CONVERTCMD(cmd->CMDXA);
-  CONVERTCMD(cmd->CMDYA);
-  CONVERTCMD(cmd->CMDXB);
-  CONVERTCMD(cmd->CMDYB);
-  CONVERTCMD(cmd->CMDXC);
-  CONVERTCMD(cmd->CMDYC);
+  if ( CONVERTCMD(&cmd->CMDXA) ||
+       CONVERTCMD(&cmd->CMDYA) ||
+       CONVERTCMD(&cmd->CMDXB) ||
+       CONVERTCMD(&cmd->CMDYB) ||
+       CONVERTCMD(&cmd->CMDXC) ||
+       CONVERTCMD(&cmd->CMDYC)) {
+         // damaged data
+         yabsys.vdp1cycles += 70;
+         return -1;
+       }
 
   x = cmd->CMDXA;
   y = cmd->CMDYA;
@@ -879,14 +895,18 @@ static int Vdp1DistortedSpriteDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u
   cmd->flip = (cmd->CMDCTRL & 0x30) >> 4;
   cmd->priority = 0;
 
-  CONVERTCMD(cmd->CMDXA);
-  CONVERTCMD(cmd->CMDYA);
-  CONVERTCMD(cmd->CMDXB);
-  CONVERTCMD(cmd->CMDYB);
-  CONVERTCMD(cmd->CMDXC);
-  CONVERTCMD(cmd->CMDYC);
-  CONVERTCMD(cmd->CMDXD);
-  CONVERTCMD(cmd->CMDYD);
+  if ( CONVERTCMD(&cmd->CMDXA) ||
+       CONVERTCMD(&cmd->CMDYA) ||
+       CONVERTCMD(&cmd->CMDXB) ||
+       CONVERTCMD(&cmd->CMDYB) ||
+       CONVERTCMD(&cmd->CMDXC) ||
+       CONVERTCMD(&cmd->CMDYC) ||
+       CONVERTCMD(&cmd->CMDXD) ||
+       CONVERTCMD(&cmd->CMDYD)) {
+         // damaged data
+         yabsys.vdp1cycles += 70;
+         return 0;
+       }
 
   cmd->CMDXA += regs->localX;
   cmd->CMDYA += regs->localY;
@@ -921,14 +941,18 @@ static int Vdp1DistortedSpriteDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u
 static int Vdp1PolygonDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* back_framebuffer) {
   Vdp2 *varVdp2Regs = &Vdp2Lines[0];
 
-  CONVERTCMD(cmd->CMDXA);
-  CONVERTCMD(cmd->CMDYA);
-  CONVERTCMD(cmd->CMDXB);
-  CONVERTCMD(cmd->CMDYB);
-  CONVERTCMD(cmd->CMDXC);
-  CONVERTCMD(cmd->CMDYC);
-  CONVERTCMD(cmd->CMDXD);
-  CONVERTCMD(cmd->CMDYD);
+  if ( CONVERTCMD(&cmd->CMDXA) ||
+       CONVERTCMD(&cmd->CMDYA) ||
+       CONVERTCMD(&cmd->CMDXB) ||
+       CONVERTCMD(&cmd->CMDYB) ||
+       CONVERTCMD(&cmd->CMDXC) ||
+       CONVERTCMD(&cmd->CMDYC) ||
+       CONVERTCMD(&cmd->CMDXD) ||
+       CONVERTCMD(&cmd->CMDYD)) {
+         // damaged data
+         yabsys.vdp1cycles += 70;
+         return 0;
+       }
 
   cmd->CMDXA += regs->localX;
   cmd->CMDYA += regs->localY;
@@ -972,14 +996,19 @@ static int Vdp1PolylineDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* back
   cmd->h = 1;
   cmd->flip = 0;
 
-  CONVERTCMD(cmd->CMDXA);
-  CONVERTCMD(cmd->CMDYA);
-  CONVERTCMD(cmd->CMDXB);
-  CONVERTCMD(cmd->CMDYB);
-  CONVERTCMD(cmd->CMDXC);
-  CONVERTCMD(cmd->CMDYC);
-  CONVERTCMD(cmd->CMDXD);
-  CONVERTCMD(cmd->CMDYD);
+  if ( CONVERTCMD(&cmd->CMDXA) ||
+       CONVERTCMD(&cmd->CMDYA) ||
+       CONVERTCMD(&cmd->CMDXB) ||
+       CONVERTCMD(&cmd->CMDYB) ||
+       CONVERTCMD(&cmd->CMDXC) ||
+       CONVERTCMD(&cmd->CMDYC) ||
+       CONVERTCMD(&cmd->CMDXD) ||
+       CONVERTCMD(&cmd->CMDYD)) {
+         // damaged data
+         yabsys.vdp1cycles += 70;
+         return 0;
+       }
+
 
   cmd->CMDXA += regs->localX;
   cmd->CMDYA += regs->localY;
@@ -1010,10 +1039,15 @@ static int Vdp1LineDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* back_fra
   Vdp2 *varVdp2Regs = &Vdp2Lines[0];
 
 
-  CONVERTCMD(cmd->CMDXA);
-  CONVERTCMD(cmd->CMDYA);
-  CONVERTCMD(cmd->CMDXB);
-  CONVERTCMD(cmd->CMDYB);
+  if ( CONVERTCMD(&cmd->CMDXA) ||
+       CONVERTCMD(&cmd->CMDYA) ||
+       CONVERTCMD(&cmd->CMDXB) ||
+       CONVERTCMD(&cmd->CMDYB)) {
+         // damaged data
+         yabsys.vdp1cycles += 70;
+         return 0;
+       }
+
 
   cmd->CMDXA += regs->localX;
   cmd->CMDYA += regs->localY;
