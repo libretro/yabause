@@ -640,38 +640,75 @@ static void checkClipCmd(vdp1cmd_struct **sysClipCmd, vdp1cmd_struct **usrClipCm
 }
 
 static int getNormalCycles(vdp1cmd_struct *cmd) {
-  return cmd->w * cmd->h;
+  int rw = MAX(cmd->w, 1);
+  if (Vdp1Regs->TVMR & 0x1) rw >>= 1;
+  return rw * MAX(cmd->h, 1);
 }
 
 static int getScaledCycles(vdp1cmd_struct *cmd) {
-  int cmdW = cmd->w;
+  int cmdW = MAX(cmd->w, 1);
+   switch ((cmd->CMDPMOD >> 3) & 0x7) {
+    case 0:
+    case 1:
+      // 4 pixels per 16 bits
+      cmdW  = cmdW >> 2;
+      break;
+    case 2:
+    case 3:
+    case 4:
+      // 2 pixels per 16 bits
+      cmdW = cmdW >> 1;
+      break;
+    default:
+      break;
+  }
   int rh = cmd->CMDYD - cmd->CMDYA;
   int rw = cmd->CMDXC - cmd->CMDXC;
+  if (Vdp1Regs->TVMR & 0x1) rw >>= 1;
   if (((cmd->CMDPMOD>>12)&0x1) && (rw < cmd->w)) cmdW >>= 1; //HSS
-  return MAX(rw, cmdW) * rh;
+  return MAX(rw, cmdW) * MAX(rh, 1);
 }
 
 static int getDistortedCycles(vdp1cmd_struct *cmd) {
-  int rw = (sqrt((cmd->CMDXB-cmd->CMDXA)*(cmd->CMDXB-cmd->CMDXA) + (cmd->CMDYB-cmd->CMDYA)*(cmd->CMDYB-cmd->CMDYA))
-          + sqrt((cmd->CMDXC-cmd->CMDXD)*(cmd->CMDXC-cmd->CMDXD) + (cmd->CMDYC-cmd->CMDYD)*(cmd->CMDYC-cmd->CMDYD))
+  int rw = (abs(cmd->CMDXB-cmd->CMDXA)
+          + abs(cmd->CMDXC-cmd->CMDXD)
            )/2;
+  if (Vdp1Regs->TVMR & 0x1) rw >>= 1;
   int cmdW = cmd->w;
+  switch ((cmd->CMDPMOD >> 3) & 0x7) {
+   case 0:
+   case 1:
+     // 4 pixels per 16 bits
+     cmdW  = cmdW >> 2;
+     break;
+   case 2:
+   case 3:
+   case 4:
+     // 2 pixels per 16 bits
+     cmdW = cmdW >> 1;
+     break;
+   default:
+     break;
+ }
   if (((cmd->CMDPMOD>>12)&0x1) && (rw < cmd->w))  cmdW >>= 1; //HSS
   rw = MAX(cmdW, rw);
-  int rh = MAX(sqrt((cmd->CMDXA-cmd->CMDXD)*(cmd->CMDXA-cmd->CMDXD) + (cmd->CMDYA-cmd->CMDYD)*(cmd->CMDYA-cmd->CMDYD)),
-               sqrt((cmd->CMDXC-cmd->CMDXB)*(cmd->CMDXC-cmd->CMDXB) + (cmd->CMDYC-cmd->CMDYB)*(cmd->CMDYC-cmd->CMDYB))
+  int rh = MAX(abs(cmd->CMDYA-cmd->CMDYD),
+               abs(cmd->CMDYC-cmd->CMDYB)
               );
-  return rw * rh;
+
+
+  return (int)((float)MAX(rw, 1) * (float)MAX(rh, 1));
 }
 
 static int getPolygonCycles(vdp1cmd_struct *cmd) {
-  int rw = (sqrt((cmd->CMDXB-cmd->CMDXA)*(cmd->CMDXB-cmd->CMDXA) + (cmd->CMDYB-cmd->CMDYA)*(cmd->CMDYB-cmd->CMDYA))
-          + sqrt((cmd->CMDXC-cmd->CMDXD)*(cmd->CMDXC-cmd->CMDXD) + (cmd->CMDYC-cmd->CMDYD)*(cmd->CMDYC-cmd->CMDYD))
+  int rw = (abs(cmd->CMDXB-cmd->CMDXA)
+          + abs(cmd->CMDXC-cmd->CMDXD)
            )/2;
-  int rh = MAX(sqrt((cmd->CMDXA-cmd->CMDXD)*(cmd->CMDXA-cmd->CMDXD) + (cmd->CMDYA-cmd->CMDYD)*(cmd->CMDYA-cmd->CMDYD)),
-               sqrt((cmd->CMDXC-cmd->CMDXB)*(cmd->CMDXC-cmd->CMDXB) + (cmd->CMDYC-cmd->CMDYB)*(cmd->CMDYC-cmd->CMDYB))
+  if (Vdp1Regs->TVMR & 0x1) rw >>= 1;
+  int rh = MAX(abs(cmd->CMDYA-cmd->CMDYD),
+               abs(cmd->CMDYC-cmd->CMDYB)
               );
-  return rw * rh;
+  return (int)((float)MAX(rw, 1) * (float)MAX(rh, 1));
 }
 
 static int Vdp1NormalSpriteDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* back_framebuffer){
