@@ -36,7 +36,6 @@
 #include "ygl.h"
 #include "yui.h"
 
-#define CAP(L,A,M) (((A)<(L))?(L):(((A)>(M))?(M):(A)))
 // #define DEBUG_CMD_LIST
 // #define FRAMELOG printf
 #define FRAMELOG_CMD //printf
@@ -82,7 +81,7 @@ static void checkFBSync();
 
 #define DEBUG_BAD_COORD //YuiMsg
 
-static inline int CONVERTCMD(s32 *A) {
+int CONVERTCMD(s32 *A) {
   s32 toto = (*A);
   if (((*A)&0x400) != 0) (*A) |= 0xF800;
   else (*A) &= ~0xF800;
@@ -672,8 +671,8 @@ static int getScaledCycles(vdp1cmd_struct *cmd) {
     default:
       break;
   }
-  int rh = CAP(ly,cmd->CMDYD,hy) - CAP(ly,cmd->CMDYA,hy);
-  int rw = CAP(lx,cmd->CMDXB,hx) - CAP(ly,cmd->CMDXA,hx);
+  int rh = abs(cmd->CMDYD - cmd->CMDYA);
+  int rw = abs(cmd->CMDXB - cmd->CMDXA);
   if (Vdp1Regs->TVMR & 0x1) rw >>= 1;
   if (((cmd->CMDPMOD>>12)&0x1) && (rw < cmd->w)) cmdW >>= 1; //HSS
   return MAX(rw, cmdW) * MAX(rh, 1);
@@ -691,8 +690,8 @@ static int getDistortedCycles(vdp1cmd_struct *cmd) {
     hy = Vdp1Regs->userclipY2;
   }
 
-  int rw = (abs(CAP(lx,cmd->CMDXB,hx)-CAP(lx,cmd->CMDXA,hx))
-          + abs(CAP(lx,cmd->CMDXC,hx)-CAP(lx,cmd->CMDXD,hx))
+  int rw = (abs(cmd->CMDXB-cmd->CMDXA)
+          + abs(cmd->CMDXC-cmd->CMDXD)
            )/2;
   if (Vdp1Regs->TVMR & 0x1) rw >>= 1;
   int cmdW = cmd->w;
@@ -713,8 +712,8 @@ static int getDistortedCycles(vdp1cmd_struct *cmd) {
  }
   if (((cmd->CMDPMOD>>12)&0x1) && (rw < cmd->w))  cmdW >>= 1; //HSS
   rw = MAX(cmdW, rw);
-  int rh = MAX(abs(CAP(ly,cmd->CMDYA,hy)-CAP(ly,cmd->CMDYD,hy)),
-               abs(CAP(ly,cmd->CMDYC,hy)-CAP(ly,cmd->CMDYB,hy))
+  int rh = MAX(abs(cmd->CMDYA-cmd->CMDYD),
+               abs(cmd->CMDYC-cmd->CMDYB)
               );
 
   return (int)((float)MAX(rw, 1) * (float)MAX(rh, 1));
@@ -731,12 +730,12 @@ static int getPolygonCycles(vdp1cmd_struct *cmd) {
     ly = Vdp1Regs->userclipY1;
     hy = Vdp1Regs->userclipY2;
   }
-  int rw = (abs(CAP(lx,cmd->CMDXB,hx)-CAP(lx,cmd->CMDXA,hx))
-          + abs(CAP(lx,cmd->CMDXC,hx)-CAP(lx,cmd->CMDXD,hx))
+  int rw = (abs(cmd->CMDXB-cmd->CMDXA)
+          + abs(cmd->CMDXC-cmd->CMDXD)
            )/2;
   if (Vdp1Regs->TVMR & 0x1) rw >>= 1;
-  int rh = MAX(abs(CAP(ly,cmd->CMDYA,hy)-CAP(ly,cmd->CMDYD,hy)),
-               abs(CAP(ly,cmd->CMDYC,hy)-CAP(ly,cmd->CMDYB,hy))
+  int rh = MAX(abs(cmd->CMDYA-cmd->CMDYD),
+               abs(cmd->CMDYC-cmd->CMDYB)
               );
   return (int)((float)MAX(rw, 1) * (float)MAX(rh, 1));
 }
