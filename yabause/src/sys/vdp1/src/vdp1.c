@@ -360,7 +360,7 @@ void VideoDeInit(void) {
 //////////////////////////////////////////////////////////////////////////////
 
 void Vdp1Reset(void) {
-  YuiMsg("Reset Vdp1\n");
+   FRAMELOG("Reset Vdp1\n");
    Vdp1Regs->PTMR = 0;
    Vdp1Regs->MODR = 0x1000; // VDP1 Version 1
    Vdp1Regs->TVMR = 0;
