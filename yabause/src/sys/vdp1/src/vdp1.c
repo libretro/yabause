@@ -87,11 +87,11 @@ static inline int CONVERTCMD(s32 *A) {
   if (((*A)&0xF800) != 0) (*A) |= 0xF800;
   else (*A) &= ~0xF800;
   ((*A) = (s32)(s16)(*A));
-  if (((*A)) < -1024) {
+  if (((*A)) < -2048) {
     DEBUG_BAD_COORD("Bad(-1024) %x (%d, 0x%x)\n", (*A), (*A), toto);
     return 1;
   }
-  if (((*A)) > 1023) {
+  if (((*A)) > 2047) {
     DEBUG_BAD_COORD("Bad(1023) %x (%d, 0x%x)\n", (*A), (*A), toto);
     return 1;
   }
