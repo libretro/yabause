@@ -83,7 +83,10 @@ static void checkFBSync();
 
 int CONVERTCMD(s32 *A) {
   s32 toto = (*A);
-  if (((*A)&0x400) != 0) (*A) |= 0xF800;
+  if ((((*A)>>12)&0x1)^(((*A)>>11)&0x1) != 0) {
+    return 1;
+  }
+  if (((*A)>>11)&0x1) (*A) |= 0xF800;
   else (*A) &= ~0xF800;
   ((*A) = (s32)(s16)(*A));
   if (((*A)) < -2048) {
@@ -91,7 +94,7 @@ int CONVERTCMD(s32 *A) {
     return 1;
   }
   if (((*A)) > 2047) {
-    DEBUG_BAD_COORD("Bad(207) %x (%d, 0x%x)\n", (*A), (*A), toto);
+    DEBUG_BAD_COORD("Bad(2047) %x (%d, 0x%x)\n", (*A), (*A), toto);
     return 1;
   }
   return 0;
