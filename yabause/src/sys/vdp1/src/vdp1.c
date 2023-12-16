@@ -824,16 +824,30 @@ static int Vdp1ScaledSpriteDraw(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs, u8* 
   cmd->flip = (cmd->CMDCTRL & 0x30) >> 4;
   cmd->priority = 0;
 
-  if ( CONVERTCMD(&cmd->CMDXA) ||
-       CONVERTCMD(&cmd->CMDYA) ||
-       CONVERTCMD(&cmd->CMDXB) ||
-       CONVERTCMD(&cmd->CMDYB) ||
-       CONVERTCMD(&cmd->CMDXC) ||
-       CONVERTCMD(&cmd->CMDYC)) {
-         // damaged data
-         yabsys.vdp1cycles += 70;
-         return -1;
-       }
+  switch ((cmd->CMDCTRL & 0xF00) >> 8)
+  {
+    case 0x0:
+      if ( CONVERTCMD(&cmd->CMDXA) ||
+           CONVERTCMD(&cmd->CMDYA) ||
+           CONVERTCMD(&cmd->CMDXC) ||
+           CONVERTCMD(&cmd->CMDYC)) {
+             // damaged data
+             yabsys.vdp1cycles += 70;
+             return -1;
+           }
+       break;
+    default:
+      if ( CONVERTCMD(&cmd->CMDXA) ||
+           CONVERTCMD(&cmd->CMDYA) ||
+           CONVERTCMD(&cmd->CMDXB) ||
+           CONVERTCMD(&cmd->CMDYB)) {
+             // damaged data
+             yabsys.vdp1cycles += 70;
+             return -1;
+           }
+       break;
+  }
+
 
   x = cmd->CMDXA;
   y = cmd->CMDYA;
