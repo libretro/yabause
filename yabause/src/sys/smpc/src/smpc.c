@@ -779,7 +779,7 @@ static void SmpcSetTiming(void) {
          return;
       case 0x10:
           if (SmpcInternalVars->firstPeri == 1) {
-            if (yabsys.LineCount < (yabsys.VBlankLineCount + 3))
+            if ((yabsys.LineCount < (yabsys.VBlankLineCount + 3)) && (yabsys.LineCount >= yabsys.VBlankLineCount))
               intback_wait_for_vblankout = 1;
             else
               SmpcInternalVars->timing = 30;
@@ -799,7 +799,7 @@ static void SmpcSetTiming(void) {
             else if ((SmpcRegs->IREG[0] == 0) && (SmpcRegs->IREG[1] & 0x8))
             {
                //peripheral only
-               if (yabsys.LineCount < (yabsys.VBlankLineCount + 3))
+               if ((yabsys.LineCount < (yabsys.VBlankLineCount + 3)) && (yabsys.LineCount >= yabsys.VBlankLineCount))
                  intback_wait_for_vblankout = 1;
                else
                  SmpcInternalVars->timing = 30;
