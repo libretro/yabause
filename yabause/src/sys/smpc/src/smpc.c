@@ -662,20 +662,18 @@ static void processCommand(void) {
 void SmpcExec(s32 t) {
   if (intback_wait_for_vblankout != 0)
   {
-    if (yabsys.LineCount == 0)
+    if (yabsys.LineCount == yabsys.MaxLineCount - 1)
     {
       SmpcInternalVars->timing = t;
       intback_wait_for_vblankout = 0;
     }
   } else {
     if (SmpcInternalVars->timing > 0) {
-
       SmpcInternalVars->timing -= t;
       if (SmpcInternalVars->timing <= 0) {
         processCommand();
       }
     }
-
   }
 
 }
@@ -781,7 +779,10 @@ static void SmpcSetTiming(void) {
          return;
       case 0x10:
           if (SmpcInternalVars->firstPeri == 1) {
-            intback_wait_for_vblankout = 1;
+            if (yabsys.LineCount < (yabsys.VBlankLineCount + 3))
+              intback_wait_for_vblankout = 1;
+            else
+              SmpcInternalVars->timing = 30;
           } else {
             // Calculate timing based on what data is being retrieved
 
@@ -798,7 +799,10 @@ static void SmpcSetTiming(void) {
             else if ((SmpcRegs->IREG[0] == 0) && (SmpcRegs->IREG[1] & 0x8))
             {
                //peripheral only
-               intback_wait_for_vblankout = 1;
+               if (yabsys.LineCount < (yabsys.VBlankLineCount + 3))
+                 intback_wait_for_vblankout = 1;
+               else
+                 SmpcInternalVars->timing = 30;
             }
             else SmpcInternalVars->timing = 1;
          }
