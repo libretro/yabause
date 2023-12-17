@@ -56,10 +56,7 @@ int isSkipped = 0;
 
 u8 Vdp2ColorRamUpdated[512] = {0};
 u8 Vdp2ColorRamToSync[512] = {0};
-u8 A0_Updated = 0;
-u8 A1_Updated = 0;
-u8 B0_Updated = 0;
-u8 B1_Updated = 0;
+u8 Vdp2Ram_Updated = 0;
 
 struct CellScrollData cell_scroll_data[270];
 Vdp2 Vdp2Lines[270];
@@ -74,59 +71,25 @@ int g_frame_count = 0;
 
 u8 Vdp2RamIsUpdated(void)
 {
-  return A0_Updated | (A1_Updated << 1) | (B0_Updated << 2) | (B1_Updated << 3);
+  return Vdp2Ram_Updated;
 }
 
 static void vdp2RamAccessCheck(SH2_struct *context, u32 addr, int update){
-  int A0BlockedAccess = 0;
-  int A1BlockedAccess = 0;
-  int B0BlockedAccess = 0;
-  int B1BlockedAccess = 0;
+  int BlockedAccess = 1;
 
   if (context == NULL) return;
 
-  if (addr >= 0 && addr < (0x20000<<(Vdp2Regs->VRSIZE>>15))){
-    A0BlockedAccess = 1;
-    for (int i = 0; i<8; i++) {
-      if(Vdp2External.AC_VRAM[0][i] == 0xE) A0BlockedAccess = 0;
-    }
-    A0_Updated |= update;
+  int bank = Vdp2GetBank(Vdp2Regs, addr);
+
+  for (int i = 0; i<8; i++) {
+    if(Vdp2External.AC_VRAM[bank][i] == 0xE) BlockedAccess = 0;
   }
-  else if (addr >= (0x20000<<(Vdp2Regs->VRSIZE>>15)) && addr < (0x40000<<(Vdp2Regs->VRSIZE>>15))){
-    A1BlockedAccess = 1;
-    for (int i = 0; i<8; i++) {
-      if(Vdp2External.AC_VRAM[1][i] == 0xE) A1BlockedAccess = 0;
-    }
-    A1_Updated |= update;
-  }
-  else if (addr >= (0x40000<<(Vdp2Regs->VRSIZE>>15)) && addr < (0x60000<<(Vdp2Regs->VRSIZE>>15))){
-    B0BlockedAccess = 1;
-    for (int i = 0; i<8; i++) {
-      if(Vdp2External.AC_VRAM[2][i] == 0xE) B0BlockedAccess = 0;
-    }
-    B0_Updated |= update;
-  }
-  else if (addr >= (0x60000<<(Vdp2Regs->VRSIZE>>15)) && addr < (0x80000<<(Vdp2Regs->VRSIZE>>15))){
-    B1BlockedAccess = 1;
-    for (int i = 0; i<8; i++) {
-      if(Vdp2External.AC_VRAM[3][i] == 0xE) B1BlockedAccess = 0;
-    }
-    B1_Updated |= update;
-  }
+  Vdp2Ram_Updated = 1;
 
   if ((context != NULL) && (yabsys.LineCount < yabsys.VBlankLineCount) && (Vdp2Regs->TVSTAT & 0x0004 == 0)) {
     //Visible area, cpu shall have a valid time slot, otherwise it is blocked
-    if (A0BlockedAccess) {
-      SH2SetCPUConcurrency(context, VDP2_RAM_A0_LOCK);
-    }
-    if (A1BlockedAccess) {
-      SH2SetCPUConcurrency(context, VDP2_RAM_A1_LOCK);
-    }
-    if (B0BlockedAccess) {
-      SH2SetCPUConcurrency(context, VDP2_RAM_B0_LOCK);
-    }
-    if (B1BlockedAccess) {
-      SH2SetCPUConcurrency(context, VDP2_RAM_B1_LOCK);
+    if (BlockedAccess) {
+      SH2SetCPUConcurrency(context, VDP2_RAM_A0_LOCK << bank);
     }
   }
 }
@@ -184,7 +147,7 @@ void FASTCALL Vdp2RamWriteByte(SH2_struct *context, u8* mem, u32 addr, u8 val) {
 //////////////////////////////////////////////////////////////////////////////
 
 void FASTCALL Vdp2RamWriteWord(SH2_struct *context, u8* mem, u32 addr, u16 val) {
-  int A0BlockedAccess = 0;
+  int BlockedAccess = 0;
   int A1BlockedAccess = 0;
   int B0BlockedAccess = 0;
   int B1BlockedAccess = 0;
@@ -1320,7 +1283,7 @@ int Vdp2LoadState(const void * stream, UNUSED int version, int size)
    // Read internal variables
    MemStateRead((void *)&Vdp2Internal, sizeof(Vdp2Internal_struct), 1, stream);
 
-   A0_Updated = A1_Updated = B0_Updated = B1_Updated = 1;
+   Vdp2Ram_Updated = 1;
 
    if(VIDCore) VIDCore->Resize(0,0,0,0,0);
 

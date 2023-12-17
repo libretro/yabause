@@ -2182,6 +2182,7 @@ void VIDCSVdp2Draw(void)
 //////////////////////////////////////////////////////////////////////////////
 
 #define VDP2_DRAW_LINE 0
+extern u8 Vdp2Ram_Updated;
 static void VIDCSVdp2DrawScreens(void)
 {
   u64 before;
@@ -2210,10 +2211,7 @@ LOG_ASYN("===================================\n");
 
 LOG_ASYN("*********************************\n");
 
-  A0_Updated = 0;
-  A1_Updated = 0;
-  B0_Updated = 0;
-  B1_Updated = 0;
+  Vdp2Ram_Updated = 0;
 }
 
 //////////////////////////////////////////////////////////////////////////////
