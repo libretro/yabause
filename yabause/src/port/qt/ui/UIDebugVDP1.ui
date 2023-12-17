@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>715</width>
+    <width>982</width>
     <height>367</height>
    </rect>
   </property>
@@ -16,18 +16,18 @@
   <layout class="QVBoxLayout" name="verticalLayout_12">
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_6">
-      <item>
-       <widget class="QGroupBox" name="gbCommandRaw">
-        <property name="title">
-         <string>Jump list</string>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout_10">
-         <item>
-          <widget class="QListWidget" name="lwCommandRaw"/>
-         </item>
-        </layout>
-       </widget>
-      </item>
+     <item>
+      <widget class="QGroupBox" name="gbCommandRaw">
+       <property name="title">
+        <string>Jump list</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_10">
+        <item>
+         <widget class="QListWidget" name="lwCommandRaw"/>
+        </item>
+       </layout>
+      </widget>
+     </item>
      <item>
       <widget class="QGroupBox" name="gbCommandList">
        <property name="title">
