@@ -2023,33 +2023,43 @@ void Vdp1DebugCommand(u32 number, char *outstring)
          {
             case 0x0:
                AddString(outstring, "Only two coordinates\r\n");
+               invalid = CONVERTCMD(&cmd.CMDXC) || CONVERTCMD(&cmd.CMDYC);
                break;
             case 0x5:
                AddString(outstring, "Upper-left\r\n");
+               invalid = CONVERTCMD(&cmd.CMDXB) || CONVERTCMD(&cmd.CMDYB);
                break;
             case 0x6:
                AddString(outstring, "Upper-center\r\n");
+               invalid = CONVERTCMD(&cmd.CMDXB) || CONVERTCMD(&cmd.CMDYB);
                break;
             case 0x7:
                AddString(outstring, "Upper-right\r\n");
+               invalid = CONVERTCMD(&cmd.CMDXB) || CONVERTCMD(&cmd.CMDYB);
                break;
             case 0x9:
                AddString(outstring, "Center-left\r\n");
+               invalid = CONVERTCMD(&cmd.CMDXB) || CONVERTCMD(&cmd.CMDYB);
                break;
             case 0xA:
                AddString(outstring, "Center-center\r\n");
+               invalid = CONVERTCMD(&cmd.CMDXB) || CONVERTCMD(&cmd.CMDYB);
                break;
             case 0xB:
                AddString(outstring, "Center-right\r\n");
+               invalid = CONVERTCMD(&cmd.CMDXB) || CONVERTCMD(&cmd.CMDYB);
                break;
             case 0xC:
                AddString(outstring, "Lower-left\r\n");
+               invalid = CONVERTCMD(&cmd.CMDXB) || CONVERTCMD(&cmd.CMDYB);
                break;
             case 0xE:
                AddString(outstring, "Lower-center\r\n");
+               invalid = CONVERTCMD(&cmd.CMDXB) || CONVERTCMD(&cmd.CMDYB);
                break;
             case 0xF:
                AddString(outstring, "Lower-right\r\n");
+               invalid = CONVERTCMD(&cmd.CMDXB) || CONVERTCMD(&cmd.CMDYB);
                break;
             default: break;
          }
@@ -2057,8 +2067,7 @@ void Vdp1DebugCommand(u32 number, char *outstring)
          AddString(outstring, "CMDXA = 0x%04x, CMDYA = 0x%04x\r\n", cmd.CMDXA&0xFFFF, cmd.CMDYA&0xFFFF);
          AddString(outstring, "CMDXB = 0x%04x, CMDYB = 0x%04x\r\n", cmd.CMDXB&0xFFFF, cmd.CMDYB&0xFFFF);
          AddString(outstring, "CMDXC = 0x%04x, CMDYC = 0x%04x\r\n", cmd.CMDXC&0xFFFF, cmd.CMDYC&0xFFFF);
-         invalid = CONVERTCMD(&cmd.CMDXA) || CONVERTCMD(&cmd.CMDYA);
-         invalid |= CONVERTCMD(&cmd.CMDXB) || CONVERTCMD(&cmd.CMDYB);
+         invalid |= CONVERTCMD(&cmd.CMDXA) || CONVERTCMD(&cmd.CMDYA);
          if (invalid) {
            AddString(outstring, "Invalid coordinates - Not drawn\n");
          } else {
