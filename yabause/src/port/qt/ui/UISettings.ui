@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ui version="4.1">
+<ui version="4.0">
  <class>UISettings</class>
  <widget class="QDialog" name="UISettings">
   <property name="geometry">
@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>522</width>
-    <height>944</height>
+    <height>731</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -887,11 +887,11 @@
         <widget class="QComboBox" name="cb68kCore"/>
        </item>
        <item>
-         <widget class="QCheckBox" name="cbUseCache">
-          <property name="text">
-           <string>Use SH2 cache - Experimental</string>
-          </property>
-         </widget>
+        <widget class="QCheckBox" name="cbUseCache">
+         <property name="text">
+          <string>Use SH2 cache - Experimental</string>
+         </property>
+        </widget>
        </item>
        <item>
         <spacer>
@@ -1179,7 +1179,7 @@
   </connection>
  </connections>
  <buttongroups>
-  <buttongroup name="bgShowMenubar"/>
   <buttongroup name="bgShowToolbar"/>
+  <buttongroup name="bgShowMenubar"/>
  </buttongroups>
 </ui>
