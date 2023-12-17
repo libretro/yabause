@@ -20,6 +20,7 @@
 #include "CommonDialogs.h"
 
 #include <QImageWriter>
+#include <QScrollBar>
 #include <QGraphicsPixmapItem>
 #include <sstream>
 
@@ -118,6 +119,9 @@ UIDebugVDP1::UIDebugVDP1( QWidget* p )
 
    lwCommandList->clear();
    lwCommandRaw->clear();
+
+    connect(lwCommandList->verticalScrollBar(), &QScrollBar::valueChanged,lwCommandRaw->verticalScrollBar(), &QScrollBar::setValue);
+    connect(lwCommandRaw->verticalScrollBar(), &QScrollBar::valueChanged,lwCommandList->verticalScrollBar(), &QScrollBar::setValue);
 
   Vdp1CommandsCount cmdCount;
   memset(&cmdCount, 0, sizeof(Vdp1CommandsCount));
