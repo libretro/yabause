@@ -580,7 +580,7 @@ void Vdp2StartVisibleLine(void) {
     }
     nbAddrToUpdate = 0;
   }
-  if(yabsys.LineCount == yabsys.MaxLineCount - 2) {
+  if(yabsys.LineCount == yabsys.MaxLineCount - 1) {
     YglUpdateColorRam();
   }
   #endif
