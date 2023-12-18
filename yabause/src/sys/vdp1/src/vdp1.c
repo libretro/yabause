@@ -647,16 +647,22 @@ static int getNormalCycles(vdp1cmd_struct *cmd) {
   return rw * MAX(cmd->h, 1);
 }
 
+#define CAP(L,A,H) (((A)<(L))?(L):(((A)>(H))?(H):(A)))
+
 static int getScaledCycles(vdp1cmd_struct *cmd) {
-  int lx = -1024;
-  int ly = -1024;
-  int hx = 1023;
-  int hy = 1023;
+  int ax = cmd->CMDXA;
+  int ay = cmd->CMDYA;
+  int bx = cmd->CMDXB;
+  int dy = cmd->CMDYD;
   if (!(cmd->CMDPMOD & 0x800)) {
-    lx = Vdp1Regs->userclipX1;
-    hx = Vdp1Regs->userclipX2;
-    ly = Vdp1Regs->userclipY1;
-    hy = Vdp1Regs->userclipY2;
+    int lx = Vdp1Regs->userclipX1;
+    int hx = Vdp1Regs->userclipX2;
+    int ly = Vdp1Regs->userclipY1;
+    int hy = Vdp1Regs->userclipY2;
+    ax = CAP(lx,ax,hx);
+    bx = CAP(lx,bx,hx);
+    ay = CAP(ly,ay,hy);
+    dy = CAP(ly,dy,hy);
   }
   int cmdW = MAX(cmd->w, 1);
    switch ((cmd->CMDPMOD >> 3) & 0x7) {
@@ -674,27 +680,39 @@ static int getScaledCycles(vdp1cmd_struct *cmd) {
     default:
       break;
   }
-  int rh = abs(cmd->CMDYD - cmd->CMDYA);
-  int rw = abs(cmd->CMDXB - cmd->CMDXA);
+  int rh = abs(dy - ay);
+  int rw = abs(bx - ax);
   if (Vdp1Regs->TVMR & 0x1) rw >>= 1;
   if (((cmd->CMDPMOD>>12)&0x1) && (rw < cmd->w)) cmdW >>= 1; //HSS
   return MAX(rw, cmdW) * MAX(rh, 1);
 }
 
 static int getDistortedCycles(vdp1cmd_struct *cmd) {
-  int lx = -1024;
-  int ly = -1024;
-  int hx = 1023;
-  int hy = 1023;
+  int ax = cmd->CMDXA;
+  int ay = cmd->CMDYA;
+  int bx = cmd->CMDXB;
+  int by = cmd->CMDYB;
+  int cx = cmd->CMDXC;
+  int cy = cmd->CMDYC;
+  int dx = cmd->CMDXD;
+  int dy = cmd->CMDYD;
   if (!(cmd->CMDPMOD & 0x800)) {
-    lx = Vdp1Regs->userclipX1;
-    hx = Vdp1Regs->userclipX2;
-    ly = Vdp1Regs->userclipY1;
-    hy = Vdp1Regs->userclipY2;
+    int lx = Vdp1Regs->userclipX1;
+    int hx = Vdp1Regs->userclipX2;
+    int ly = Vdp1Regs->userclipY1;
+    int hy = Vdp1Regs->userclipY2;
+    ax = CAP(lx,ax,hx);
+    bx = CAP(lx,bx,hx);
+    cx = CAP(lx,cx,hx);
+    dx = CAP(lx,dx,hx);
+    ay = CAP(ly,ay,hy);
+    by = CAP(ly,by,hy);
+    cy = CAP(ly,cy,hy);
+    dy = CAP(ly,dy,hy);
   }
 
-  int rw = (abs(cmd->CMDXB-cmd->CMDXA)
-          + abs(cmd->CMDXC-cmd->CMDXD)
+  int rw = (abs(bx-ax)
+          + abs(cx-dx)
            )/2;
   if (Vdp1Regs->TVMR & 0x1) rw >>= 1;
   int cmdW = cmd->w;
@@ -715,8 +733,8 @@ static int getDistortedCycles(vdp1cmd_struct *cmd) {
  }
   if (((cmd->CMDPMOD>>12)&0x1) && (rw < cmd->w))  cmdW >>= 1; //HSS
   rw = MAX(cmdW, rw);
-  int rh = MAX(abs(cmd->CMDYA-cmd->CMDYD),
-               abs(cmd->CMDYC-cmd->CMDYB)
+  int rh = MAX(abs(ay-dy),
+               abs(cy-by)
               );
 
   return (int)((float)MAX(rw, 1) * (float)MAX(rh, 1));
