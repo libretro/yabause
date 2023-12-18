@@ -225,7 +225,7 @@ SHADER_VERSION_COMPUTE
 "};\n"
 
 "layout(local_size_x = "Stringify(LOCAL_SIZE_X)", local_size_y = "Stringify(LOCAL_SIZE_Y)") in;\n"
-"layout(rgba8, binding = 0) writeonly uniform image2D outSurface;\n"
+"layout(rgba8, binding = 0) uniform image2D outSurface;\n"
 "layout(rgba8, binding = 1) writeonly uniform image2D meshSurface;\n"
 "layout(rgba8, binding = 2) readonly uniform image2D FBSurface;\n"
 "layout(std430, binding = 3) readonly buffer VDP1RAM { uint Vdp1Ram[]; };\n"
@@ -546,6 +546,7 @@ SHADER_VERSION_COMPUTE
 "  ivec2 index = ivec2((texel.x*"Stringify(NB_COARSE_RAST_X)")/size.x, (texel.y*"Stringify(NB_COARSE_RAST_Y)")/size.y);\n"
 "  ivec2 syslimit = sysClip;\n"
 "  ivec4 userlimit = usrClip;\n"
+"  finalColor = imageLoad(outSurface, ivec2(texel));\n"
 "  uint lindex = index.y*"Stringify(NB_COARSE_RAST_X)"+ index.x;\n"
 "  uint cmdIndex = lindex * "Stringify(QUEUE_SIZE)"u;\n"
 
