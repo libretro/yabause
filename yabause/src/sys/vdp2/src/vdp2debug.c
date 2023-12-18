@@ -1513,7 +1513,7 @@ void Vdp2DebugStatsSprite(char *outstring, int *isenabled)
       break;
   }
   AddString(outstring, "VDP1 Framebuffer Data Format = %s\r\n", Vdp2Regs->SPCTL & 0x20 ? "RGB and palette" : "Palette only");
-  AddString(outstring, "Erased Area: EWLR 0x%x EWRR 0x%x\n");
+  AddString(outstring, "Erased Area: EWLR 0x%x EWRR 0x%x\n", Vdp1Regs->EWLR, Vdp1Regs->EWRR);
   {
     int shift = ((Vdp1Regs->TVMR & 0x1) == 1)?4:3;
     int limits[4] = {0};
