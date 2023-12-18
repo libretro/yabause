@@ -74,7 +74,7 @@ u8 Vdp2RamIsUpdated(void)
   return Vdp2Ram_Updated;
 }
 
-static void vdp2RamAccessCheck(SH2_struct *context, u32 addr, int update){
+static void vdp2RamAccessCheck(SH2_struct *context, u32 addr){
   int BlockedAccess = 1;
 
   if (context == NULL) return;
@@ -84,10 +84,9 @@ static void vdp2RamAccessCheck(SH2_struct *context, u32 addr, int update){
   for (int i = 0; i<8; i++) {
     if(Vdp2External.AC_VRAM[bank][i] == 0xE) BlockedAccess = 0;
   }
-  Vdp2Ram_Updated = 1;
 
   if ((context != NULL) && (yabsys.LineCount < yabsys.VBlankLineCount) && (Vdp2Regs->TVSTAT & 0x0004 == 0)) {
-    //Visible area, cpu shall have a valid time slot, otherwise it is blocked
+    // Visible area, cpu shall have a valid time slot, otherwise it is blocked
     if (BlockedAccess) {
       SH2SetCPUConcurrency(context, VDP2_RAM_A0_LOCK << bank);
     }
@@ -100,7 +99,7 @@ u8 FASTCALL Vdp2RamReadByte(SH2_struct *context, u8* mem, u32 addr) {
   else
     addr &= 0x7FFFF;
 
-   vdp2RamAccessCheck(context, addr, 0);
+   vdp2RamAccessCheck(context, addr);
 
    return T1ReadByte(mem, addr);
 }
@@ -113,7 +112,7 @@ u16 FASTCALL Vdp2RamReadWord(SH2_struct *context, u8* mem, u32 addr) {
   else
     addr &= 0x7FFFF;
 
-    vdp2RamAccessCheck(context, addr, 0);
+    vdp2RamAccessCheck(context, addr);
 
    return T1ReadWord(mem, addr);
 }
@@ -126,7 +125,7 @@ u32 FASTCALL Vdp2RamReadLong(SH2_struct *context, u8* mem, u32 addr) {
   else
     addr &= 0x7FFFF;
 
-   vdp2RamAccessCheck(context, addr, 0);
+   vdp2RamAccessCheck(context, addr);
 
    return T1ReadLong(mem, addr);
 }
@@ -139,8 +138,8 @@ void FASTCALL Vdp2RamWriteByte(SH2_struct *context, u8* mem, u32 addr, u8 val) {
   else
     addr &= 0x7FFFF;
 
-    vdp2RamAccessCheck(context, addr, 1);
-
+    vdp2RamAccessCheck(context, addr);
+   Vdp2Ram_Updated = 1;
    T1WriteByte(mem, addr, val);
 }
 
@@ -156,8 +155,8 @@ void FASTCALL Vdp2RamWriteWord(SH2_struct *context, u8* mem, u32 addr, u16 val) 
   else
     addr &= 0x7FFFF;
 
-   vdp2RamAccessCheck(context, addr, 1);
-
+   vdp2RamAccessCheck(context, addr);
+   Vdp2Ram_Updated = 1;
    T1WriteWord(mem, addr, val);
 }
 
@@ -169,8 +168,8 @@ void FASTCALL Vdp2RamWriteLong(SH2_struct *context, u8* mem, u32 addr, u32 val) 
   else
     addr &= 0x7FFFF;
 
-    vdp2RamAccessCheck(context, addr, 1);
-
+    vdp2RamAccessCheck(context, addr);
+    Vdp2Ram_Updated = 1;
    T1WriteLong(mem, addr, val);
 }
 
