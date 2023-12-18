@@ -984,24 +984,10 @@ void UIYabause::on_aViewDebugSCSPChan_triggered()
       UIDebugSCSPChan(this).exec();
 }
 
-void UIYabause::on_aViewDebugSCSPDSP_triggered()
-{
-	YabauseLocker locker( mYabauseThread );
-	UIDebugSCSPDSP( mYabauseThread, this ).exec();
-}
-
 void UIYabause::on_aViewDebugMemoryEditor_triggered()
 {
 	YabauseLocker locker( mYabauseThread );
 	UIMemoryEditor( UIDebugCPU::PROC_MSH2, mYabauseThread, this ).exec();
-}
-
-void UIYabause::on_aTraceLogging_triggered( bool toggled )
-{
-#ifdef SH2_TRACE
-	SH2SetInsTracing(toggled? 1 : 0);
-#endif
-	return;
 }
 
 void UIYabause::on_aHelpCompatibilityList_triggered()

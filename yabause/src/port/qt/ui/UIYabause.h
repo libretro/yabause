@@ -171,10 +171,8 @@ protected slots:
 	void on_aViewDebugM68K_triggered();
         void on_aViewDebugSCSP_triggered();
         void on_aViewDebugSCSPChan_triggered();
-	void on_aViewDebugSCSPDSP_triggered();
 	void on_aViewDebugSCUDSP_triggered();
 	void on_aViewDebugMemoryEditor_triggered();
-	void on_aTraceLogging_triggered( bool toggled );
 	// help menu
 	void on_aHelpReport_triggered();
 	void on_aHelpCompatibilityList_triggered();
