@@ -58,7 +58,7 @@ static const char *smpcfilename = NULL;
 
 //////////////////////////////////////////////////////////////////////////////
 
-int SmpcInit(u8 regionid, int clocksync, u32 basetime, const char *smpcpath, u8 languageid) {
+int SmpcInit(u8 regionid, u32 basetime, const char *smpcpath, u8 languageid) {
    if ((SmpcRegsT = (u8 *) calloc(1, sizeof(Smpc))) == NULL)
       return -1;
 
@@ -69,7 +69,6 @@ int SmpcInit(u8 regionid, int clocksync, u32 basetime, const char *smpcpath, u8 
 
    SmpcInternalVars->regionsetting = regionid;
    SmpcInternalVars->regionid = regionid;
-   SmpcInternalVars->clocksync = clocksync;
    SmpcInternalVars->basetime = basetime ? basetime : time(NULL);
    SmpcInternalVars->languageid = languageid;
 
@@ -293,11 +292,11 @@ static void SmpcINTBACKStatus(void) {
    //SmpcRegs->OREG[0] = 0x0 | (SmpcInternalVars->resd << 6);  // goto setclock/setlanguage screen
 
    // write time data in OREG1-7
-   if (SmpcInternalVars->clocksync) {
-      tmp = SmpcInternalVars->basetime + ((u64)framecounter * 1001 / 60000);
-   } else {
-      tmp = time(NULL);
-   }
+   if (yabsys.IsPal)
+         tmp = SmpcInternalVars->basetime + ((u64)yabsys.frame_count * 1000 / 50000);
+   else
+    tmp = SmpcInternalVars->basetime + ((u64)yabsys.frame_count * 1001 / 60000);
+
 #ifdef WIN32
    memcpy(&times, localtime(&tmp), sizeof(times));
 #elif defined(_arch_dreamcast) || defined(PSP)
