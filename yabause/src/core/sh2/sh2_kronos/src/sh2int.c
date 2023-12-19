@@ -147,23 +147,25 @@ static u16 FASTCALL FetchVram(SH2_struct *context, u32 addr)
   return SH2MappedMemoryReadWord(context, addr);
 }
 
-static const int const cacheMask[8] = {
+static const int const cacheMask[9] = {
   0x3FFFF, //Bios
   0x7FFFF, //LowWram
   0x1FFFFF, //CS0
   0x7FFFF, //SoundRam
   0x3FFFF, //VDP1Ram
+  0x3FFFF, //VDP2Ram
   0x7FFFF, //HighWRam
   0x7FF, //Data Array
   0x7FFFF //Undecoded
 };
 
-static const int const cacheSize[8] = {
+static const int const cacheSize[9] = {
   0x40000, //Bios
   0x80000, //LowWram
   0x200000, //CS0
   0x80000, //SoundRam
   0x40000, //VDP1Ram
+  0x40000, //VDP2Ram
   0x80000, //HighWRam
   0x800, //Data Array
   0x80000 //Undecoded
@@ -178,7 +180,9 @@ static opcode_func cache_slave_cs0[0x200000];
 static opcode_func cache_master_sound[0x80000];
 static opcode_func cache_slave_sound[0x80000];
 static opcode_func cache_master_vdp1[0x40000];
+static opcode_func cache_master_vdp2[0x40000];
 static opcode_func cache_slave_vdp1[0x40000];
+static opcode_func cache_slave_vdp2[0x40000];
 static opcode_func cache_master_hiram[0x80000];
 static opcode_func cache_slave_hiram[0x80000];
 static opcode_func cache_master_array[0x800];
@@ -186,13 +190,14 @@ static opcode_func cache_slave_array[0x800];
 static opcode_func cache_master_undecoded[0x80000];
 static opcode_func cache_slave_undecoded[0x80000];
 
-static opcode_func* cacheCode[2][8] = {
+static opcode_func* cacheCode[2][9] = {
   {
     cache_master_bios,
     cache_master_lowram,
     cache_master_cs0,
     cache_master_sound,
     cache_master_vdp1,
+    cache_master_vdp2,
     cache_master_hiram,
     cache_master_array,
     cache_master_undecoded
@@ -203,6 +208,7 @@ static opcode_func* cacheCode[2][8] = {
     cache_slave_cs0,
     cache_slave_sound,
     cache_slave_vdp1,
+    cache_slave_vdp2,
     cache_slave_hiram,
     cache_slave_array,
     cache_slave_undecoded
@@ -331,22 +337,22 @@ int SH2KronosInterpreterInit(void)
 
    int i,j;
 
-   for (i = 0; i < 7; i++) {
+   for (i = 0; i < 8; i++) {
        for (j = 0; j < cacheSize[i]; j++) {
            cacheCode[0][i][j] = decode;
            cacheCode[1][i][j] = decode;
        }
    }
 
-   for (j = 0; j < cacheSize[7]; j++) {
-       cacheCode[0][7][j] = SH2undecoded;
-       cacheCode[1][7][j] = SH2undecoded;
+   for (j = 0; j < cacheSize[8]; j++) {
+       cacheCode[0][8][j] = SH2undecoded;
+       cacheCode[1][8][j] = SH2undecoded;
    }
 
    for (i = 0; i < 0x1000; i++)
    {
       krfetchlist[i] = FetchInvalid;
-      cacheId[i] = 7;
+      cacheId[i] = 8;
       if (((i>>8) == 0x0) || ((i>>8) == 0x2)) {
         switch (i&0xFF)
         {
@@ -370,6 +376,10 @@ int SH2KronosInterpreterInit(void)
             krfetchlist[i] = SH2MappedMemoryReadWord;
             cacheId[i] = 4;
             break;
+          case 0x05e: // PGA Tour 97
+            krfetchlist[i] = SH2MappedMemoryReadWord;
+            cacheId[i] = 5;
+            break;
           case 0x060: // High Work Ram
           case 0x061:
           case 0x062:
@@ -387,17 +397,17 @@ int SH2KronosInterpreterInit(void)
           case 0x06E:
           case 0x06F:
             krfetchlist[i] = SH2MappedMemoryReadWord;
-            cacheId[i] = 5;
+            cacheId[i] = 6;
             break;
           default:
             krfetchlist[i] = FetchInvalid;
-            cacheId[i] = 7;
+            cacheId[i] = 8;
             break;
         }
      }
      if ((i>>8) == 0xC) {
        krfetchlist[i] = SH2MappedMemoryReadWord;
-       cacheId[i] = 6;
+       cacheId[i] = 7;
      }
    }
    cacheCode[0][0][0x7d600>>1] = BUPDetectInit;
