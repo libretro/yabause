@@ -953,7 +953,7 @@ void UIYabause::on_aViewDebugVDP1_triggered()
 void UIYabause::on_aViewDebugVDP2_triggered()
 {
 	YabauseLocker locker( mYabauseThread );
-	UIDebugVDP2( NULL ).exec();
+	UIDebugVDP2( NULL, &locker ).exec();
 }
 
 void UIYabause::on_aHelpReport_triggered()

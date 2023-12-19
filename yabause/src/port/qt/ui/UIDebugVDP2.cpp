@@ -27,12 +27,7 @@ typedef struct {
 	QPlainTextEdit *pte;
 } debugItem_s;
 
-UIDebugVDP2::UIDebugVDP2( QWidget* p )
-	: QDialog( p )
-{
-	// setup dialog
-	setupUi( this );
-	viewer = new UIDebugVDP2Viewer( this );
+void UIDebugVDP2::updateScreenInfos() {
 	debugItem_s items[8] = {
 		{Vdp2DebugStatsNBG0, NBG0Debug, pteNBG0Info},
 		{Vdp2DebugStatsNBG1, NBG1Debug, pteNBG1Info},
@@ -62,6 +57,16 @@ UIDebugVDP2::UIDebugVDP2( QWidget* p )
 	QtYabause::retranslateWidget( this );
 }
 
+UIDebugVDP2::UIDebugVDP2( QWidget* p , YabauseLocker *lock)
+	: QDialog( p )
+{
+	// setup dialog
+	setupUi( this );
+	mLock = lock;
+	viewer = new UIDebugVDP2Viewer( this );
+	updateScreenInfos();
+}
+
 bool UIDebugVDP2::updateInfoDisplay(void (*debugStats)(char *, int *), QGroupBox *cb, QPlainTextEdit *pte)
 {
    char tempstr[2048] = {0};
@@ -85,4 +90,11 @@ bool UIDebugVDP2::updateInfoDisplay(void (*debugStats)(char *, int *), QGroupBox
 void UIDebugVDP2::on_pbViewer_clicked()
 {
 	viewer->exec();
+}
+
+void UIDebugVDP2::on_pbNextButton_clicked() {
+  if (mLock != NULL) {
+    mLock->step();
+    updateScreenInfos();
+  }
 }

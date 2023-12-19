@@ -22,19 +22,24 @@
 #include "ui_UIDebugVDP2.h"
 #include "UIDebugVDP2Viewer.h"
 #include "../QtYabause.h"
+#include "UIYabause.h"
 
 class UIDebugVDP2 : public QDialog, public Ui::UIDebugVDP2
 {
 	Q_OBJECT
 public:
-	UIDebugVDP2( QWidget* parent = 0 );
+	UIDebugVDP2( QWidget* parent = 0 , YabauseLocker *lock = 0);
 
 protected:
    bool updateInfoDisplay(void (*debugStats)(char *, int *), QGroupBox *cb, QPlainTextEdit *pte);
 	 UIDebugVDP2Viewer *viewer;
 protected slots:
    void on_pbViewer_clicked();
+ 	 void on_pbNextButton_clicked ();
 
+private:
+	YabauseLocker* mLock;
+	void updateScreenInfos();
 };
 
 #endif // UIDEBUGVDP2_H
