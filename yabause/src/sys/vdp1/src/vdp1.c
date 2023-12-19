@@ -486,6 +486,7 @@ static void updateFBCRVBE() {
 }
 
 static void Vdp1TryDraw(void) {
+  if ((yabsys.LineCount >= yabsys.MaxLineCount-2) && (yabsys.LineCount <= yabsys.MaxLineCount-1)) return;
   if ((oldNeedVdp1draw == 0) && (needVdp1draw != 0)) {
     FRAMELOG("Shift EDSR\n");
     Vdp1Regs->EDSR >>= 1;
