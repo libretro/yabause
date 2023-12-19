@@ -947,7 +947,7 @@ void UIYabause::on_aViewDebugSSH2_triggered()
 void UIYabause::on_aViewDebugVDP1_triggered()
 {
 	YabauseLocker locker( mYabauseThread );
-	UIDebugVDP1( NULL ).exec();
+	UIDebugVDP1( NULL , &locker).exec();
 }
 
 void UIYabause::on_aViewDebugVDP2_triggered()

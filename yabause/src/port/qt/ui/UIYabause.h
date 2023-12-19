@@ -51,6 +51,11 @@ public:
 		if ( mRunning && !mPaused )
 			mThread->pauseEmulation( true, false );
 	}
+	void step(){
+		if ( mThread->emulationPaused() ) {
+			YabauseExec();
+		}
+	}
 	~YabauseLocker()
 	{
 		if ( ( mRunning && !mPaused ) /*|| mForceRun*/ )

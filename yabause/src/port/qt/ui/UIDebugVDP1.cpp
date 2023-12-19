@@ -108,54 +108,68 @@ std::string buildInfoLabel(Vdp1CommandsCount& cmdCount)
 
 
 } // namespace ''
-UIDebugVDP1::UIDebugVDP1( QWidget* p )
-	: QDialog( p )
-{
-	// setup dialog
-	setupUi( this );
 
-   QGraphicsScene *scene=new QGraphicsScene(this);
-   gvTexture->setScene(scene);
-
-   lwCommandList->clear();
-   lwCommandRaw->clear();
-
-    connect(lwCommandList->verticalScrollBar(), &QScrollBar::valueChanged,lwCommandRaw->verticalScrollBar(), &QScrollBar::setValue);
-    connect(lwCommandRaw->verticalScrollBar(), &QScrollBar::valueChanged,lwCommandList->verticalScrollBar(), &QScrollBar::setValue);
-
+void UIDebugVDP1::fillCommandList() {
   Vdp1CommandsCount cmdCount;
   memset(&cmdCount, 0, sizeof(Vdp1CommandsCount));
 
-   if (Vdp1Ram)
-   {
-      for (int i=0;;i++)
-      {
-         char *string;
-         u32 addr = Vdp1DebugGetCommandAddr(i);
-         if ((string = Vdp1DebugGetCommandNumberName(addr)) == NULL)
-            break;
+  lwCommandList->clear();
+  lwCommandRaw->clear();
+  if (Vdp1Ram)
+  {
+    for (int i=0;;i++)
+    {
+       char *string;
+       u32 addr = Vdp1DebugGetCommandAddr(i);
+       if ((string = Vdp1DebugGetCommandNumberName(addr)) == NULL)
+          break;
 
-         Vdp1CountCommands(i, cmdCount);
-         lwCommandList->addItem(QtYabause::translate(string));
-         string = Vdp1DebugGetCommandRaw(addr);
-         lwCommandRaw->addItem(string);
-         free(string);
-      }
-   }
-
-   vdp1texture = NULL;
-   vdp1RawTexture = NULL;
-   vdp1RawNumBytes = 0;
-   vdp1texturew = vdp1textureh = 1;
-   pbSaveBitmap->setEnabled(vdp1texture ? true : false);
-   pbSaveRawSprite->setEnabled(vdp1RawTexture ? true : false);
+       Vdp1CountCommands(i, cmdCount);
+       lwCommandList->addItem(QtYabause::translate(string));
+       string = Vdp1DebugGetCommandRaw(addr);
+       lwCommandRaw->addItem(string);
+       free(string);
+    }
+  }
 
   QString infoLabelText(QString::fromStdString(buildInfoLabel(cmdCount)));
   lVDP1Info->setText(infoLabelText);
   lVDP1Info->setToolTip(infoLabelText);
 
-	// retranslate widgets
-	QtYabause::retranslateWidget( this );
+  if (lwCommandList->count() > 0) {
+    syncOnVdp1Entry(0);
+  } else {
+    pteCommandInfo->clear();
+    if (vdp1texture)
+       free(vdp1texture);
+    if (vdp1RawTexture)
+       free(vdp1RawTexture);
+    vdp1texture = NULL;
+    vdp1RawTexture = NULL;
+    vdp1RawNumBytes = 0;
+    vdp1texturew = vdp1textureh = 1;
+    pbSaveBitmap->setEnabled(vdp1texture ? true : false);
+    pbSaveRawSprite->setEnabled(vdp1RawTexture ? true : false);
+  }
+  // retranslate widgets
+  QtYabause::retranslateWidget( this );
+}
+
+UIDebugVDP1::UIDebugVDP1( QWidget* p , YabauseLocker* lock)
+	: QDialog( p )
+{
+	// setup dialog
+	setupUi( this );
+  // setWindowFlags()
+  mLock = lock;
+
+   QGraphicsScene *scene=new QGraphicsScene(this);
+   gvTexture->setScene(scene);
+
+    connect(lwCommandList->verticalScrollBar(), &QScrollBar::valueChanged,lwCommandRaw->verticalScrollBar(), &QScrollBar::setValue);
+    connect(lwCommandRaw->verticalScrollBar(), &QScrollBar::valueChanged,lwCommandList->verticalScrollBar(), &QScrollBar::setValue);
+
+    fillCommandList();
 }
 
 UIDebugVDP1::~UIDebugVDP1()
@@ -257,4 +271,11 @@ void UIDebugVDP1::on_pbSaveBitmap_clicked ()
 	if ( !s.isEmpty() )
 		if ( !img.save( s ) )
 			CommonDialogs::information( QtYabause::translate( "An error occured while writing file." ) );
+}
+
+void UIDebugVDP1::on_pbNextButton_clicked() {
+  if (mLock != NULL) {
+    mLock->step();
+    fillCommandList();
+  }
 }
