@@ -91,11 +91,6 @@ namespace QtYabause
 		static constexpr char const* const ScreenshotsFormat = "General/ScreenshotsFormat";
 	};
 
-	namespace VolatileSettingKeys
-	{
-		static constexpr char const* const CartridgePath = "Cartridge/Path";
-	};
-
 	namespace DefaultPaths
 	{
 		QString Screenshots();

@@ -338,7 +338,6 @@ void UISettings::tbBrowse_clicked()
 		{
 			requestFile( QtYabause::translate( "Open a cartridge file" ), leCartridge, QString(), pathProposal);
 		}
-		updateVolatileSettings();
 	}
 	else if ( tb == tbMemory )
 		requestNewFile( QtYabause::translate( "Choose a memory file" ), leMemory );
@@ -503,7 +502,6 @@ void UISettings::on_cbCartridge_currentIndexChanged( int id )
 	lRegion->setVisible(mCartridgeTypes[id].pathFlag);
 	cbRegion->setVisible(mCartridgeTypes[id].pathFlag);
 	selectedCartridgeType = id;
-	updateVolatileSettings();
 }
 
 void UISettings::loadCores()
@@ -758,7 +756,6 @@ void UISettings::loadSettings()
 	leMpegROM->setText( s->value( "MpegROM/Path" ).toString() );
 	checkBox_extended_internal_backup->setChecked(s->value("Memory/ExtendMemory").toBool());
   	//the path needs to go into the volatile settings since we keep only one cartridge path there to keep things simple.
-	updateVolatileSettings();
 
 	// input
 	cbInput->setCurrentIndex( cbInput->findData( s->value( "Input/PerCore", QtYabause::defaultPERCore().id ).toInt() ) );
@@ -866,6 +863,7 @@ void UISettings::saveSettings()
 	s->setValue( "Memory/Path", leMemory->text() );
 	s->setValue( "MpegROM/Path", leMpegROM->text() );
   s->setValue("Memory/ExtendMemory", checkBox_extended_internal_backup->isChecked());
+	s->setValue("Cartridge/Path", leCartridge->text());
 
 	// input
 	s->setValue( "Input/PerCore", cbInput->itemData( cbInput->currentIndex() ).toInt() );
@@ -912,10 +910,4 @@ QString UISettings::getCartridgePathSettingsKey(int cartridgeType) const
 	}
 	name = name.remove(' ');
 	return "Cartridge/Path/" + name;
-}
-
-void UISettings::updateVolatileSettings() const
-{
-	auto* const volatileSettings = QtYabause::volatileSettings();
-	volatileSettings->setValue(QtYabause::VolatileSettingKeys::CartridgePath, leCartridge->text());
 }
