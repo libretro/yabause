@@ -799,6 +799,11 @@ void UISettings::loadSettings()
 	}
 }
 
+void UISettings::on_cbAutostart_toggled(bool enable){
+	VolatileSettings * const vs = QtYabause::volatileSettings();
+	vs->setValue( "autostart", enable);
+}
+
 void UISettings::saveSettings()
 {
 	// get settings pointer
