@@ -87,8 +87,10 @@ bool YabauseThread::pauseEmulation( bool pause, bool reset )
 
 	if ( mPause ) {
 		ScspMuteAudio(SCSP_MUTE_SYSTEM);
-		killTimer( mTimerId );
-		mTimerId = -1;
+		if (mTimerId != -1) {
+			killTimer( mTimerId );
+			mTimerId = -1;
+		}
 	}
 	else {
     resetSyncVideo();
