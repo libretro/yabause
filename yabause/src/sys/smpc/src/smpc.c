@@ -671,8 +671,8 @@ void SmpcExec(s32 t) {
     if (yabsys.LineCount == yabsys.MaxLineCount - 1)
     {
       intback_wait_for_vblankout = 0;
+      SmpcInternalVars->timing = 272;
       SMPCLOG("Intback after vblank out\n");
-      processCommand();
     }
   }
   if (SmpcInternalVars->timing > 0) {
@@ -776,7 +776,7 @@ static void SmpcSetTiming(void) {
               SmpcRegs->SF = 1;
             }
             else
-              SmpcInternalVars->timing = 30;
+              SmpcInternalVars->timing = 272;
           } else {
             // Calculate timing based on what data is being retrieved
 
@@ -803,7 +803,7 @@ static void SmpcSetTiming(void) {
                  SmpcRegs->SF = 1;
                }
                else
-                 SmpcInternalVars->timing = 30;
+                 SmpcInternalVars->timing = 272;
             }
             else SmpcInternalVars->timing = 1;
          }
