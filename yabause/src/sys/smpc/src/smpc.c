@@ -54,7 +54,7 @@ static int intback_wait_for_vblankout = 0;
 static u8 bustmp = 0;
 static const char *smpcfilename = NULL;
 
-//#define SMPCLOG printf
+// #define SMPCLOG printf
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -499,29 +499,33 @@ static void SmpcINTBACKPeripheral(void) {
 static void SmpcINTBACK(void) {
   if (SmpcInternalVars->firstPeri == 1) {
      //in a continous mode.
+      SMPCLOG("Continue on command SF %d\n", SmpcRegs->SF);
       SmpcINTBACKPeripheral();
-      SmpcRegs->SF = 0;
+      SmpcRegs->SF = (SmpcRegs->SR & 0x40)==0;
       SmpcRegs->OREG[31] = 0x10;
+      SMPCLOG("Continue on command now SF is %d\n", SmpcRegs->SF);
       ScuSendSystemManager();
       return;
   }
   if (SmpcRegs->IREG[0] != 0x0) {
       // Return non-peripheral data
+      SMPCLOG("non peripheral require controlers %d\n", (SmpcRegs->IREG[1]&0x8)!=0);
       SmpcInternalVars->firstPeri = ((SmpcRegs->IREG[1] & 0x8) >> 3);
       for(int i=0;i<31;i++) SmpcRegs->OREG[i] = 0xff;
       m_pmode = (SmpcRegs->IREG[0]>>4);
       SmpcINTBACKStatus();
       SmpcRegs->SR = 0x40 | (SmpcInternalVars->firstPeri << 5); // the low nibble is undefined(or 0xF)
-      SmpcRegs->SF = 0;
+      SmpcRegs->SF = (SmpcRegs->IREG[1]&0x8)!=0;
       ScuSendSystemManager();
       return;
   }
   if (SmpcRegs->IREG[1] & 0x8) {
+      SMPCLOG("controlers only\n");
       SmpcInternalVars->firstPeri = ((SmpcRegs->IREG[1] & 0x8) >> 3);
       SmpcINTBACKPeripheral();
       SmpcRegs->OREG[31] = 0x10;
       ScuSendSystemManager();
-      SmpcRegs->SF = 0;
+      SmpcRegs->SF = (SmpcRegs->SR & 0x40)==0;
   }
   else {
     SMPCLOG("Nothing to do\n");
@@ -578,7 +582,6 @@ static void SmpcRESDISA(void) {
 
 //////////////////////////////////////////////////////////////////////////////
 static void processCommand(void) {
-  intback_wait_for_vblankout = 0;
   switch(SmpcRegs->COMREG) {
      case 0x0:
         SMPCLOG("smpc\t: MSHON not implemented\n");
@@ -659,22 +662,26 @@ static void processCommand(void) {
 }
 
 void SmpcExec(s32 t) {
+  if ((SmpcRegs->COMREG == 0x10) && (yabsys.LineCount == yabsys.VBlankLineCount) && (SmpcRegs->SF != 0)) {
+      SMPCLOG("Intback Abort\n");
+      SmpcRegs->SF = 0; //End command without interrupt - not enough time
+  }
   if (intback_wait_for_vblankout != 0)
   {
     if (yabsys.LineCount == yabsys.MaxLineCount - 1)
     {
-      SmpcInternalVars->timing = t;
       intback_wait_for_vblankout = 0;
-    }
-  } else {
-    if (SmpcInternalVars->timing > 0) {
-      SmpcInternalVars->timing -= t;
-      if (SmpcInternalVars->timing <= 0) {
-        processCommand();
-      }
+      SMPCLOG("Intback after vblank out\n");
+      processCommand();
     }
   }
-
+  if (SmpcInternalVars->timing > 0) {
+    SmpcInternalVars->timing -= t;
+    if (SmpcInternalVars->timing <= 0) {
+        SMPCLOG("Command due to timing %d\n", SmpcInternalVars->timing);
+        processCommand();
+    }
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -715,23 +722,6 @@ u8 FASTCALL SmpcReadByte(SH2_struct *context, u8* mem, u32 addr) {
        return SmpcRegsT[addr >> 1];
      }
    }
-
-   if ((addr >= 0x21) && (addr <= 0x5D)) { //OREG[0-30]
-     if ((SmpcRegs->SF == 1) && (SmpcRegs->COMREG == 0x10)){
-       //Output register [0-30] are read but a intback command is pending
-       //Force the command processing
-       processCommand();
-     }
-   }
-
-   if ((addr == 0x5F) && (addr <= 0x5D)) { //OREG[31]
-     if (SmpcRegs->SF == 1){
-       //Output register 31 is read but a command is pending
-       //Force the command processing
-       processCommand();
-     }
-   }
-
 
    SMPCLOG("Read SMPC[0x%x] = 0x%x\n",addr, SmpcRegsT[addr >> 1]);
    return SmpcRegsT[addr >> 1];
@@ -778,8 +768,13 @@ static void SmpcSetTiming(void) {
          return;
       case 0x10:
           if (SmpcInternalVars->firstPeri == 1) {
-            if ((yabsys.LineCount < (yabsys.VBlankLineCount + 3)) && (yabsys.LineCount >= yabsys.VBlankLineCount))
+            //Continue
+            if (yabsys.LineCount >= yabsys.VBlankLineCount) {
+              SMPCLOG("Continue on read for peri 1 - wait for vblankout\n");
+              SmpcInternalVars->timing = 0;
               intback_wait_for_vblankout = 1;
+              SmpcRegs->SF = 1;
+            }
             else
               SmpcInternalVars->timing = 30;
           } else {
@@ -788,18 +783,25 @@ static void SmpcSetTiming(void) {
             if ((SmpcRegs->IREG[0] == 0x01) && (SmpcRegs->IREG[1] & 0x8))
             {
                //status followed by peripheral data
+               // A voir s'il faut attendre Vblankout
                SmpcInternalVars->timing = 18; //4.5ms => 18
             }
             else if ((SmpcRegs->IREG[0] == 0x01) && ((SmpcRegs->IREG[1] & 0x8) == 0))
             {
                //status only
+               //Pas de lecture des periph, peut se faire tout le temps
                SmpcInternalVars->timing = 18;
             }
             else if ((SmpcRegs->IREG[0] == 0) && (SmpcRegs->IREG[1] & 0x8))
             {
                //peripheral only
-               if ((yabsys.LineCount < (yabsys.VBlankLineCount + 3)) && (yabsys.LineCount >= yabsys.VBlankLineCount))
+               //In case of Vblank - wait for Vblankout
+               if (yabsys.LineCount >= yabsys.VBlankLineCount) {
+                 SMPCLOG("Continue on read - wait for vblankout\n");
+                 SmpcInternalVars->timing = 0;
                  intback_wait_for_vblankout = 1;
+                 SmpcRegs->SF = 1;
+               }
                else
                  SmpcInternalVars->timing = 30;
             }
@@ -872,12 +874,12 @@ void FASTCALL SmpcWriteByte(SH2_struct *context, u8* mem, u32 addr, u8 val) {
       SmpcRegsT[0xF] = val&0x1F;
    } else
      SmpcRegsT[addr >> 1] = val;
-
-      SMPCLOG("Write SMPC[0x%x] = 0x%x\n",addr, SmpcRegsT[addr >> 1]);
+      SMPCLOG("Write SMPC[0x%x] = 0x%x SF = 0x%x (%d %d) %d\n",addr, SmpcRegsT[addr >> 1], SmpcRegs->SF, yabsys.LineCount, yabsys.DecilineCount, yabsys.VBlankLineCount);
 
    switch(addr) {
       case 0x01: // Maybe an INTBACK continue/break request
-         if (SmpcInternalVars->firstPeri != 0)
+         if (SmpcRegs->SF ==0) SMPCLOG("Request a continue/break but no intback on going\n");
+         if ((SmpcInternalVars->firstPeri != 0) && (SmpcRegs->SF !=0))
          {
             if (SmpcRegs->IREG[0] & 0x40) {
                // Break
@@ -900,6 +902,7 @@ void FASTCALL SmpcWriteByte(SH2_struct *context, u8* mem, u32 addr, u8 val) {
          return;
       case 0x63:
          SmpcRegs->SF &= val;
+         SMPCLOG("Limit SF = 0%x (0%x)\n", SmpcRegs->SF, val);
          return;
       case 0x75: // PDR1
          // FIX ME (should support other peripherals)
