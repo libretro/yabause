@@ -501,7 +501,7 @@ static void SmpcINTBACK(void) {
      //in a continous mode.
       SMPCLOG("Continue on command SF %d\n", SmpcRegs->SF);
       SmpcINTBACKPeripheral();
-      SmpcRegs->SF = (SmpcRegs->SR & 0x40)==0;
+      SmpcRegs->SF = (SmpcRegs->SR & 0x20)==0;
       SmpcRegs->OREG[31] = 0x10;
       SMPCLOG("Continue on command now SF is %d\n", SmpcRegs->SF);
       ScuSendSystemManager();
@@ -525,7 +525,7 @@ static void SmpcINTBACK(void) {
       SmpcINTBACKPeripheral();
       SmpcRegs->OREG[31] = 0x10;
       ScuSendSystemManager();
-      SmpcRegs->SF = (SmpcRegs->SR & 0x40)==0;
+      SmpcRegs->SF = (SmpcRegs->SR & 0x20)==0;
   }
   else {
     SMPCLOG("Nothing to do\n");
