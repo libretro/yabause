@@ -879,7 +879,7 @@ void FASTCALL SmpcWriteByte(SH2_struct *context, u8* mem, u32 addr, u8 val) {
    switch(addr) {
       case 0x01: // Maybe an INTBACK continue/break request
          if (SmpcRegs->SF ==0) SMPCLOG("Request a continue/break but no intback on going\n");
-         if ((SmpcInternalVars->firstPeri != 0) && (SmpcRegs->SF !=0))
+         if ((SmpcInternalVars->firstPeri != 0) && (SmpcInternalVars->timing <= 0))
          {
             if (SmpcRegs->IREG[0] & 0x40) {
                // Break
