@@ -659,9 +659,10 @@ static void processCommand(void) {
 }
 
 void SmpcExec(s32 t) {
-  if ((SmpcRegs->COMREG == 0x10) && (yabsys.LineCount == yabsys.VBlankLineCount) && (SmpcRegs->SF != 0)) {
-      SMPCLOG("Intback Abort\n");
+  if ((SmpcRegs->COMREG == 0x10) && (yabsys.LineCount == yabsys.VBlankLineCount) && (SmpcRegs->SF != 0) && (SmpcInternalVars->timing>0)) {
+      SMPCLOG("Intback Abort %d\n", SmpcInternalVars->timing);
       SmpcRegs->SF = 0; //End command without interrupt - not enough time
+      SmpcInternalVars->timing = -1;
   }
   if (intback_wait_for_vblankout != 0)
   {
@@ -675,7 +676,7 @@ void SmpcExec(s32 t) {
   if (SmpcInternalVars->timing > 0) {
     SmpcInternalVars->timing -= t;
     if (SmpcInternalVars->timing <= 0) {
-        SMPCLOG("Command due to timing %d\n", SmpcInternalVars->timing);
+        SMPCLOG("Command due to timing %d (%d)\n", SmpcInternalVars->timing, yabsys.LineCount);
         processCommand();
     }
   }
@@ -698,7 +699,7 @@ u8 FASTCALL SmpcReadByte(SH2_struct *context, u8* mem, u32 addr) {
    if (addr == 0x063) {
      bustmp = SmpcRegsT[addr >> 1] & 0xFE;
      bustmp |= SmpcRegs->SF;
-     SMPCLOG("Read SMPC[0x63] 0x%x\n", bustmp);
+     SMPCLOG("Read SMPC[0x63] 0x%x %d\n", bustmp, yabsys.LineCount);
      return bustmp;
    }
    if (addr == 0x77){
@@ -772,8 +773,9 @@ static void SmpcSetTiming(void) {
               intback_wait_for_vblankout = 1;
               SmpcRegs->SF = 1;
             }
-            else
-              SmpcInternalVars->timing = 272;
+            else {
+              SmpcInternalVars->timing = 15;
+            }
           } else {
             // Calculate timing based on what data is being retrieved
 
@@ -799,10 +801,11 @@ static void SmpcSetTiming(void) {
                  intback_wait_for_vblankout = 1;
                  SmpcRegs->SF = 1;
                }
-               else
+               else {
                  SmpcInternalVars->timing = 272;
+               }
             }
-            else SmpcInternalVars->timing = 1;
+            else SmpcInternalVars->timing = 10;
          }
          SmpcRegs->OREG[31] = 0x10;
          return;
