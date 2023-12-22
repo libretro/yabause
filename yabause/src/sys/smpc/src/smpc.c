@@ -502,7 +502,6 @@ static void SmpcINTBACK(void) {
       SMPCLOG("Continue on command SF %d\n", SmpcRegs->SF);
       SmpcINTBACKPeripheral();
       SmpcRegs->SF = (SmpcRegs->SR & 0x20)!=0;
-      SmpcRegs->OREG[31] = 0x10;
       SMPCLOG("Continue on command now SF is %d\n", SmpcRegs->SF);
       ScuSendSystemManager();
       return;
@@ -523,13 +522,11 @@ static void SmpcINTBACK(void) {
       SMPCLOG("controlers only\n");
       SmpcInternalVars->firstPeri = ((SmpcRegs->IREG[1] & 0x8) >> 3);
       SmpcINTBACKPeripheral();
-      SmpcRegs->OREG[31] = 0x10;
       ScuSendSystemManager();
       SmpcRegs->SF = (SmpcRegs->SR & 0x20)!=0;
   }
   else {
     SMPCLOG("Nothing to do\n");
-    SmpcRegs->OREG[31] = 0x10;
     SmpcRegs->SF = 0;
   }
 }
@@ -723,7 +720,7 @@ u8 FASTCALL SmpcReadByte(SH2_struct *context, u8* mem, u32 addr) {
      }
    }
 
-   SMPCLOG("Read SMPC[0x%x] = 0x%x\n",addr, SmpcRegsT[addr >> 1]);
+   SMPCLOG("Read SMPC[0x%x] = 0x%x (%d %d)\n",addr, SmpcRegsT[addr >> 1], yabsys.LineCount, yabsys.DecilineCount);
    return SmpcRegsT[addr >> 1];
 }
 
@@ -797,7 +794,7 @@ static void SmpcSetTiming(void) {
                //peripheral only
                //In case of Vblank - wait for Vblankout
                if (yabsys.LineCount >= yabsys.VBlankLineCount) {
-                 SMPCLOG("Continue on read - wait for vblankout\n");
+                 SMPCLOG("Peripheral only - wait for vblankout\n");
                  SmpcInternalVars->timing = 0;
                  intback_wait_for_vblankout = 1;
                  SmpcRegs->SF = 1;
@@ -807,6 +804,7 @@ static void SmpcSetTiming(void) {
             }
             else SmpcInternalVars->timing = 1;
          }
+         SmpcRegs->OREG[31] = 0x10;
          return;
       case 0x17:
          SmpcInternalVars->timing = 1;
@@ -874,7 +872,7 @@ void FASTCALL SmpcWriteByte(SH2_struct *context, u8* mem, u32 addr, u8 val) {
       SmpcRegsT[0xF] = val&0x1F;
    } else
      SmpcRegsT[addr >> 1] = val;
-      SMPCLOG("Write SMPC[0x%x] = 0x%x SF = 0x%x (%d %d) %d\n",addr, SmpcRegsT[addr >> 1], SmpcRegs->SF, yabsys.LineCount, yabsys.DecilineCount, yabsys.VBlankLineCount);
+      SMPCLOG("Write SMPC[0x%x] = 0x%x SF = 0x%x (%d %d) %d \n",addr, SmpcRegsT[addr >> 1], SmpcRegs->SF, yabsys.LineCount, yabsys.DecilineCount, yabsys.VBlankLineCount);
 
    switch(addr) {
       case 0x01: // Maybe an INTBACK continue/break request
