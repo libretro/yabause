@@ -668,7 +668,7 @@ void SmpcExec(s32 t) {
     if (yabsys.LineCount == yabsys.MaxLineCount - 1)
     {
       intback_wait_for_vblankout = 0;
-      SmpcInternalVars->timing = 272;
+      SmpcInternalVars->timing = 1;
       SMPCLOG("Intback after vblank out\n");
     }
   }
