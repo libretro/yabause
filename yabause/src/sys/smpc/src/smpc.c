@@ -659,11 +659,6 @@ static void processCommand(void) {
 }
 
 void SmpcExec(s32 t) {
-  if ((SmpcRegs->COMREG == 0x10) && (yabsys.LineCount == yabsys.VBlankLineCount) && (SmpcRegs->SF != 0) && (SmpcInternalVars->timing>0)) {
-      SMPCLOG("Intback Abort %d\n", SmpcInternalVars->timing);
-      SmpcRegs->SF = 0; //End command without interrupt - not enough time
-      SmpcInternalVars->timing = -1;
-  }
   if (intback_wait_for_vblankout != 0)
   {
     if (yabsys.LineCount == yabsys.MaxLineCount - 1)
@@ -687,6 +682,11 @@ void SmpcExec(s32 t) {
 
 
 void SmpcINTBACKEnd(void) {
+  if ((SmpcRegs->COMREG == 0x10) && (SmpcRegs->SF != 0) && (SmpcInternalVars->timing>0)) {
+      SMPCLOG("Intback Abort %d\n", SmpcInternalVars->timing);
+      SmpcRegs->SF = 0; //End command without interrupt - not enough time
+      SmpcInternalVars->timing = -1;
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
