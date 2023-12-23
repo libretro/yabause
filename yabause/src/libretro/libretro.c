@@ -51,7 +51,7 @@ static char addon_cart_path[PATH_MAX];
 static char game_basename[128];
 
 static int game_width  = 320;
-static int game_height = 240;
+static int game_height = 224;
 static int game_interlace;
 
 static int window_width;
@@ -732,8 +732,9 @@ void YuiSwapBuffers(void)
    int prev_game_height = game_height;
    game_width = _Ygl->width;
    game_height = _Ygl->height;
-   if (resolution_need_update || (prev_game_width != game_width) || (prev_game_height != game_height))
-      retro_reinit_av_info();
+   if (resolution_need_update || (prev_game_width != game_width) || (prev_game_height != game_height)) {
+     retro_reinit_av_info();
+   }
    audio_size = soundlen;
    frame_expected--;
    video_cb(RETRO_HW_FRAME_BUFFER_VALID, game_width, game_height, 0);
@@ -1172,9 +1173,9 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
    info->timing.sample_rate    = SAMPLERATE;
    info->geometry.base_width   = base_width;
    info->geometry.base_height  = base_height;
-   info->geometry.max_width    = window_width;
+   info->geometry.max_width    = window_width; //OpenGL surface
    info->geometry.max_height   = window_height;
-   info->geometry.aspect_ratio = (retro_get_region() == RETRO_REGION_NTSC) ? 4.0 / 3.0 : 5.0 / 4.0;
+   info->geometry.aspect_ratio = 4.0 / 3.0;
    if(yabsys.isRotated == 1)
    {
       environ_cb(RETRO_ENVIRONMENT_SET_ROTATION, &yabsys.isRotated);

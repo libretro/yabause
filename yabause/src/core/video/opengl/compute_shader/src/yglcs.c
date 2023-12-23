@@ -213,7 +213,7 @@ void VIDCSRender(Vdp2 *varVdp2Regs) {
    glDisable(GL_BLEND);
 
    glBindVertexArray(_Ygl->vao);
-
+#ifndef __LIBRETRO__
    switch(modeScreen) {
      case 0:
        w = (dar>par)?(double)GlHeight*par:GlWidth;
@@ -237,7 +237,12 @@ void VIDCSRender(Vdp2 *varVdp2Regs) {
         break;
     }
     scale = MAX(w/_Ygl->rwidth, h/_Ygl->rheight);
-
+#else
+  //Libretro is taking care to the resize
+  w = _Ygl->width;
+  h = _Ygl->height;
+  x = y = 0;
+#endif
    glViewport(0, 0, GlWidth, GlHeight);
 
    glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->default_fbo);
@@ -394,23 +399,19 @@ void VIDCSRender(Vdp2 *varVdp2Regs) {
     }
   }
 
-#ifdef __LIBRETRO__
-  glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->default_fbo);
-#else
   glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->original_fbo);
-#endif
+
   glDrawBuffers(NB_RENDER_LAYER, &DrawBuffers[0]);
   glClearBufferfi(GL_DEPTH_STENCIL, 0, 0, 0);
 
   YglBlitTexture( prioscreens, modescreens, isRGB, isBlur, isPerline, isShadow, lncl_draw, GetCSVDP1fb, winS_draw, winS_mode_draw, win0_draw, win0_mode_draw, win1_draw, win1_mode_draw, win_op_draw, useLineColorOffset, varVdp2Regs);
   srcTexture = _Ygl->original_fbotex[0];
-#ifndef __LIBRETRO__
+
    int scali = (int)(scale);
    glViewport(x, y, w, h);
    glScissor(x, y, w-scali, h-scali);
    glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->default_fbo);
    YglBlitFramebuffer(srcTexture, _Ygl->width, _Ygl->height, w, h);
-#endif
 
   finishCSRender();
   return;
