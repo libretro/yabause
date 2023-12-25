@@ -48,12 +48,10 @@ protected:
 	bool showFPS;
 	QMutex mMutex;
 	bool mPause;
-	int mTimerId;
 	int mInit;
 
 	void deInitEmulation();
 	void resetYabauseConf();
-	void timerEvent( QTimerEvent* );
 
 
 public slots:
@@ -72,7 +70,6 @@ signals:
 	void pause( bool paused );
 	void reset();
 	void toggleEmulateMouse( bool enable, bool show );
-	void loopEnded();
 };
 
 #endif // YABAUSETHREAD_H

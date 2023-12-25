@@ -21,6 +21,8 @@
 #include "YabauseGL.h"
 #include "QtYabause.h"
 #include <QKeyEvent>
+#include <QApplication>
+
 
 YabauseGL::YabauseGL( ) : QOpenGLWindow()
 {
@@ -53,6 +55,20 @@ YabauseGL::YabauseGL( ) : QOpenGLWindow()
 
   format.setProfile(QSurfaceFormat::CoreProfile);
   setFormat(format);
+  mPause = true;
+}
+
+void YabauseGL::requestFrame() {
+  QApplication::postEvent(this, new FrameRequest());
+}
+
+void YabauseGL::pause(bool pause) {
+  if (pause != mPause) {
+    mPause = pause;
+    if (!mPause) {
+      requestFrame();
+    }
+  }
 }
 
 void YabauseGL::initializeGL()
@@ -63,6 +79,20 @@ void YabauseGL::initializeGL()
   glInitialized();
 }
 
+bool YabauseGL::event(QEvent *event)
+{
+    switch (event->type()) {
+    case FrameRequest::mType:
+        if ( !mPause ) {
+          YabauseExec();
+          requestFrame();
+        }
+        return true;
+    default:
+        return QWindow::event(event);
+    }
+}
+
 void YabauseGL::swapBuffers()
 {
   context()->swapBuffers(context()->surface());
@@ -70,7 +100,10 @@ void YabauseGL::swapBuffers()
 
 void YabauseGL::resizeGL( int w, int h )
 {
-  glResized();
+  QOpenGLWindow::resizeGL(w, h);
+  if ( VIDCore ) {
+    VIDCore->Resize(0, 0, w, h, 0);
+  }
  }
 
 void YabauseGL::getScale(float *xRatio, float* yRatio, int* xUp, int *yUp) {

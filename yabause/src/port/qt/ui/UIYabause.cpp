@@ -104,11 +104,6 @@ UIYabause::UIYabause( QWidget* parent )
 		// 	aEmulationRun->trigger();
 	});
 
-	connect(mYabauseGL, &YabauseGL::glResized, [&]
-	{
-		mNeedResize = true;
-	});
-
 	setCentralWidget( container );
 	// create log widget
 	teLog = new QTextEdit( this );
@@ -145,16 +140,6 @@ UIYabause::UIYabause( QWidget* parent )
 	connect( mouseCursorTimer, SIGNAL( timeout() ), this, SLOT( cursorRestore() ));
 	connect( mYabauseThread, SIGNAL( toggleEmulateMouse( bool, bool ) ), this, SLOT( toggleEmulateMouse( bool, bool ) ) );
 
-	connect(mYabauseThread, &YabauseThread::loopEnded, [&]
-	{
-		if (mNeedResize) {
-			const QSize size = mYabauseGL->size();
-			if ( VIDCore ) {
-				VIDCore->Resize(0, 0, size.width(), size.height(), 0);
-			}
-			mNeedResize = false;
-		}
-	});
 	// Load shortcuts
 	VolatileSettings* vs = QtYabause::volatileSettings();
 	QList<QAction *> actions = findChildren<QAction *>();
@@ -1058,6 +1043,7 @@ void UIYabause::on_cbVideoDriver_currentIndexChanged( int id )
 
 void UIYabause::pause( bool paused )
 {
+	mYabauseGL->pause(paused);
 	mYabauseGL->updateView();
 
 	aEmulationRun->setEnabled( paused );
