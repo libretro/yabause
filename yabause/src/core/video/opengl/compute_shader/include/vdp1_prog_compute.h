@@ -48,10 +48,10 @@ SHADER_VERSION_COMPUTE
 "{\n"
 "  ivec2 size = imageSize(outSurface);\n"
 "  ivec2 texel = ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);\n"
-"  int x = int(texel.x * upscale.x);\n"
-"  int y = int(texel.y * upscale.y);\n"
-"  if (x >= 512 || y >= 256 ) return;\n"
-"  vec4 pix = imageLoad(fbSurface, ivec2(vec2(x,255-y)));\n"
+"  ivec2 coord = ivec2(int(texel.x * upscale.x),int(texel.y * upscale.y));\n"
+"  texel.y = texel.y;\n"
+"  if (any(greaterThanEqual(coord, ivec2(512, 256)))) return;"
+"  vec4 pix = imageLoad(fbSurface, coord);\n"
 "  if (pix.a != 0.0) imageStore(outSurface,texel,vec4(pix.r, pix.g, 0.0, 0.0));\n"
 "}\n";
 
@@ -71,7 +71,7 @@ SHADER_VERSION_COMPUTE
 "  int x = int(texel.x * upscale.x);\n"
 "  int y = int(texel.y * upscale.y);\n"
 "  if (x >= 512 || y >= 256 ) return;\n"
-"  int idx = int(x) + int(255 - y)*512;\n"
+"  int idx = int(x) + int(y)*512;\n"
 "  vec4 pix = imageLoad(s_texture, ivec2(vec2(texel.x,texel.y)));\n"
 "  uint val = (uint(pix.r*255.0)<<24) | (uint(pix.g*255.0)<<16);\n"
 "  Vdp1FB[idx] = val;\n"
@@ -92,10 +92,10 @@ SHADER_VERSION_COMPUTE
 "  ivec2 size = imageSize(outSurface);\n"
 "  ivec2 texel = ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);\n"
 "  if (texel.x >= size.x || texel.y >= size.y ) return;\n"
-"  if (texel.x < limits.x) return;"
-"  if (texel.y > limits.y) return;"
-"  if (texel.x > limits.z) return;"
-"  if (texel.y < limits.w) return;"
+"  if (texel.x < limits.x) return;\n"
+"  if (texel.y < limits.y) return;\n"
+"  if (texel.x > limits.z) return;\n"
+"  if (texel.y > limits.w) return;\n"
 "  imageStore(outSurface,texel,col);\n"
 "  imageStore(outMesh, texel, vec4(0.0));\n"
 "}\n";
@@ -225,7 +225,7 @@ SHADER_VERSION_COMPUTE
 "};\n"
 
 "layout(local_size_x = "Stringify(LOCAL_SIZE_X)", local_size_y = "Stringify(LOCAL_SIZE_Y)") in;\n"
-"layout(rgba8, binding = 0) writeonly uniform image2D outSurface;\n"
+"layout(rgba8, binding = 0) uniform image2D outSurface;\n"
 "layout(rgba8, binding = 1) writeonly uniform image2D meshSurface;\n"
 "layout(rgba8, binding = 2) readonly uniform image2D FBSurface;\n"
 "layout(std430, binding = 3) readonly buffer VDP1RAM { uint Vdp1Ram[]; };\n"
@@ -239,7 +239,6 @@ SHADER_VERSION_COMPUTE
 "layout(location = 7) uniform vec2 upscale;\n"
 "layout(location = 8) uniform ivec2 sysClip;\n"
 "layout(location = 9) uniform ivec4 usrClip;\n"
-"layout(location = 10) uniform mat4 rot;\n"
 
 //===================================================================
 "vec3 antiAliasedPoint( vec2 P,  vec2 P0, vec2 P1 )\n"
@@ -542,12 +541,12 @@ SHADER_VERSION_COMPUTE
 "  ivec2 size = imageSize(outSurface);\n"
 "  ivec2 pos = ivec2(gl_GlobalInvocationID.xy);\n"
 "  if (pos.x >= size.x || pos.y >= size.y ) return;\n"
-"  vec2 texel = (vec4(float(pos.x),float(-pos.y), 1.0, 1.0) *rot).xy;\n"
-"  vec2 scaleRot = vec2(1.0/length(rot[0].xy), 1.0/length(rot[1].xy));\n"
+"  vec2 texel = vec2(float(pos.x),float(-pos.y));\n"
 "  texel.y = -texel.y;\n"
 "  ivec2 index = ivec2((texel.x*"Stringify(NB_COARSE_RAST_X)")/size.x, (texel.y*"Stringify(NB_COARSE_RAST_Y)")/size.y);\n"
 "  ivec2 syslimit = sysClip;\n"
 "  ivec4 userlimit = usrClip;\n"
+"  finalColor = imageLoad(outSurface, ivec2(texel));\n"
 "  uint lindex = index.y*"Stringify(NB_COARSE_RAST_X)"+ index.x;\n"
 "  uint cmdIndex = lindex * "Stringify(QUEUE_SIZE)"u;\n"
 
@@ -576,17 +575,17 @@ SHADER_VERSION_COMPUTE
 "      userlimit = ivec4(pixcmd.CMDXA,pixcmd.CMDYA,pixcmd.CMDXC,pixcmd.CMDYC);\n"
 "      continue;\n"
 "    }\n"
-"    if (any(greaterThan(pos,syslimit*scaleRot*upscale))) { \n"
+"    if (any(greaterThan(pos,syslimit*upscale))) { \n"
 "      waitSysClip = true;\n"
 "      continue;\n"
 "    }"
 "    if (((pixcmd.CMDPMOD >> 9) & 0x3u) == 2u) {\n"
 "//Draw inside\n"
-"      if (any(lessThan(pos,userlimit.xy*scaleRot*upscale)) || any(greaterThan(pos,userlimit.zw*scaleRot*upscale))) continue;\n"
+"      if (any(lessThan(pos,userlimit.xy*upscale)) || any(greaterThan(pos,userlimit.zw*upscale))) continue;\n"
 "    }\n"
 "    if (((pixcmd.CMDPMOD >> 9) & 0x3u) == 3u) {\n"
 "//Draw outside\n"
-"      if (all(greaterThanEqual(pos,userlimit.xy*scaleRot*upscale)) && all(lessThanEqual(pos,userlimit.zw*scaleRot*upscale))) continue;\n"
+"      if (all(greaterThanEqual(pos,userlimit.xy*upscale)) && all(lessThanEqual(pos,userlimit.zw*upscale))) continue;\n"
 "    }\n"
 "    texcoord = uv;\n"
 "    gouraudcoord = texcoord;\n"
@@ -751,14 +750,14 @@ static const char vdp1_continue_no_mesh_f[] =
 static const char vdp1_end_f[] =
 "  }\n"
 "  if (!drawn) return;\n"
-"  imageStore(outSurface,ivec2(int(pos.x), int(size.y - 1.0 - pos.y)),finalColor);\n"
+"  imageStore(outSurface,ivec2(int(pos.x), int(pos.y)),finalColor);\n"
 "}\n";
 
 static const char vdp1_end_mesh_f[] =
 "  }\n"
 "  if (!drawn) return;\n"
-"  imageStore(outSurface,ivec2(int(pos.x), int(size.y - 1.0 - pos.y)),finalColor);\n"
-"  imageStore(meshSurface,ivec2(int(pos.x), int(size.y - 1.0 - pos.y)),meshColor);\n"
+"  imageStore(outSurface,ivec2(int(pos.x), int(pos.y)),finalColor);\n"
+"  imageStore(meshSurface,ivec2(int(pos.x), int(pos.y)),meshColor);\n"
 "}\n";
 
 #ifdef __cplusplus

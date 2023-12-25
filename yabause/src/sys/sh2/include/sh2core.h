@@ -30,7 +30,6 @@ extern "C" {
 
 
 #define SH2CORE_DEFAULT     -1
-#define MAX_INTERRUPTS 50
 
 #ifdef MACH
 #undef MACH
@@ -119,6 +118,7 @@ typedef struct
    u8 RDR;     // 0xFFFFFE05
    u8 TIER;    // 0xFFFFFE10
    u8 FTCSR;   // 0xFFFFFE11
+   u8 FTCSRM;   // 0xFFFFFE11 //Mask
 
 #ifdef WORDS_BIGENDIAN
   union {
@@ -291,11 +291,18 @@ typedef struct
    u32 CHCR0M;
 } Onchip_struct;
 
-typedef struct
-{
+typedef struct {
    u8 vector;
    u8 level;
-} interrupt_struct;
+} onchip_interrupt_struct;
+
+
+typedef struct
+{
+  u8 nmi;
+  u8 d;
+  u8 irl;
+} intc_s;
 
 enum SH2STEPTYPE
 {
@@ -332,6 +339,14 @@ typedef struct SH2_struct_s SH2_struct;
 #define BREAK_LONGWRITE 0x20
 
 #define MAX_BREAKPOINTS 10
+
+
+#define A_BUS_ACCESS 0x1
+#define VDP2_RAM_A0_LOCK 0x2
+#define VDP2_RAM_A1_LOCK 0x4
+#define VDP2_RAM_B0_LOCK 0x8
+#define VDP2_RAM_B1_LOCK 0x10
+#define VDP2_RAM_LOCK (VDP2_RAM_A0_LOCK|VDP2_RAM_A1_LOCK|VDP2_RAM_B0_LOCK|VDP2_RAM_B1_LOCK)
 
 typedef void (FASTCALL *writebytefunc)(SH2_struct *context, u8*, u32, u8);
 typedef void (FASTCALL *writewordfunc)(SH2_struct *context, u8*, u32, u16);
@@ -405,6 +420,11 @@ typedef struct
 } backtrace_struct;
 //END debug
 
+
+void SH2IntcSetIrl(SH2_struct *sh, u8 irl, u8 d);
+void SH2IntcSetNmi(SH2_struct *sh);
+void SH2EvaluateInterrupt(SH2_struct *sh);
+
 typedef struct SH2_struct_s
 {
    sh2regs_struct regs;
@@ -425,8 +445,9 @@ typedef struct SH2_struct_s
         u32 shift;
    } wdt;
 
-   interrupt_struct interrupts[MAX_INTERRUPTS];
-   u32 NumberOfInterrupts;
+   intc_s intc;
+   u8 intVector;
+   u8 intPriority;
    u32 AddressArray[0x100];
    u8 DataArray[0x1000];
    u32 target_cycles;
@@ -434,7 +455,9 @@ typedef struct SH2_struct_s
    u8 isslave;
    u8 isSleeping;
    u16 instruction;
-   int depth;
+   s16 branchDepth;
+   u8 doNotInterrupt;
+   u8 not_used;
 
 #ifdef DMPHISTORY
    u32 pchistory[MAX_DMPHISTORY];
@@ -455,7 +478,7 @@ typedef struct SH2_struct_s
    u32 cycleFrac;
    u32 cycleLost;
    int cdiff;
-   int trace;
+   u32 interruptReturnAddress;
     u32 frtcycles;
     u32 wdtcycles;
 
@@ -483,6 +506,9 @@ typedef struct SH2_struct_s
                 u32 address;
              };
           } stepOverOut;
+    u32 BUPTableAddr;
+    void (*SH2InterruptibleExec)(struct SH2_struct_s *context, u32 cycles);
+    u32 blockingMask;
 //ENd debug
 } SH2_struct;
 
@@ -518,15 +544,11 @@ typedef struct
    void (*SetPR)(SH2_struct *context, u32 value);
    void (*SetPC)(SH2_struct *context, u32 value);
    void (*OnFrame)(SH2_struct *context);
-   void (*SendInterrupt)(SH2_struct *context, u8 vector, u8 level);
-   void (*RemoveInterrupt)(SH2_struct *context, u8 vector, u8 level);
-   int (*GetInterrupts)(SH2_struct *context,
-                        interrupt_struct interrupts[MAX_INTERRUPTS]);
-   void (*SetInterrupts)(SH2_struct *context, int num_interrupts,
-                         const interrupt_struct interrupts[MAX_INTERRUPTS]);
+   void (*notifyInterrupt)(SH2_struct *context);
 
    void (*WriteNotify)(SH2_struct *context, u32 start, u32 length);
    void(*AddCycle)(SH2_struct *context, u32 value);
+   void(*updateInterruptReturnHandling)(SH2_struct *context);
 } SH2Interface_struct;
 
 static INLINE void SH2HandleBreakpoints(SH2_struct *context)
@@ -559,8 +581,6 @@ void SH2Reset(SH2_struct *context);
 void SH2PowerOn(SH2_struct *context);
 void FASTCALL SH2Exec(SH2_struct *context, u32 cycles);
 void FASTCALL SH2TestExec(SH2_struct *context, u32 cycles);
-void SH2SendInterrupt(SH2_struct *context, u8 vector, u8 level);
-void SH2RemoveInterrupt(SH2_struct *context, u8 vector, u8 level);
 void SH2NMI(SH2_struct *context);
 
 void SH2GetRegisters(SH2_struct *context, sh2regs_struct * r);
@@ -580,7 +600,8 @@ void SH2TrackInfLoopClear(SH2_struct *context);
 void SH2Disasm(u32 v_addr, u16 op, int mode, sh2regs_struct *r, char *string);
 void SH2DumpHistory(SH2_struct *context);
 
-void SH2SetCPUConcurrency(u8 on);
+void SH2SetCPUConcurrency(SH2_struct *context, u8 on);
+void SH2ClearCPUConcurrency(SH2_struct *context, u8 on);
 
 int BackupHandled(SH2_struct * sh, u32 addr);
 int isBackupHandled(u32 addr);
@@ -623,10 +644,8 @@ int SH2LoadState(SH2_struct *context, const void * stream, int version, int size
 extern SH2Interface_struct SH2Dyn;
 extern SH2Interface_struct SH2DynDebug;
 
-#if DYNAREC_KRONOS
 extern SH2Interface_struct SH2KronosInterpreter;
 extern SH2Interface_struct SH2KronosDebugInterpreter;
-#endif
 
 #ifdef __cplusplus
 }

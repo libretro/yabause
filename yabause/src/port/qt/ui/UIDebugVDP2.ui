@@ -15,23 +15,13 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_7">
    <item>
-    <layout class="QGridLayout" name="gridLayout">
+    <layout class="QGridLayout" name="DebugGrid">
      <item row="0" column="0">
-      <widget class="QGroupBox" name="groupBox">
+      <widget class="QGroupBox" name="NBG0Debug">
        <property name="title">
-        <string>NBG0/RBG1 Info</string>
+        <string>NBG0 Info</string>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout">
-        <item>
-         <widget class="QCheckBox" name="cbNBG0Enabled">
-          <property name="text">
-           <string>Screen Enabled</string>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
         <item>
          <widget class="QPlainTextEdit" name="pteNBG0Info">
           <property name="readOnly">
@@ -43,21 +33,11 @@
       </widget>
      </item>
      <item row="0" column="1">
-      <widget class="QGroupBox" name="groupBox_2">
+      <widget class="QGroupBox" name="NBG1Debug">
        <property name="title">
         <string>NBG1 Info</string>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_2">
-        <item>
-         <widget class="QCheckBox" name="cbNBG1Enabled">
-          <property name="text">
-           <string>Screen Enabled</string>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
         <item>
          <widget class="QPlainTextEdit" name="pteNBG1Info">
           <property name="readOnly">
@@ -69,21 +49,11 @@
       </widget>
      </item>
      <item row="0" column="2">
-      <widget class="QGroupBox" name="groupBox_3">
+      <widget class="QGroupBox" name="NBG2Debug">
        <property name="title">
         <string>NBG2 Info</string>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_3">
-        <item>
-         <widget class="QCheckBox" name="cbNBG2Enabled">
-          <property name="text">
-           <string>Screen Enabled</string>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
         <item>
          <widget class="QPlainTextEdit" name="pteNBG2Info">
           <property name="readOnly">
@@ -95,21 +65,11 @@
       </widget>
      </item>
      <item row="1" column="0">
-      <widget class="QGroupBox" name="groupBox_4">
+      <widget class="QGroupBox" name="NBG3Debug">
        <property name="title">
         <string>NBG3 Info</string>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_4">
-        <item>
-         <widget class="QCheckBox" name="cbNBG3Enabled">
-          <property name="text">
-           <string>Screen Enabled</string>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
         <item>
          <widget class="QPlainTextEdit" name="pteNBG3Info">
           <property name="readOnly">
@@ -121,21 +81,11 @@
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QGroupBox" name="groupBox_5">
+      <widget class="QGroupBox" name="RBG0Debug">
        <property name="title">
         <string>RBG0 Info</string>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_5">
-        <item>
-         <widget class="QCheckBox" name="cbRBG0Enabled">
-          <property name="text">
-           <string>Screen Enabled</string>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
         <item>
          <widget class="QPlainTextEdit" name="pteRBG0Info">
           <property name="readOnly">
@@ -147,21 +97,43 @@
       </widget>
      </item>
      <item row="1" column="2">
-      <widget class="QGroupBox" name="groupBox_6">
+      <widget class="QGroupBox" name="RBG1Debug">
        <property name="title">
-        <string>General Info</string>
+        <string>RBG1 Info</string>
        </property>
-       <layout class="QVBoxLayout" name="verticalLayout_6">
+       <layout class="QVBoxLayout" name="verticalLayout">
         <item>
-         <widget class="QCheckBox" name="cbDisplayEnabled">
-          <property name="text">
-           <string>Display Enabled</string>
-          </property>
-          <property name="checkable">
+         <widget class="QPlainTextEdit" name="pteRBG1Info">
+          <property name="readOnly">
            <bool>true</bool>
           </property>
          </widget>
         </item>
+       </layout>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QGroupBox" name="SPRITEDebug">
+       <property name="title">
+        <string>Sprite Info</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="QPlainTextEdit" name="pteSPRITEInfo">
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QGroupBox" name="GeneralDebug">
+       <property name="title">
+        <string>General Info</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_6">
         <item>
          <widget class="QPlainTextEdit" name="pteGeneralInfo">
           <property name="readOnly">
@@ -181,6 +153,13 @@
        <property name="text">
         <string>Viewer</string>
        </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pbNextButton">
+        <property name="text">
+         <string>Next Frame</string>
+        </property>
       </widget>
      </item>
      <item>

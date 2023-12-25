@@ -284,7 +284,7 @@ typedef struct {
 
 int ScuInit(void);
 void ScuDeInit(void);
-void ScuReset(void);
+void ScuReset(u8 powering_up);
 void ScuExec(u32 timing);
 extern u8 ScuCPUBAccess();
 
@@ -294,6 +294,8 @@ u32 FASTCALL	ScuReadLong(SH2_struct *sh,u8*, u32);
 void FASTCALL	ScuWriteByte(SH2_struct *sh,u8*, u32, u8);
 void FASTCALL	ScuWriteWord(SH2_struct *sh,u8*, u32, u16);
 void FASTCALL	ScuWriteLong(SH2_struct *sh,u8*, u32, u32);
+
+void ScuAcceptInterrupt(SH2_struct *sh);
 
 void ScuSendVBlankIN(void);
 void ScuSendVBlankOUT(void);

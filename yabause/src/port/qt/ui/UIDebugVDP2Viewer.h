@@ -27,13 +27,18 @@ class UIDebugVDP2Viewer : public QDialog, public Ui::UIDebugVDP2Viewer
 	Q_OBJECT
 public:
 	UIDebugVDP2Viewer( QWidget* parent = 0 );
-
+	void addItem(int i);
+	int exec() override;
+	void showEvent(QShowEvent *) override;
+private:
+	void displayCurrentScreen();
 protected:
    pixel_t *vdp2texture;
    int width, height;
 protected slots:
    void on_cbScreen_currentIndexChanged ( int index );
    void on_pbSaveAsBitmap_clicked ();
+	 void on_cbOpaque_toggled(bool enable);
 };
 
 #endif // UIDEBUGVDP2VIEWER_H

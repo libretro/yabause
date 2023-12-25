@@ -311,11 +311,7 @@ extern "C" {
 
 #endif
 
-#ifdef USE_16BPP
-  typedef u16 pixel_t;
-#else
-  typedef u32 pixel_t;
-#endif
+typedef u32 pixel_t;
 
 #ifdef _MSC_VER
 #define snprintf sprintf_s

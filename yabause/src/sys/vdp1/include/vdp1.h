@@ -72,11 +72,9 @@ typedef struct {
    int disptoggle;
    int manualerase;
    int manualchange;
-   int onecyclemode;
+   int onecycleerase;
+   int onecyclechange;
    int useVBlankErase;
-   int swap_frame_buffer;
-   int plot_trigger_line;
-   int plot_trigger_done;
    int current_frame;
    int updateVdp1Ram;
    int checkEDSR;
@@ -167,7 +165,7 @@ typedef struct
    void(*Vdp1UserClipping)(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs);
    void(*Vdp1SystemClipping)(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs);
    void(*Vdp1LocalCoordinate)(vdp1cmd_struct *cmd, u8 * ram, Vdp1 * regs);
-   void(*Vdp1EraseWrite)(int id);
+   int(*Vdp1EraseWrite)(int id);
    void(*Vdp1FrameChange)(void);
    void(*Vdp1RegenerateCmd)(vdp1cmd_struct* cmd);
    // VDP2 specific
@@ -183,6 +181,7 @@ typedef struct
    int (*setupFrame)();
    void (*FinsihDraw)(void);
    void (*Vdp1FBDraw)(void);
+   pixel_t* (*getVdp2ScreenExtract)(u32 screen, int * w, int * h);
 } VideoInterface_struct;
 
 extern VideoInterface_struct *VIDCore;
@@ -206,14 +205,19 @@ void FASTCALL Vdp1FrameBufferWriteByte(SH2_struct *context, u8*, u32, u8);
 void FASTCALL Vdp1FrameBufferWriteWord(SH2_struct *context, u8*, u32, u16);
 void FASTCALL Vdp1FrameBufferWriteLong(SH2_struct *context, u8*, u32, u32);
 
+extern void Vdp1SetRaster(int is352);
+
 void Vdp1DrawCommands(u8 * ram, Vdp1 * regs, u8* back_framebuffer);
 void Vdp1FakeDrawCommands(u8 * ram, Vdp1 * regs);
 
 extern Vdp1 * Vdp1Regs;
 
 enum VDP1STATUS {
-  VDP1_STATUS_IDLE = 0,
-  VDP1_STATUS_RUNNING
+  VDP1_STATUS_IDLE = 0x0,
+  VDP1_STATUS_RUNNING = 0x1,
+  VDP1_STATUS_MASK = 0x1,
+  VDP1_SWITCHING = 0x2,
+  VDP1_SWITCH_REQUEST = 0x4
 };
 
 int Vdp1Init(void);
@@ -234,7 +238,9 @@ void FASTCALL	Vdp1WriteLong(SH2_struct *context, u8*, u32, u32);
 int Vdp1SaveState(void ** stream);
 int Vdp1LoadState(const void * stream, int version, int size);
 
-char *Vdp1DebugGetCommandNumberName(u32 number);
+u32 Vdp1DebugGetCommandAddr(u32 number);
+char *Vdp1DebugGetCommandNumberName(u32 addr);
+char *Vdp1DebugGetCommandRaw(u32 addr);
 Vdp1CommandType Vdp1DebugGetCommandType(u32 number);
 void Vdp1DebugCommand(u32 number, char *outstring);
 u32 *Vdp1DebugTexture(u32 number, int *w, int *h);
@@ -243,7 +249,10 @@ void ToggleVDP1(void);
 
 void Vdp1HBlankIN(void);
 void Vdp1StartVisibleLine(void);
+void Vdp1VBlankOUT(void);
 void Vdp1VBlankIN(void);
+void Vdp1VBlankIN_It(void);
+void Vdp1SwitchFrame(void);
 
 #ifdef __cplusplus
 }

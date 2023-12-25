@@ -46,27 +46,17 @@ extern int setupShadow(Vdp2 *varVdp2Regs, int layer);
 extern int setupBlur(Vdp2 *varVdp2Regs, int layer);
 extern int YglDrawBackScreen();
 
-extern u32* vdp1_read();
-extern void vdp1_write();
-
 //////////////////////////////////////////////////////////////////////////////
-void YglEraseWriteCSVDP1(int id) {
+int VIDCSEraseWriteVdp1(int id) {
 
   float col[4] = {0.0};
   u16 color;
   int priority;
   u32 alpha = 0;
   int status = 0;
-  if (_Ygl->vdp1_pbo[0] == 0) return;
+  if (_Ygl->vdp1_pbo[0] == 0) return 0;
 
   _Ygl->vdp1_stencil_mode = 0;
-
-  _Ygl->vdp1levels[id].ux1 = 0;
-  _Ygl->vdp1levels[id].uy1 = 0;
-  _Ygl->vdp1levels[id].ux2 = 0;
-  _Ygl->vdp1levels[id].uy2 = 0;
-  _Ygl->vdp1levels[id].uclipcurrent = 0;
-  _Ygl->vdp1levels[id].blendmode = 0;
 
   color = Vdp1Regs->EWDR;
 
@@ -78,7 +68,13 @@ void YglEraseWriteCSVDP1(int id) {
   limits[2] = (((Vdp1Regs->EWRR>>9)&0x7F)<<shift) - 1;
   limits[3] = ((Vdp1Regs->EWRR)&0x1FF); //TODO: manage double interlace
 
-  if ((limits[0]>=limits[2])||(limits[1]>limits[3])) return; //No erase write when invalid area - Should be done only for one dot but no idea of which dot it shall be
+  //Prohibited value - Example Quake first screens
+  if ((limits[2] == -1)||(limits[3] == 0)) return 0;
+
+  if ((limits[0]>=limits[2])||(limits[1]>limits[3])) {
+    return 0; //No erase write when invalid area - Should be done only for one dot but no idea of which dot it shall be
+  }
+
 
 //Can be usefull for next steps to evaluate effective possible pixels which can be deleted during VBLANK
 //see p49 of vdp1 doc. A raster is the number of maxLinecount
@@ -95,34 +91,40 @@ void YglEraseWriteCSVDP1(int id) {
     }
   }
 
-  FRAMELOG("YglEraseWriteVDP1xx: clear %d (%d,%d)(%d,%d)\n", id, limits[0], limits[1], limits[2], limits[3]);
   vdp1_clear(id, col, limits);
 
   //Get back to drawframe
   glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->default_fbo);
-
+  return ((limits[2]-limits[0])*(limits[3]-limits[1]))>>(Vdp1Regs->TVMR & 0x1);
 }
 
-void YglCSFinsihDraw(void) {
+void VIDCSFinsihDraw(void) {
   vdp1_wait_regenerate();
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-void YglCSRenderVDP1(void) {
-  TRACE_RENDER("YglCSRenderVDP1");
-  FRAMELOG("YglCSRenderVDP1: drawframe =%d %d\n", _Ygl->drawframe, yabsys.LineCount);
+void VIDCSRenderVDP1(void) {
+  TRACE_RENDER("VIDCSRenderVDP1");
+  FRAMELOG("VIDCSRenderVDP1: drawframe =%d %d\n", _Ygl->drawframe, yabsys.LineCount);
   vdp1_compute();
 }
 
-void YglFrameChangeCSVDP1(){
+void VIDCSFrameChangeVdp1(){
   u32 current_drawframe = 0;
-  YglCSRenderVDP1();
+  if (_Ygl->shallVdp1Erase[_Ygl->readframe] != 0) {
+    FRAMELOG("FB %d is erased now\n", _Ygl->readframe);
+    _Ygl->shallVdp1Erase[_Ygl->readframe] = 0;
+    VIDCSEraseWriteVdp1(_Ygl->readframe);
+    clearVDP1Framebuffer(_Ygl->readframe);
+  }
+  VIDCSRenderVDP1();
   current_drawframe = _Ygl->drawframe;
   _Ygl->drawframe = _Ygl->readframe;
   _Ygl->readframe = current_drawframe;
+  _Ygl->vdp1fb_read_buf[_Ygl->drawframe] = NULL;
 
-  FRAMELOG("YglFrameChangeVDP1: swap drawframe =%d readframe = %d (%d)\n", _Ygl->drawframe, _Ygl->readframe, yabsys.LineCount);
+  FRAMELOG("VIDCSFrameChangeVdp1: swap drawframe =%d readframe = %d (%d)\n", _Ygl->drawframe, _Ygl->readframe, yabsys.LineCount);
 }
 
 extern int WinS[enBGMAX+1];
@@ -156,9 +158,9 @@ void finishCSRender() {
   _Ygl->sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE,0);
 }
 
-void YglCSRender(Vdp2 *varVdp2Regs) {
-   TRACE_RENDER("YglCSRender");
-
+void VIDCSRender(Vdp2 *varVdp2Regs) {
+   TRACE_RENDER("VIDCSRender");
+   double scale = 1.0;
    GLuint cprg=0;
    GLuint srcTexture;
    GLuint VDP1fb[2];
@@ -211,7 +213,7 @@ void YglCSRender(Vdp2 *varVdp2Regs) {
    glDisable(GL_BLEND);
 
    glBindVertexArray(_Ygl->vao);
-
+#ifndef __LIBRETRO__
    switch(modeScreen) {
      case 0:
        w = (dar>par)?(double)GlHeight*par:GlWidth;
@@ -234,8 +236,13 @@ void YglCSRender(Vdp2 *varVdp2Regs) {
      default:
         break;
     }
-
-
+    scale = MAX(w/_Ygl->rwidth, h/_Ygl->rheight);
+#else
+  //Libretro is taking care to the resize
+  w = _Ygl->width;
+  h = _Ygl->height;
+  x = y = 0;
+#endif
    glViewport(0, 0, GlWidth, GlHeight);
 
    glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->default_fbo);
@@ -287,7 +294,7 @@ void YglCSRender(Vdp2 *varVdp2Regs) {
   int allPrio = 0;
 
   for (int i = 0; i < SPRITE; i++) {
-    if (((i == RBG0) || (i == RBG1)) && (_Ygl->rbg_use_compute_shader)) {
+    if ((i == RBG0) || (i == RBG1)) {
       glViewport(0, 0, _Ygl->width, _Ygl->height);
       glScissor(0, 0, _Ygl->width, _Ygl->height);
       glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->rbg_compute_fbo);
@@ -302,6 +309,9 @@ void YglCSRender(Vdp2 *varVdp2Regs) {
       glDrawBuffers(1, &DrawBuffers[i]);
     }
     drawScreen[i] = DrawVDP2Screen(varVdp2Regs, i);
+    if ((Vdp2External.disptoggle & (1<<i)) == 0) {
+      drawScreen[i] = 0;
+    }
   }
 
   const int vdp2screens[] = {RBG0, RBG1, NBG0, NBG1, NBG2, NBG3};
@@ -326,7 +336,7 @@ void YglCSRender(Vdp2 *varVdp2Regs) {
 
   for (int j=0; j<6; j++) {
     if (drawScreen[vdp2screens[j]] != 0) {
-      if (((vdp2screens[j] == RBG0) ||(vdp2screens[j] == RBG1)) && (_Ygl->rbg_use_compute_shader)) {
+      if ((vdp2screens[j] == RBG0) ||(vdp2screens[j] == RBG1)) {
         if (vdp2screens[j] == RBG0)
         prioscreens[id] = _Ygl->rbg_compute_fbotex[0];
         else
@@ -389,24 +399,20 @@ void YglCSRender(Vdp2 *varVdp2Regs) {
     }
   }
 
-#ifdef __LIBRETRO__
-  glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->default_fbo);
-#else
   glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->original_fbo);
-#endif
+
   glDrawBuffers(NB_RENDER_LAYER, &DrawBuffers[0]);
   glClearBufferfi(GL_DEPTH_STENCIL, 0, 0, 0);
 
   YglBlitTexture( prioscreens, modescreens, isRGB, isBlur, isPerline, isShadow, lncl_draw, GetCSVDP1fb, winS_draw, winS_mode_draw, win0_draw, win0_mode_draw, win1_draw, win1_mode_draw, win_op_draw, useLineColorOffset, varVdp2Regs);
   srcTexture = _Ygl->original_fbotex[0];
-#ifndef __LIBRETRO__
+
+   int scali = (int)(scale);
    glViewport(x, y, w, h);
-   glScissor(x, y, w, h);
+   glScissor(x, y, w-scali, h-scali);
    glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->default_fbo);
    YglBlitFramebuffer(srcTexture, _Ygl->width, _Ygl->height, w, h);
-#endif
 
   finishCSRender();
   return;
 }
-

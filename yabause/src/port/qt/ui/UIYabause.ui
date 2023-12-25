@@ -208,6 +208,7 @@
     <addaction name="aViewFPS"/>
     <addaction name="mViewLayer"/>
     <addaction name="aViewFullscreen"/>
+    <addaction name="aViewLog"/>
    </widget>
    <widget class="QMenu" name="mViewDebug">
     <property name="enabled">
@@ -462,6 +463,21 @@
    </property>
    <property name="shortcut">
     <string>Alt+Return</string>
+   </property>
+  </action>
+  <action name="aViewLog">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/actions/icons/actions/log.png</normaloff>:/actions/icons/actions/log.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Log</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+L</string>
    </property>
   </action>
   <action name="aViewDebugMSH2">
@@ -943,6 +959,15 @@
    </property>
    <property name="shortcut">
     <string>Alt+S</string>
+   </property>
+  </action>
+  <action name="aViewDebugSCSPChan">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/actions/icons/actions/debug_cpu.png</normaloff>:/actions/icons/actions/debug_cpu.png</iconset>
+   </property>
+   <property name="text">
+    <string>SCSP Channels</string>
    </property>
   </action>
  </widget>

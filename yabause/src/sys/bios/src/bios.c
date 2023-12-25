@@ -53,7 +53,7 @@ u32 interruptlist[2][0x80];
 extern u32 backup_file_addr;
 extern u32 backup_file_size;
 
-static void FASTCALL BiosBUPRead(SH2_struct * sh);
+void FASTCALL BiosBUPRead(SH2_struct * sh);
 //////////////////////////////////////////////////////////////////////////////
 
 void BiosInit(SH2_struct *context)
@@ -762,7 +762,7 @@ void FASTCALL BiosBUPInit(SH2_struct * sh)
 
 //////////////////////////////////////////////////////////////////////////////
 
-static void FASTCALL BiosBUPSelectPartition(SH2_struct * sh)
+void FASTCALL BiosBUPSelectPartition(SH2_struct * sh)
 {
    u32 size;
    u32 addr;
@@ -774,7 +774,7 @@ static void FASTCALL BiosBUPSelectPartition(SH2_struct * sh)
 
    SH2GetRegisters(sh, &sh->regs);
 
-   LOG("BiosBUPSelectPartition. PR = %08X device = %d \n", sh->regs.PR, sh->regs.R[4] );
+   LOG_BUP("BiosBUPSelectPartition. PR = %08X device = %d \n", sh->regs.PR, sh->regs.R[4] );
 
    ret = GetDeviceStats(sh->regs.R[4], &size, &addr, &blocksize);
    if (ret != 0) {
@@ -792,11 +792,11 @@ static void FASTCALL BiosBUPSelectPartition(SH2_struct * sh)
 
 //////////////////////////////////////////////////////////////////////////////
 
-static void FASTCALL BiosBUPFormat(SH2_struct * sh)
+void FASTCALL BiosBUPFormat(SH2_struct * sh)
 {
    SH2GetRegisters(sh, &sh->regs);
 
-//   LOG("BiosBUPFormat. PR = %08X\n", sh->regs.PR);
+   LOG_BUP("BiosBUPFormat. PR = %08X\n", sh->regs.PR);
 
    BupFormat(sh->regs.R[4]);
 
@@ -807,7 +807,7 @@ static void FASTCALL BiosBUPFormat(SH2_struct * sh)
 
 //////////////////////////////////////////////////////////////////////////////
 
-static void FASTCALL BiosBUPStatus(SH2_struct * sh)
+void FASTCALL BiosBUPStatus(SH2_struct * sh)
 {
    u32 size;
    u32 addr;
@@ -819,7 +819,7 @@ static void FASTCALL BiosBUPStatus(SH2_struct * sh)
 
    SH2GetRegisters(sh, &sh->regs);
 
-   LOG("BiosBUPStatus. arg1 = %d, arg2 = %d, arg3 = %08X, PR = %08X\n", sh->regs.R[4], sh->regs.R[5], sh->regs.R[6], sh->regs.PR);
+   LOG_BUP("BiosBUPStatus. arg1 = %d, arg2 = %d, arg3 = %08X, PR = %08X\n", sh->regs.R[4], sh->regs.R[5], sh->regs.R[6], sh->regs.PR);
 
    // Fill in status variables
    ret = GetDeviceStats(sh->regs.R[4], &size, &addr, &blocksize);
@@ -856,7 +856,7 @@ static void FASTCALL BiosBUPStatus(SH2_struct * sh)
 
 //////////////////////////////////////////////////////////////////////////////
 
-static void FASTCALL BiosBUPWrite(SH2_struct * sh)
+void FASTCALL BiosBUPWrite(SH2_struct * sh)
 {
    u32 size;
    u32 addr;
@@ -873,7 +873,7 @@ static void FASTCALL BiosBUPWrite(SH2_struct * sh)
 
    SH2GetRegisters(sh, &sh->regs);
 
-   LOG("BiosBUPWrite. arg1 = %d, arg2 = %08X, arg3 = %08X, arg4 = %d, PR = %08X\n", sh->regs.R[4], sh->regs.R[5], sh->regs.R[6], sh->regs.R[7], sh->regs.PR);
+   LOG_BUP("BiosBUPWrite. arg1 = %d, arg2 = %08X, arg3 = %08X, arg4 = %d, PR = %08X\n", sh->regs.R[4], sh->regs.R[5], sh->regs.R[6], sh->regs.R[7], sh->regs.PR);
 
    // Fill in status variables
    ret = GetDeviceStats(sh->regs.R[4], &size, &addr, &blocksize);
@@ -1054,7 +1054,7 @@ static void FASTCALL BiosBUPWrite(SH2_struct * sh)
 
 //////////////////////////////////////////////////////////////////////////////
 
-static void FASTCALL BiosBUPDelete(SH2_struct * sh)
+void FASTCALL BiosBUPDelete(SH2_struct * sh)
 {
    u32 size;
    u32 addr;
@@ -1064,7 +1064,7 @@ static void FASTCALL BiosBUPDelete(SH2_struct * sh)
 
    SH2GetRegisters(sh, &sh->regs);
 
-   LOG("BiosBUPDelete. PR = %08X\n", sh->regs.PR);
+   LOG_BUP("BiosBUPDelete. PR = %08X\n", sh->regs.PR);
 
    // Fill in status variables
    ret = GetDeviceStats(sh->regs.R[4], &size, &addr, &blocksize);
@@ -1097,7 +1097,7 @@ static void FASTCALL BiosBUPDelete(SH2_struct * sh)
 
 //////////////////////////////////////////////////////////////////////////////
 
-static void FASTCALL BiosBUPDirectory(SH2_struct * sh)
+void FASTCALL BiosBUPDirectory(SH2_struct * sh)
 {
    u32 size;
    u32 addr;
@@ -1112,7 +1112,7 @@ static void FASTCALL BiosBUPDirectory(SH2_struct * sh)
    for (i = 0; i < 12; i++)
       filename[i] = SH2MappedMemoryReadByte(sh, sh->regs.R[5]+i);
 
-   LOG("BiosBUPDirectory. arg1 = %d, arg2 = %s, arg3 = %08X, arg4 = %08X, PR = %08X\n", sh->regs.R[4], filename, sh->regs.R[6], sh->regs.R[7], sh->regs.PR);
+   LOG_BUP("BiosBUPDirectory. arg1 = %d, arg2 = %s, arg3 = %08X, arg4 = %08X, PR = %08X\n", sh->regs.R[4], filename, sh->regs.R[6], sh->regs.R[7], sh->regs.PR);
 
    ret = GetDeviceStats(sh->regs.R[4], &size, &addr, &blocksize);
 
@@ -1215,7 +1215,7 @@ static void FASTCALL BiosBUPDirectory(SH2_struct * sh)
 
 //////////////////////////////////////////////////////////////////////////////
 
-static void FASTCALL BiosBUPVerify(SH2_struct * sh)
+void FASTCALL BiosBUPVerify(SH2_struct * sh)
 {
    u32 size;
    u32 addr;
@@ -1230,7 +1230,7 @@ static void FASTCALL BiosBUPVerify(SH2_struct * sh)
 
    SH2GetRegisters(sh, &sh->regs);
 
-   LOG("BiosBUPVerify. PR = %08X\n", sh->regs.PR);
+   LOG_BUP("BiosBUPVerify. PR = %08X\n", sh->regs.PR);
 
    ret = GetDeviceStats(sh->regs.R[4], &size, &addr, &blocksize);
 
@@ -1396,7 +1396,7 @@ static void ConvertMonthAndDayMem(u32 data, u8* monthaddr, u8 * dayaddr, int typ
 
 //////////////////////////////////////////////////////////////////////////////
 
-static void FASTCALL BiosBUPGetDate(SH2_struct * sh)
+void FASTCALL BiosBUPGetDate(SH2_struct * sh)
 {
    u32 date;
    u32 div;
@@ -1405,7 +1405,7 @@ static void FASTCALL BiosBUPGetDate(SH2_struct * sh)
 
    SH2GetRegisters(sh, &sh->regs);
 
-   LOG("BiosBUPGetDate. PR = %08X\n", sh->regs.PR);
+   LOG_BUP("BiosBUPGetDate. PR = %08X\n", sh->regs.PR);
 
    date = sh->regs.R[4];
 
@@ -1445,7 +1445,7 @@ static void FASTCALL BiosBUPGetDate(SH2_struct * sh)
 
 //////////////////////////////////////////////////////////////////////////////
 
-static void FASTCALL BiosBUPSetDate(SH2_struct * sh)
+void FASTCALL BiosBUPSetDate(SH2_struct * sh)
 {
    u32 date;
    u8 data;
@@ -1458,7 +1458,7 @@ static void FASTCALL BiosBUPSetDate(SH2_struct * sh)
 
    SH2GetRegisters(sh, &sh->regs);
 
-   LOG("BiosBUPSetDate. PR = %08X\n", sh->regs.PR);
+   LOG_BUP("BiosBUPSetDate. PR = %08X\n", sh->regs.PR);
 
    // Year
    data = SH2MappedMemoryReadByte(sh, sh->regs.R[4]);
@@ -2226,7 +2226,7 @@ int BiosBUPImport(u32 device, saveinfo_struct * saveinfo, const char * buf, int 
 
 
 
-static void FASTCALL BiosBUPRead(SH2_struct * sh)
+void FASTCALL BiosBUPRead(SH2_struct * sh)
 {
   u32 size;
   u32 addr;
@@ -2249,7 +2249,7 @@ static void FASTCALL BiosBUPRead(SH2_struct * sh)
   }
   fname[10] = 0;
 
-   LOG("BiosBUPRead rtn=%08X device=%d, %s, \n", sh->regs.PR, sh->regs.R[4], fname);
+   LOG_BUP("BiosBUPRead rtn=%08X device=%d, %s, \n", sh->regs.PR, sh->regs.R[4], fname);
 
    ret = GetDeviceStats(sh->regs.R[4], &size, &addr, &blocksize);
 

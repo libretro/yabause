@@ -55,7 +55,7 @@ static YabEventQueue *cmdq[2] = {NULL};
 static int vdp1_generate_run = 0;
 #endif
 
-static u32 write_fb[512*256];
+static u32 write_fb[2][512*256];
 
 static const GLchar * a_prg_vdp1[NB_PRG][5] = {
   //VDP1_MESH_STANDARD - BANDING
@@ -310,7 +310,7 @@ static int generateComputeBuffer(int w, int h) {
 
 u8 cmdBuffer[2][0x80000];
 
-void vdp1GenerateBuffer_sync(vdp1cmd_struct* cmd, int id) {
+void VIDCSGenerateBufferVdp1_sync(vdp1cmd_struct* cmd, int id) {
 	int endcnt;
 	u32 dot;
 	int pos = (cmd->CMDSRCA * 8) & 0x7FFFF;
@@ -406,35 +406,35 @@ void vdp1GenerateBuffer_sync(vdp1cmd_struct* cmd, int id) {
 	  }
 }
 #ifdef VDP1RAM_CS_ASYNC
-void* vdp1GenerateBuffer_async_0(void *p){
+void* VIDCSGenerateBufferVdp1_async_0(void *p){
 	while(vdp1_generate_run != 0){
 		vdp1cmd_struct* cmd = (vdp1cmd_struct*)YabWaitEventQueue(cmdq[0]);
 		if (cmd != NULL){
-			vdp1GenerateBuffer_sync(cmd, 0);
+			VIDCSGenerateBufferVdp1_sync(cmd, 0);
 			free(cmd);
 		}
 	}
 	return NULL;
 }
-void* vdp1GenerateBuffer_async_1(void *p){
+void* VIDCSGenerateBufferVdp1_async_1(void *p){
 	while(vdp1_generate_run != 0){
 		vdp1cmd_struct* cmd = (vdp1cmd_struct*)YabWaitEventQueue(cmdq[1]);
 		if (cmd != NULL){
-			vdp1GenerateBuffer_sync(cmd, 1);
+			VIDCSGenerateBufferVdp1_sync(cmd, 1);
 			free(cmd);
 		}
 	}
 	return NULL;
 }
 
-void vdp1GenerateBuffer(vdp1cmd_struct* cmd){
+void VIDCSGenerateBufferVdp1(vdp1cmd_struct* cmd){
 	vdp1cmd_struct* cmdToSent = (vdp1cmd_struct*)malloc(sizeof(vdp1cmd_struct));
 	memcpy(cmdToSent, cmd, sizeof(vdp1cmd_struct));
 	YabAddEventQueue(cmdq[_Ygl->drawframe], cmdToSent);
 }
 #else
-void vdp1GenerateBuffer(vdp1cmd_struct* cmd){
-	vdp1GenerateBuffer_sync(cmd, _Ygl->drawframe);
+void VIDCSGenerateBufferVdp1(vdp1cmd_struct* cmd){
+	VIDCSGenerateBufferVdp1_sync(cmd, _Ygl->drawframe);
 }
 #endif
 
@@ -483,7 +483,7 @@ int vdp1_add(vdp1cmd_struct* cmd, int clipcmd) {
 		}
 	}
 	if (clipcmd == 0) {
-		if (cmd->type != FB_WRITE) vdp1GenerateBuffer(cmd);
+		if (cmd->type != FB_WRITE) VIDCSGenerateBufferVdp1(cmd);
 		else {
 			requireCompute = 1;
 		}
@@ -567,20 +567,22 @@ int vdp1_add(vdp1cmd_struct* cmd, int clipcmd) {
 		vdp1_compute();
 		if (_Ygl->vdp1IsNotEmpty[_Ygl->drawframe] != -1) {
 			vdp1_write();
-			_Ygl->vdp1IsNotEmpty[_Ygl->drawframe] != -1;
+			_Ygl->vdp1IsNotEmpty[_Ygl->drawframe] = -1;
 		}
   }
   return 0;
 }
 
-void vdp1_clear(int id, float *col, int* limits) {
+void vdp1_clear(int id, float *col, int* lim) {
 	int progId = CLEAR;
+	int limits[4];
+	memcpy(limits, lim, 4*sizeof(int));
 	if (prg_vdp1[progId] == 0)
     prg_vdp1[progId] = createProgram(sizeof(a_prg_vdp1[progId]) / sizeof(char*), (const GLchar**)a_prg_vdp1[progId]);
 	limits[0] = limits[0]*_Ygl->vdp1width/512;
-	limits[1] = _Ygl->vdp1height - (limits[1]*_Ygl->vdp1height/256) - 1 ;
+	limits[1] = limits[1]*_Ygl->vdp1height/256;
 	limits[2] = limits[2]*_Ygl->vdp1width/512;
-	limits[3] = _Ygl->vdp1height - (limits[3]*_Ygl->vdp1height/256) - 1;
+	limits[3] = limits[3]*_Ygl->vdp1height/256;
   glUseProgram(prg_vdp1[progId]);
 	glBindImageTexture(0, get_vdp1_tex(id), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
 	glBindImageTexture(1, get_vdp1_mesh(id), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
@@ -610,7 +612,7 @@ void vdp1_write() {
 	glBindImageTexture(1, 0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA8);
 }
 
-u32* vdp1_read() {
+u32* vdp1_read(int frame) {
 	int progId = READ;
 	float wratio = 1.0f/_Ygl->vdp1wratio;
 	float hratio = 1.0f/_Ygl->vdp1hratio;
@@ -618,7 +620,7 @@ u32* vdp1_read() {
     prg_vdp1[progId] = createProgram(sizeof(a_prg_vdp1[progId]) / sizeof(char*), (const GLchar**)a_prg_vdp1[progId]);
   glUseProgram(prg_vdp1[progId]);
 
-	glBindImageTexture(0, get_vdp1_tex(_Ygl->drawframe), 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA8);
+	glBindImageTexture(0, get_vdp1_tex(frame), 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA8);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_vdp1access_);
 	glUniform2f(2, wratio, hratio);
 
@@ -629,11 +631,11 @@ u32* vdp1_read() {
 	glBindImageTexture(0, 0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA8);
 
 #ifdef _OGL3_
-	glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0x0, 512*256*4, (void*)(&write_fb[0]));
+	glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0x0, 512*256*4, (void*)(&write_fb[frame][0]));
 #endif
 
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-	return &write_fb[0];
+	return &write_fb[frame][0];
 }
 
 
@@ -654,8 +656,8 @@ void vdp1_compute_init(int width, int height, float ratiow, float ratioh)
 		vdp1_generate_run = 1;
 		cmdq[0] = YabThreadCreateQueue(512);
 		cmdq[1] = YabThreadCreateQueue(512);
-		YabThreadStart(YAB_THREAD_CS_CMD_0, vdp1GenerateBuffer_async_0, NULL);
-		YabThreadStart(YAB_THREAD_CS_CMD_1, vdp1GenerateBuffer_async_1, NULL);
+		YabThreadStart(YAB_THREAD_CS_CMD_0, VIDCSGenerateBufferVdp1_async_0, NULL);
+		YabThreadStart(YAB_THREAD_CS_CMD_1, VIDCSGenerateBufferVdp1_async_1, NULL);
 	}
 #endif
   work_groups_x = _Ygl->vdp1width / local_size_x;
@@ -719,6 +721,7 @@ void vdp1_compute() {
   }
   if (needRender == 0) {
 		nbCmdToProcess = 0;
+		VDP1CPRINT("No cmd to draw\n");
 		return;
 	}
 
@@ -729,7 +732,7 @@ void vdp1_compute() {
 
 	glUseProgram(prg_vdp1[progId]);
 
-	VDP1CPRINT("Draw VDP1\n");
+	VDP1CPRINT("Draw VDP1 on %d\n", _Ygl->drawframe);
 	if ((oldProg != -1) && (oldProg != progId)) {
 		//CleanUp mesh texture
 		vdp1_clear_mesh();
@@ -748,7 +751,7 @@ void vdp1_compute() {
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_nbcmd_);
   glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(int)*NB_COARSE_RAST, (void*)nbCmd);
 
-	glBindImageTexture(0, compute_tex[_Ygl->drawframe], 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+	glBindImageTexture(0, compute_tex[_Ygl->drawframe], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
 	glBindImageTexture(1, mesh_tex[_Ygl->drawframe], 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
 	glBindImageTexture(2, _Ygl->vdp1AccessTex[_Ygl->drawframe], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA8);
 
@@ -759,29 +762,6 @@ void vdp1_compute() {
 	glUniform2f(7, tex_ratiow, tex_ratioh);
 	glUniform2i(8, Vdp1Regs->systemclipX2, Vdp1Regs->systemclipY2);
 	glUniform4i(9, Vdp1Regs->userclipX1, Vdp1Regs->userclipY1, Vdp1Regs->userclipX2, Vdp1Regs->userclipY2);
-	YglMatrix m, mat;
-	YglLoadIdentity(&m);
-  if (Vdp1Regs->TVMR & 0x02) {
-    YglMatrix rotate, scale;
-    YglLoadIdentity(&rotate);
-    rotate.m[0][0] = Vdp1ParaA.deltaX;
-    rotate.m[0][1] = Vdp1ParaA.deltaY;
-    rotate.m[1][0] = Vdp1ParaA.deltaXst;
-    rotate.m[1][1] = Vdp1ParaA.deltaYst;
-		rotate.m[0][3] = Vdp1ParaA.Xst;
-		rotate.m[1][3] = -Vdp1ParaA.Yst;
-
-    YglMatrixMultiply(&mat, &m, &rotate);
-    YglLoadIdentity(&scale);
-    // scale.m[0][0] = 1.0;
-    // scale.m[1][1] = 1.0 / (1.0 + Vdp1ParaA.deltaY);
-    // scale.m[0][3] = 0.0;
-    // scale.m[1][3] = 1.0 - scale.m[1][1];
-
-    YglMatrixMultiply(&m, &scale, &mat);
-
-  }
-  glUniformMatrix4fv(10, 1, 0, (GLfloat*)m.m);
 
 	vdp1_setup();
 

@@ -844,21 +844,24 @@ int Cs2ForceCloseTray( int coreid, const char * cdpath ){
 
 
 //////////////////////////////////////////////////////////////////////////////
+static int Cs2Exec_CMD_unit(u32 timing) {
+  if (Cs2Area->_commandtiming > 0)
+  {
+    if (Cs2Area->_commandtiming <= timing)
+    {
+      Cs2Execute();
+      Cs2Area->_commandtiming = 0;
+      return 1;
+    }
+    else
+      Cs2Area->_commandtiming -= timing;
+  }
+  return 0;
+}
 
-void Cs2Exec(u32 timing) {
+static void Cs2Exec_unit(u32 timing) {
    Cs2Area->_statuscycles += timing * 3;
    Cs2Area->_periodiccycles += timing * 3;
-
-   if (Cs2Area->_commandtiming > 0)
-   {
-      if (Cs2Area->_commandtiming < timing)
-      {
-         Cs2Execute();
-         Cs2Area->_commandtiming = 0;
-      }
-      else
-         Cs2Area->_commandtiming -= timing;
-   }
 
    if (Cs2Area->_statuscycles >= Cs2Area->_statustiming)
    {
@@ -1037,6 +1040,18 @@ void Cs2Exec(u32 timing) {
    else if (Cs2Area->carttype == CART_JAPMODEM)
       JapModemExec(timing);
 #endif
+}
+
+void Cs2Exec(u32 timing) {
+  int cycles = 0;
+  for (int i = 0; i<timing; i++) {
+    cycles++;
+    if (Cs2Exec_CMD_unit(1) == 1) {
+      Cs2Exec_unit(cycles);
+      cycles = 0;
+    }
+  }
+  Cs2Exec_unit(cycles);
 }
 
 //////////////////////////////////////////////////////////////////////////////

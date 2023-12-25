@@ -74,7 +74,6 @@ void OSDSetVisible(int what, int visible);
 int  OSDUseBuffer(void);
 
 extern OSD_struct OSDDummy;
-extern OSD_struct OSDSoft;
 
 /* defined for backward compatibility (used to be in vdp2.h) */
 void ToggleFPS(void);

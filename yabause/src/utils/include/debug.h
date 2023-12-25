@@ -118,6 +118,12 @@ extern "C"{
 #define FRAMELOG(...)
 #endif
 
+#ifdef BUP_DEBUG
+#define LOG_BUP YuiMsg
+#else
+#define LOG_BUP
+#endif
+
 #ifdef __cplusplus
 }
 #endif

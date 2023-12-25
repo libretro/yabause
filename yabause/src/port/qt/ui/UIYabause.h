@@ -51,6 +51,11 @@ public:
 		if ( mRunning && !mPaused )
 			mThread->pauseEmulation( true, false );
 	}
+	void step(){
+		if ( mThread->emulationPaused() ) {
+			YabauseExec();
+		}
+	}
 	~YabauseLocker()
 	{
 		if ( ( mRunning && !mPaused ) /*|| mForceRun*/ )
@@ -76,10 +81,14 @@ public:
 	virtual bool eventFilter( QObject* o, QEvent* e );
 
 	int loadGameFromFile(QString const & fullFilePath);
+	YabauseThread* mYabauseThread;
 
 protected:
 	YabauseGL* mYabauseGL;
-	YabauseThread* mYabauseThread;
+
+	QDockWidget* mLogDock;
+	QTextEdit* teLog;
+	bool mCanLog;
 	bool mInit;
 	bool mNeedResize;
 	QList <cheatsearch_struct> search;
@@ -110,6 +119,7 @@ protected:
 	bool mIsCdIn;
 
 public slots:
+	void appendLog( const char* msg );
 	void pause( bool paused );
 	void reset();
 	void hideMouse();
@@ -166,10 +176,8 @@ protected slots:
 	void on_aViewDebugM68K_triggered();
         void on_aViewDebugSCSP_triggered();
         void on_aViewDebugSCSPChan_triggered();
-	void on_aViewDebugSCSPDSP_triggered();
 	void on_aViewDebugSCUDSP_triggered();
 	void on_aViewDebugMemoryEditor_triggered();
-	void on_aTraceLogging_triggered( bool toggled );
 	// help menu
 	void on_aHelpReport_triggered();
 	void on_aHelpCompatibilityList_triggered();

@@ -1811,7 +1811,7 @@ static INLINE void
 scsp_trigger_main_interrupt (u32 id)
 {
   SCSPLOG ("scsp main interrupt accepted %.4X\n", id);
-  scsp.mintf ();
+  scsp.mintf();
 }
 
 void scsp_check_interrupt() {
@@ -5096,13 +5096,17 @@ static u64 m68k_counter = 0;
 static u64 m68k_counter_done = 0;
 
 
+void ScspHalt(void) {
+  ScspLockThread();
+}
+
 void
 ScspReset (void)
 {
-  g_scsp_lock = 1;
-  YabThreadUSleep(100000);
+  // ScspLockThread();
+  // YabThreadUSleep(100000);
   scsp_reset();
-  g_scsp_lock = 0;
+  ScspUnLockThread();
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -5350,7 +5354,7 @@ void* ScspAsynMainCpu( void * p ){
       YabThreadUnLock(g_scsp_set_cyc_mtx);
     }
 
-    m68k_inc += (cycleRequest >> SCSP_FRACTIONAL_BITS);
+    m68k_inc += cycleRequest;
     // Sync 44100KHz
     while (m68k_inc >= samplecnt)
     {

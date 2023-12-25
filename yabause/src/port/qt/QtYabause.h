@@ -29,11 +29,8 @@ extern "C"
 	#include "yabause.h"
 	#include "peripheral.h"
 	#include "sh2core.h"
-	#include "sh2int.h"
 	#include "sh2iasm.h"
-	#include "vidogl.h"
 	#include "vidcs.h"
-	#include "vidsoft.h"
 	#include "cs0.h"
 	#include "cdbase.h"
 	#include "scsp.h"
@@ -92,11 +89,6 @@ namespace QtYabause
 	{
 		static constexpr char const* const ScreenshotsDirectory = "General/ScreenshotsDirectory";
 		static constexpr char const* const ScreenshotsFormat = "General/ScreenshotsFormat";
-	};
-
-	namespace VolatileSettingKeys
-	{
-		static constexpr char const* const CartridgePath = "Cartridge/Path";
 	};
 
 	namespace DefaultPaths

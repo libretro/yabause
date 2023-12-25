@@ -30,9 +30,7 @@
 #include "cs2.h"
 
 #include "m68kcore.h"
-#include "vidogl.h"
 #include "vidcs.h"
-#include "vidsoft.h"
 #include "ygl.h"
 #include "sh2int_kronos.h"
 #include "libretro_core_options.h"
@@ -53,7 +51,7 @@ static char addon_cart_path[PATH_MAX];
 static char game_basename[128];
 
 static int game_width  = 320;
-static int game_height = 240;
+static int game_height = 224;
 static int game_interlace;
 
 static int window_width;
@@ -71,19 +69,16 @@ typedef enum
     N_RES_8k = 2,
 } NATIVE_RESOLUTION_MODE;
 
-static int g_vidcoretype = VIDCORE_OGL;
-static int g_sh2coretype = 8;
 static int g_skipframe = 0;
 static int g_videoformattype = -1;
+static int g_usecache = 0;
 static int resolution_mode = RES_ORIGINAL;
 static int native_resolution_mode = N_RES_NO;
-static int polygon_mode = PERSPECTIVE_CORRECTION;
 static int initial_resolution_mode = 0;
 static int initial_native_resolution_mode = N_RES_NO;
 static int force_downsampling = 0;
 static int numthreads = 4;
 static int use_beetle_saves = 0;
-static int use_cs = COMPUTE_RBG_OFF;
 static int wireframe_mode = 0;
 static int stv_favorite_region = STV_REGION_EU;
 static int language_id = LANGUAGE_ENGLISH;
@@ -644,9 +639,8 @@ M68K_struct *M68KCoreList[] = {
 };
 
 SH2Interface_struct *SH2CoreList[] = {
-    &SH2Interpreter,
-    &SH2DebugInterpreter,
     &SH2KronosInterpreter,
+    &SH2KronosDebugInterpreter,
     NULL
 };
 
@@ -669,7 +663,6 @@ SoundInterface_struct *SNDCoreList[] = {
 };
 
 VideoInterface_struct *VIDCoreList[] = {
-    &VIDOGL,
     &VIDCS,
     NULL
 };
@@ -680,18 +673,6 @@ static void set_variable_visibility(void)
 {
    struct retro_core_option_display option_display;
 
-   // Hide settings specific to OpenGL
-   option_display.visible = (g_vidcoretype == VIDCORE_OGL);
-   option_display.key = "kronos_polygon_mode";
-   environ_cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY, &option_display);
-
-   // Hide settings specific to OpenGL CS
-   option_display.visible = (g_vidcoretype == VIDCORE_CS);
-   option_display.key = "kronos_bandingmode";
-   environ_cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY, &option_display);
-   option_display.key = "kronos_wireframe_mode";
-   environ_cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY, &option_display);
-
    // Hide settings specific to ST-V
    option_display.visible = stv_mode;
    option_display.key = "kronos_service_enabled";
@@ -700,10 +681,8 @@ static void set_variable_visibility(void)
    environ_cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY, &option_display);
 
    // Hide settings specific to compute shaders
-   option_display.visible = (getCSUsage() == 2);
+   option_display.visible = 1;
    option_display.key = "kronos_videocoretype";
-   environ_cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY, &option_display);
-   option_display.key = "kronos_use_cs";
    environ_cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY, &option_display);
 }
 
@@ -753,8 +732,9 @@ void YuiSwapBuffers(void)
    int prev_game_height = game_height;
    game_width = _Ygl->width;
    game_height = _Ygl->height;
-   if (resolution_need_update || (prev_game_width != game_width) || (prev_game_height != game_height))
-      retro_reinit_av_info();
+   if (resolution_need_update || (prev_game_width != game_width) || (prev_game_height != game_height)) {
+     retro_reinit_av_info();
+   }
    audio_size = soundlen;
    frame_expected--;
    video_cb(RETRO_HW_FRAME_BUFFER_VALID, game_width, game_height, 0);
@@ -830,28 +810,12 @@ static bool try_init_context(u32 context_type)
    switch (context_type)
    {
       case RETRO_HW_CONTEXT_OPENGL_CORE:
-         // minimum requirements to run is opengl 4.2 (RA will try to use highest version available anyway)
-         // 3.3 wouldn't crash but has too many glitches
+         // minimum requirements to run is opengl 4.3 (RA will try to use highest version available anyway)
          params.major = 4;
-         params.minor = 2;
+         params.minor = 3;
          if (glsm_ctl(GLSM_CTL_STATE_CONTEXT_INIT, &params))
             return true;
          break;
-#if 0
-      // keeping this around, just in case it might be useful someday
-      case RETRO_HW_CONTEXT_OPENGL:
-         // when using RETRO_HW_CONTEXT_OPENGL you can't set version above 3.0 (RA will try to use highest version available anyway)
-         // also, the only way to overwrite previously set version with zero values is to set them directly in hw_render, otherwise they are ignored (see glsm_state_ctx_init logic)
-         hw_render.version_major = 3;
-         hw_render.version_minor = 0;
-         if (glsm_ctl(GLSM_CTL_STATE_CONTEXT_INIT, &params))
-         {
-            // shared context is also required when using "gl" video driver
-            environ_cb(RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT, NULL);
-            return true;
-         }
-         break;
-#endif
    }
    return false;
 }
@@ -866,7 +830,7 @@ static bool init_hw_context()
    //if (preferred_context == RETRO_HW_CONTEXT_OPENGL || preferred_context == RETRO_HW_CONTEXT_OPENGL_CORE || preferred_context == RETRO_HW_CONTEXT_DUMMY)
       found_context = try_init_context(RETRO_HW_CONTEXT_OPENGL_CORE);
    if (!found_context)
-      log_cb(RETRO_LOG_ERROR, "Failed retrieving a glcore 4.2 context, make sure your GPU has the minimum requirements and RetroArch is set properly\n");
+      log_cb(RETRO_LOG_ERROR, "Failed retrieving a glcore 4.3 context, make sure your GPU has the minimum requirements and RetroArch is set properly\n");
    return found_context;
 }
 
@@ -933,27 +897,27 @@ void check_variables(void)
          g_skipframe = 5;
    }
 
-   var.key = "kronos_sh2coretype";
+#ifdef USE_CACHE
+   var.key = "kronos_usecache";
    var.value = NULL;
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
-      if (strcmp(var.value, "kronos") == 0)
-         g_sh2coretype = 8;
-      else if (strcmp(var.value, "interpreter") == 0)
-         g_sh2coretype = SH2CORE_INTERPRETER;
-   }
-
-#if !defined(_OGLES3_)
-   var.key = "kronos_videocoretype";
-   var.value = NULL;
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
-      if (strcmp(var.value, "opengl") == 0)
-         g_vidcoretype = VIDCORE_OGL;
-      else if (strcmp(var.value, "opengl_cs") == 0)
-         g_vidcoretype = VIDCORE_CS;
+      if (strcmp(var.value, "disabled") == 0)
+         g_usecache = 0;
+      else if (strcmp(var.value, "enabled") == 0)
+         g_usecache = 1;
    }
 #endif
+
+   var.key = "kronos_force_hle_bios";
+   var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (strcmp(var.value, "disabled") == 0 && hle_bios_force)
+         hle_bios_force = false;
+      else if (strcmp(var.value, "enabled") == 0 && !hle_bios_force)
+         hle_bios_force = true;
+   }
 
    var.key = "kronos_use_beetle_saves";
    var.value = NULL;
@@ -1041,18 +1005,6 @@ void check_variables(void)
          force_downsampling = 1;
    }
 
-   var.key = "kronos_polygon_mode";
-   var.value = NULL;
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
-      if (strcmp(var.value, "perspective_correction") == 0)
-         polygon_mode = PERSPECTIVE_CORRECTION;
-      else if (strcmp(var.value, "gpu_tesselation") == 0)
-         polygon_mode = GPU_TESSERATION;
-      else if (strcmp(var.value, "cpu_tesselation") == 0)
-         polygon_mode = CPU_TESSERATION;
-   }
-
    var.key = "kronos_meshmode";
    var.value = NULL;
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
@@ -1071,16 +1023,6 @@ void check_variables(void)
          banding_mode = ORIGINAL_BANDING;
       else if (strcmp(var.value, "enabled") == 0)
          banding_mode = IMPROVED_BANDING;
-   }
-
-   var.key = "kronos_use_cs";
-   var.value = NULL;
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-   {
-      if (strcmp(var.value, "disabled") == 0)
-         use_cs = COMPUTE_RBG_OFF;
-      else if (strcmp(var.value, "enabled") == 0)
-         use_cs = COMPUTE_RBG_ON;
    }
 
    var.key = "kronos_wireframe_mode";
@@ -1231,9 +1173,9 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
    info->timing.sample_rate    = SAMPLERATE;
    info->geometry.base_width   = base_width;
    info->geometry.base_height  = base_height;
-   info->geometry.max_width    = window_width;
+   info->geometry.max_width    = window_width; //OpenGL surface
    info->geometry.max_height   = window_height;
-   info->geometry.aspect_ratio = (retro_get_region() == RETRO_REGION_NTSC) ? 4.0 / 3.0 : 5.0 / 4.0;
+   info->geometry.aspect_ratio = 4.0 / 3.0;
    if(yabsys.isRotated == 1)
    {
       environ_cb(RETRO_ENVIRONMENT_SET_ROTATION, &yabsys.isRotated);
@@ -1644,9 +1586,9 @@ bool retro_load_game_common()
    if (!init_hw_context())
       return false;
 
-   yinit.vidcoretype             = g_vidcoretype;
+   yinit.vidcoretype             = VIDCORE_CS;
    yinit.percoretype             = PERCORE_LIBRETRO;
-   yinit.sh2coretype             = g_sh2coretype;
+   yinit.sh2coretype             = 8;
    yinit.sndcoretype             = SNDCORE_LIBRETRO;
    yinit.m68kcoretype            = M68KCORE_MUSASHI;
    yinit.regionid                = REGION_AUTODETECT;
@@ -1657,15 +1599,13 @@ bool retro_load_game_common()
    yinit.basetime                = 0;
    yinit.usethreads              = 1;
    yinit.numthreads              = numthreads;
-   yinit.usecache                = 0;
+   yinit.usecache                = g_usecache;
    yinit.skip_load               = 0;
-   yinit.polygon_generation_mode = polygon_mode;
    yinit.stretch                 = 2; //Always ask Kronos core to return a integer scaling
    yinit.extend_backup           = 0;
    yinit.buppath                 = bup_path;
    yinit.meshmode                = (force_downsampling ? IMPROVED_MESH : mesh_mode); // we want improved mesh with downsampling, otherwise it'll cause gfx glitches
    yinit.bandingmode             = banding_mode;
-   yinit.use_cs                  = use_cs;
    yinit.wireframe_mode          = wireframe_mode;
    yinit.skipframe               = g_skipframe;
    yinit.stv_favorite_region     = stv_favorite_region;
@@ -1881,10 +1821,8 @@ void retro_run(void)
          VIDCore->SetSettingValue(VDP_SETTING_RESOLUTION_MODE, resolution_mode);
       if(PERCore && (prev_multitap[0] != multitap[0] || prev_multitap[1] != multitap[1] || prev_service_enabled != service_enabled))
          PERCore->Init();
-      if (VIDCore) VIDCore->SetSettingValue(VDP_SETTING_POLYGON_MODE, polygon_mode);
       if (VIDCore) VIDCore->SetSettingValue(VDP_SETTING_MESH_MODE, (force_downsampling ? IMPROVED_MESH : mesh_mode)); // we want improved mesh with downsampling, otherwise it'll cause gfx glitches
       if (VIDCore) VIDCore->SetSettingValue(VDP_SETTING_BANDING_MODE, banding_mode);
-      if (VIDCore) VIDCore->SetSettingValue(VDP_SETTING_COMPUTE_SHADER, use_cs);
       if (VIDCore) VIDCore->SetSettingValue(VDP_SETTING_WIREFRAME, wireframe_mode);
       // changing video format on the fly is causing issues
       //if (g_videoformattype != -1)

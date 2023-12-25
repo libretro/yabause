@@ -456,21 +456,6 @@ void Vdp2ReadRotationTable(int which, vdp2rotationparameter_struct *parameter, V
           setupPerdot(parameter, addr-4, regs, ram);
       }
     }
-
-
-    if (parameter->k_mem_type == 0) {
-
-      u32 kaddr = (parameter->coeftbladdr+0x01);
-      if (A0_Updated == 1 && kaddr >= 0 && kaddr < 0x20000){
-      }
-      else if (A1_Updated == 1 && kaddr >= 0x20000 && kaddr < 0x40000){
-      }
-      else if (B0_Updated == 1 && kaddr >= 0x40000 && kaddr < 0x60000){
-      }
-      else if (B1_Updated == 1 && kaddr >= 0x60000 && kaddr < 0x80000){
-      }
-
-    }
   }
   else{
     parameter->use_coef_for_linecolor = 0;

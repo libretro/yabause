@@ -97,6 +97,7 @@ void ScspDeInit(void);
 void M68KStart(void);
 void M68KStop(void);
 void ScspReset(void);
+void ScspHalt(void);
 int ScspChangeVideoFormat(int type);
 void ScspAddCycles(u64 cycles);
 void ScspConvert32uto16s(s32 *srcL, s32 *srcR, s16 *dst, u32 len);

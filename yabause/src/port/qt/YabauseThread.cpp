@@ -87,8 +87,10 @@ bool YabauseThread::pauseEmulation( bool pause, bool reset )
 
 	if ( mPause ) {
 		ScspMuteAudio(SCSP_MUTE_SYSTEM);
-		killTimer( mTimerId );
-		mTimerId = -1;
+		if (mTimerId != -1) {
+			killTimer( mTimerId );
+			mTimerId = -1;
+		}
 	}
 	else {
     resetSyncVideo();
@@ -348,6 +350,10 @@ void YabauseThread::reloadSettings()
 	mYabauseConf.percoretype = vs->value( "Input/PerCore", mYabauseConf.percoretype ).toInt();
 	mYabauseConf.sh2coretype = vs->value( "Advanced/SH2Interpreter", mYabauseConf.sh2coretype ).toInt();
 	mYabauseConf.vidcoretype = vs->value( "Video/VideoCore", mYabauseConf.vidcoretype ).toInt();
+	if (mYabauseConf.vidcoretype != VIDCORE_CS) {
+		//Force vidcore to be CS. It is the only version supported now
+		mYabauseConf.vidcoretype = VIDCORE_CS;
+	}
 	mYabauseConf.osdcoretype = vs->value( "Video/OSDCore", mYabauseConf.osdcoretype ).toInt();
 	mYabauseConf.sndcoretype = vs->value( "Sound/SoundCore", mYabauseConf.sndcoretype ).toInt();
 	mYabauseConf.cdcoretype = vs->value( "General/CdRom", mYabauseConf.cdcoretype ).toInt();
@@ -393,8 +399,6 @@ void YabauseThread::reloadSettings()
 	showFPS = vs->value( "General/ShowFPS", false ).toBool();
 	mYabauseConf.vsyncon = vs->value("General/EnableVSync", true).toBool();
 	mYabauseConf.usecache = vs->value("General/SH2Cache", false).toBool();
-	mYabauseConf.usethreads = (int)vs->value( "General/EnableMultiThreading", mYabauseConf.usethreads ).toBool();
-	mYabauseConf.numthreads = vs->value( "General/NumThreads", mYabauseConf.numthreads ).toInt();
 	mYabauseConf.buppath = strdup( vs->value( "Memory/Path", mYabauseConf.buppath ).toString().toLatin1().constData() );
 	mYabauseConf.mpegpath = strdup( vs->value( "MpegROM/Path", mYabauseConf.mpegpath ).toString().toLatin1().constData() );
 	if (vs->value("Memory/ExtendMemory", true).toBool()) {
@@ -402,7 +406,7 @@ void YabauseThread::reloadSettings()
 	} else {
 		mYabauseConf.extend_backup = 0;
 	}
-	mYabauseConf.cartpath = strdup( vs->value(QtYabause::VolatileSettingKeys::CartridgePath, mYabauseConf.cartpath ).toString().toLatin1().constData() );
+	mYabauseConf.cartpath = strdup( vs->value("Cartridge/Path", mYabauseConf.cartpath ).toString().toLatin1().constData() );
 	mYabauseConf.eepromdir = strdup( mYabauseConf.cartpath );
 	mYabauseConf.modemip = strdup( vs->value( "Cartridge/ModemIP", mYabauseConf.modemip ).toString().toLatin1().constData() );
 	mYabauseConf.modemport = strdup( vs->value( "Cartridge/ModemPort", mYabauseConf.modemport ).toString().toLatin1().constData() );
@@ -411,7 +415,6 @@ void YabauseThread::reloadSettings()
 	mYabauseConf.video_upscale_type = vs->value("Video/upscale_type", mYabauseConf.video_upscale_type).toInt();
 	mYabauseConf.polygon_generation_mode = vs->value("Video/polygon_generation_mode", mYabauseConf.polygon_generation_mode).toInt();
 	mYabauseConf.resolution_mode = vs->value("Video/resolution_mode", mYabauseConf.resolution_mode).toInt();
-	mYabauseConf.use_cs = vs->value("Video/compute_shader_mode", mYabauseConf.use_cs).toInt();
 	mYabauseConf.stretch = vs->value("Video/AspectRatio", mYabauseConf.stretch).toInt();
 	mYabauseConf.wireframe_mode = vs->value("Video/Wireframe", mYabauseConf.wireframe_mode).toInt();
 	mYabauseConf.meshmode = vs->value("Video/MeshMode", mYabauseConf.meshmode).toInt();
@@ -481,7 +484,6 @@ void YabauseThread::resetYabauseConf()
 	mYabauseConf.video_filter_type = 0;
 	mYabauseConf.video_upscale_type = 0;
 	mYabauseConf.polygon_generation_mode = 0;
-	mYabauseConf.use_cs = 0;
         mYabauseConf.resolution_mode = 1;
         mYabauseConf.stretch = 0;
 }

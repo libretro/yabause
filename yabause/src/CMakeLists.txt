@@ -52,7 +52,6 @@ include_directories(core/video/opengl/core/include)
 include_directories(core/video/opengl/compute_shader/include)
 include_directories(core/video/opengl/common/include)
 include_directories(core/video/soft)
-include_directories(core/sh2/sh2_simple/include)
 include_directories(core/sh2/sh2_kronos/include)
 include_directories(core/peripheral/mac)
 include_directories(core/peripheral/linux)
@@ -102,12 +101,8 @@ set(kronos_HEADERS
   core/osd/include/osdcore.h
   core/osd/include/font.h
   core/m68k/m68kcore.h
-	core/video/opengl/core/include/vidogl.h
 	core/video/opengl/common/include/vidshared.h
 	core/video/opengl/common/include/ygl.h
-	core/video/soft/vidsoft.h
-	core/video/soft/titan/titan.h
-	core/sh2/sh2_simple/include/sh2int.h
 	core/peripheral/common/peripheral.h
 	core/net/sock.h
   ctrl/include/core.h
@@ -166,9 +161,6 @@ set(kronos_SOURCES
 	sys/memory/src/cs2.c
 	sys/memory/src/eeprom.c
 	sys/memory/src/decrypt.c
-	core/sh2/sh2_simple/src/sh2int.c
-	core/video/soft/vidsoft.c
-	core/video/soft/titan/titan.c
 	core/video/opengl/common/src/vidshared.c
 	core/peripheral/common/peripheral.c
 	core/sound/dummy/snddummy.c
@@ -180,6 +172,8 @@ set(kronos_SOURCES
 	tools/junzip/junzip.c
 	)
 add_definitions(-DIMPROVED_SAVESTATES)
+
+# add_definitions(-DBUP_DEBUG)
 
 add_subdirectory(tools/libchdr)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/tools/libchdr/src)
@@ -207,10 +201,6 @@ endif()
 include(${CMAKE_SOURCE_DIR}/l10n/CMakeLists.txt)
 
 #-------------------------------------------------------
-
-option(YAB_WANT_DYNAREC_KRONOS "Enable Sh2 dynarec by Kronos" ON)
-if (YAB_WANT_DYNAREC_KRONOS)
-	add_definitions(-DDYNAREC_KRONOS=1)
   set(kronos_SOURCES
     ${kronos_SOURCES}
     core/sh2/sh2_kronos/src/sh2int.c
@@ -221,7 +211,6 @@ if (MSVC)
         set(CMAKE_CPP_FLAGS "${CMAKE_CPP_FLAGS} /bigobj")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
 endif(MSVC)
-endif()
 
 option(YAB_WANT_VDP1RAM_CS_ASYNC "Enable Threaded update of VDP1 Ram for CS core" ON)
 if (YAB_WANT_VDP1RAM_CS_ASYNC)
@@ -231,10 +220,6 @@ endif()
 option(YAB_WANT_ASYNC_CELL "Enable Threaded rendering of nbgx cells" ON)
 if (YAB_WANT_ASYNC_CELL)
 	add_definitions(-DCELL_ASYNC=1)
-endif()
-option(YAB_WANT_ASYNC_RGB "Enable Threaded rendering of rgb0" ON)
-if (YAB_WANT_ASYNC_RGB)
-	add_definitions(-DRGB_ASYNC=1)
 endif()
 
 option(YAB_WANT_ASYNC_VDP1_TEXTURE "Enable Threaded rendering of vdp1 texture" ON)
@@ -348,17 +333,9 @@ endif()
 find_package(Threads)
 set(KRONOS_LIBRARIES ${KRONOS_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
-# 16BPP
-set(YAB_RGB "" CACHE STRING "Bit configuration of pixels in the display buffer.")
-if (YAB_RGB STREQUAL "555")
-    add_definitions(-DUSE_16BPP=1 -DUSE_RGB_555=1)
-elseif (YAB_RGB STREQUAL "565")
-    add_definitions(-DUSE_16BPP=1 -DUSE_RGB_565=1)
-endif ()
-
 # OpenGL
 option(YAB_WANT_OPENGL "use OpenGL for video output (most ports require it)" ON)
-if (YAB_WANT_OPENGL AND (YAB_RGB STREQUAL ""))
+if (YAB_WANT_OPENGL)
 	if (NOT YAB_FORCE_GLES31)
 		include(FindOpenGL)
 	endif (NOT YAB_FORCE_GLES31)
@@ -429,7 +406,6 @@ if (YAB_WANT_OPENGL AND (YAB_RGB STREQUAL ""))
 				${kronos_SOURCES}
 			core/video/opengl/common/src/commongl.c
 			core/video/opengl/core/src/yglcache.c
-			core/video/opengl/core/src/vidogl.c
 			core/video/opengl/common/src/ogl_shader.c
 			core/video/opengl/common/src/rbg_compute.cpp
 			core/video/opengl/common/src/common_glshader.c
@@ -707,8 +683,9 @@ if (CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 6.0)
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fno-PIE -no-pie" )
 endif()
 
-
-set(YAB_OPTIMIZATION "-O3 -s" CACHE STRING "Override optimization level")
+#-Wl,--print-gc-sections
+#set(YAB_OPTIMIZATION "-O3 -g" CACHE STRING "Override optimization level")
+set(YAB_OPTIMIZATION "-O3 -s -fdata-sections -ffunction-sections -Wl,--gc-sections" CACHE STRING "Override optimization level")
 if (MSVC)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Ox")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Ox")

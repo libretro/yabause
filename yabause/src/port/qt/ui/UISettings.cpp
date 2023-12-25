@@ -86,7 +86,8 @@ const Items mCartridgeTypes = Items()
 	<< Item( "9", "16 Mbit ROM", true, false )
 	<< Item( "10", "Japanese Modem", false, false, true )
 	<< Item( "12", "STV Rom game", true, false, false, true )
-	<< Item( "13", "128 Mbit Dram", false, false );
+	<< Item( "13", "128 Mbit Dram", false, false )
+	<< Item( "14", "Development Extension", false, false );
 
 const Items mVideoFilterMode = Items()
 	<< Item("0", "None")
@@ -101,17 +102,13 @@ const Items mVideoFilterMode = Items()
 const Items mUpscaleFilterMode = Items()
 	<< Item("0", "None")
 	<< Item("1", "HQ4x")
-        << Item("2", "4xBRZ")
-        << Item("3", "2xBRZ");
+	<< Item("2", "4xBRZ")
+	<< Item("3", "6xBRZ");
 
 const Items mPolygonGenerationMode = Items()
 	<< Item("0", "Triangles using perspective correction")
 	<< Item("1", "CPU Tesselation")
 	<< Item("2", "GPU Tesselation");
-
-	const Items mCSMode = Items()
-		<< Item("0", "Off")
-		<< Item("1", "On");
 
 const Items mResolutionMode = Items()
 	<< Item("1", "Original (original resolution of the Saturn)")
@@ -341,7 +338,6 @@ void UISettings::tbBrowse_clicked()
 		{
 			requestFile( QtYabause::translate( "Open a cartridge file" ), leCartridge, QString(), pathProposal);
 		}
-		updateVolatileSettings();
 	}
 	else if ( tb == tbMemory )
 		requestNewFile( QtYabause::translate( "Choose a memory file" ), leMemory );
@@ -426,18 +422,18 @@ void UISettings::changeFilterMode(int id)
 
 void UISettings::changeVideoMode(int id)
 {
-	if (VIDCoreList[id]->id == 1) {//OpenGL
-		//Tesselation on
-		Tesselation->setVisible(true);
-		cbPolygonGeneration->setVisible(true);
-		//Gouraud off
-		BandingMode->setVisible(false);
-		cbBandingModeFilter->setVisible(false);
-		//Wireframe off
-		Wireframe->setVisible(false);
-		cbWireframeFilter->setVisible(false);
-	}
-	if (VIDCoreList[id]->id == 2) {//Compute Shader
+	// if (VIDCoreList[id]->id == 1) {//OpenGL
+	// 	//Tesselation on
+	// 	Tesselation->setVisible(true);
+	// 	cbPolygonGeneration->setVisible(true);
+	// 	//Gouraud off
+	// 	BandingMode->setVisible(false);
+	// 	cbBandingModeFilter->setVisible(false);
+	// 	//Wireframe off
+	// 	Wireframe->setVisible(false);
+	// 	cbWireframeFilter->setVisible(false);
+	// }
+	if (VIDCoreList[id]->id == VIDCORE_CS) {//Compute Shader
 		//Tesselation offcol4
 		Tesselation->setVisible(false);
 		cbPolygonGeneration->setVisible(false);
@@ -458,11 +454,6 @@ void UISettings::changeUpscaleMode(int id)
 void UISettings::changePolygonMode(int id)
 {
     if (VIDCore != NULL) VIDCore->SetSettingValue(VDP_SETTING_POLYGON_MODE, (mPolygonGenerationMode.at(id).id).toInt());
-}
-
-void UISettings::changeCSMode(int id)
-{
-    if (VIDCore != NULL) VIDCore->SetSettingValue(VDP_SETTING_COMPUTE_SHADER, (mCSMode.at(id).id).toInt());
 }
 
 void UISettings::on_cbCartridge_currentIndexChanged( int id )
@@ -511,7 +502,6 @@ void UISettings::on_cbCartridge_currentIndexChanged( int id )
 	lRegion->setVisible(mCartridgeTypes[id].pathFlag);
 	cbRegion->setVisible(mCartridgeTypes[id].pathFlag);
 	selectedCartridgeType = id;
-	updateVolatileSettings();
 }
 
 void UISettings::loadCores()
@@ -552,13 +542,6 @@ void UISettings::loadCores()
 		cbPolygonGeneration->addItem(QtYabause::translate(it.Name), it.id);
 
 		connect(cbPolygonGeneration, SIGNAL(currentIndexChanged(int)), this, SLOT(changePolygonMode(int)));
-
-		// Compute shader Mode
-		foreach(const Item& it, mCSMode){
-			cbGPURBG->addItem(QtYabause::translate(it.Name), it.id);
-		}
-
-		connect(cbGPURBG, SIGNAL(currentIndexChanged(int)), this, SLOT(changeCSMode(int)));
 
 	// Resolution
   foreach(const Item& it, mResolutionMode)
@@ -738,12 +721,11 @@ void UISettings::loadSettings()
 	else
 		dteBaseTime->setDateTime( QDateTime(QDate(1998, 1, 1), QTime(12, 0, 0)) );
 
-	int numThreads = QThread::idealThreadCount();
-	cbEnableMultiThreading->setChecked(s->value( "General/EnableMultiThreading", numThreads <= 1 ? false : true ).toBool());
-	sbNumberOfThreads->setValue(s->value( "General/NumThreads", numThreads < 0 ? 1 : numThreads ).toInt());
-
 	// video
 	cbVideoCore->setCurrentIndex( cbVideoCore->findData( s->value( "Video/VideoCore", QtYabause::defaultVIDCore().id ).toInt() ) );
+	if (cbVideoCore->currentIndex() != VIDCORE_CS) {
+		cbVideoCore->setCurrentIndex(cbVideoCore->findData(VIDCORE_CS));
+	}
 	changeVideoMode(cbVideoCore->currentIndex());
 #if YAB_PORT_OSD
 	cbOSDCore->setCurrentIndex( cbOSDCore->findData( s->value( "Video/OSDCore", QtYabause::defaultOSDCore().id ).toInt() ) );
@@ -753,7 +735,6 @@ void UISettings::loadSettings()
 	cbFilterMode->setCurrentIndex(cbFilterMode->findData(s->value("Video/filter_type", mVideoFilterMode.at(0).id).toInt()));
         cbUpscaleMode->setCurrentIndex(cbUpscaleMode->findData(s->value("Video/upscale_type", mUpscaleFilterMode.at(0).id).toInt()));
 	cbPolygonGeneration->setCurrentIndex(cbPolygonGeneration->findData(s->value("Video/polygon_generation_mode", mPolygonGenerationMode.at(1).id).toInt()));
-  cbGPURBG->setCurrentIndex(cbGPURBG->findData(s->value("Video/compute_shader_mode", mCSMode.at(0).id).toInt()));
 	cbResolution->setCurrentIndex(cbResolution->findData(s->value("Video/resolution_mode", mResolutionMode.at(0).id).toInt()));
   cbAspectRatio->setCurrentIndex(cbAspectRatio->findData(s->value("Video/AspectRatio", mAspectRatio.at(0).id).toInt()));
 	cbWireframeFilter->setCurrentIndex(cbWireframeFilter->findData(s->value("Video/Wireframe", mWireframe.at(0).id).toInt()));
@@ -775,7 +756,6 @@ void UISettings::loadSettings()
 	leMpegROM->setText( s->value( "MpegROM/Path" ).toString() );
 	checkBox_extended_internal_backup->setChecked(s->value("Memory/ExtendMemory").toBool());
   	//the path needs to go into the volatile settings since we keep only one cartridge path there to keep things simple.
-	updateVolatileSettings();
 
 	// input
 	cbInput->setCurrentIndex( cbInput->findData( s->value( "Input/PerCore", QtYabause::defaultPERCore().id ).toInt() ) );
@@ -817,6 +797,11 @@ void UISettings::loadSettings()
 			action->setShortcut(QKeySequence(var.toString()));
 		}
 	}
+}
+
+void UISettings::on_cbAutostart_toggled(bool enable){
+	VolatileSettings * const vs = QtYabause::volatileSettings();
+	vs->setValue( "autostart", enable);
 }
 
 void UISettings::saveSettings()
@@ -866,14 +851,10 @@ void UISettings::saveSettings()
 	s->setValue( "Video/filter_type", cbFilterMode->itemData(cbFilterMode->currentIndex()).toInt());
 	s->setValue( "Video/upscale_type", cbUpscaleMode->itemData(cbUpscaleMode->currentIndex()).toInt());
 	s->setValue( "Video/polygon_generation_mode", cbPolygonGeneration->itemData(cbPolygonGeneration->currentIndex()).toInt());
-	s->setValue( "Video/compute_shader_mode", cbGPURBG->itemData(cbGPURBG->currentIndex()).toInt());
 	s->setValue("Video/resolution_mode", cbResolution->itemData(cbResolution->currentIndex()).toInt());
 
 	s->setValue( "General/ClockSync", cbClockSync->isChecked() );
 	s->setValue( "General/FixedBaseTime", dteBaseTime->dateTime().toString(Qt::ISODate));
-
-	s->setValue( "General/EnableMultiThreading", cbEnableMultiThreading->isChecked() );
-	s->setValue( "General/NumThreads", sbNumberOfThreads->value());
 
 	// sound
 	s->setValue( "Sound/SoundCore", cbSoundCore->itemData( cbSoundCore->currentIndex() ).toInt() );
@@ -887,6 +868,7 @@ void UISettings::saveSettings()
 	s->setValue( "Memory/Path", leMemory->text() );
 	s->setValue( "MpegROM/Path", leMpegROM->text() );
   s->setValue("Memory/ExtendMemory", checkBox_extended_internal_backup->isChecked());
+	s->setValue("Cartridge/Path", leCartridge->text());
 
 	// input
 	s->setValue( "Input/PerCore", cbInput->itemData( cbInput->currentIndex() ).toInt() );
@@ -933,10 +915,4 @@ QString UISettings::getCartridgePathSettingsKey(int cartridgeType) const
 	}
 	name = name.remove(' ');
 	return "Cartridge/Path/" + name;
-}
-
-void UISettings::updateVolatileSettings() const
-{
-	auto* const volatileSettings = QtYabause::volatileSettings();
-	volatileSettings->setValue(QtYabause::VolatileSettingKeys::CartridgePath, leCartridge->text());
 }

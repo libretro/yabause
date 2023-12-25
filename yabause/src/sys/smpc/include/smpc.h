@@ -63,7 +63,7 @@ typedef struct {
 
 extern Smpc * SmpcRegs;
 
-typedef struct 
+typedef struct
 {
    int offset;
    int size;
@@ -89,13 +89,12 @@ typedef struct {
    s32 timing;
    PortData_struct port1;
    PortData_struct port2;
-   u8 clocksync;
    u32 basetime;  // Safe until early 2106.  After that you're on your own (:
 } SmpcInternal;
 
 extern SmpcInternal * SmpcInternalVars;
 
-int SmpcInit(u8 regionid, int clocksync, u32 basetime, const char *smpcpath, u8 languageid);
+int SmpcInit(u8 regionid, u32 basetime, const char *smpcpath, u8 languageid);
 void SmpcDeInit(void);
 void SmpcRecheckRegion(void);
 int SmpcGetLanguage(void);

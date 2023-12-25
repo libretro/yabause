@@ -51,19 +51,8 @@ NULL
 };
 
 SH2Interface_struct *SH2CoreList[] = {
-&SH2Interpreter,
-&SH2DebugInterpreter,
-#ifdef SH2_DYNAREC
-&SH2Dynarec,
-#endif
-#if DYNAREC_DEVMIYAX
-&SH2Dyn,
-&SH2DynDebug,
-#endif
-#if DYNAREC_KRONOS
 &SH2KronosInterpreter,
 &SH2KronosDebugInterpreter,
-#endif
 NULL
 };
 
@@ -113,7 +102,6 @@ NULL
 
 VideoInterface_struct *VIDCoreList[] = {
 #ifdef HAVE_LIBGL
-&VIDOGL,
 &VIDCS,
 #endif
 #ifdef USE_SOFT_RENDER
@@ -128,7 +116,6 @@ OSD_struct *OSDCoreList[] = {
 #ifdef HAVE_LIBGL
 &OSDNnovg,
 #endif
-&OSDSoft,
 &OSDDummy,
 NULL
 };
@@ -179,6 +166,7 @@ extern "C"
 		  mbstowcs(wtext, str, strlen(str) + 1);//Plus null
 		  LPWSTR ptr = wtext;
 		    ::OutputDebugString(ptr);
+			QtYabause::mainWindow()->appendLog( str );
 	      free(str);
 	  }
        }
@@ -190,18 +178,21 @@ extern "C"
 		vsnprintf(dest, 512, format, argptr);
 		va_end(argptr);
 		printf("%s", dest);
+		fflush(stdout);
+		QtYabause::mainWindow()->appendLog( dest );
 }
 
 #endif
 
        void YuiErrorMsg(const char *error_text)
        {
+				 emit mUIYabause->mYabauseThread->error( error_text, false );
          YuiMsg("Error: %s\n", error_text);
        }
 
   void YuiEndOfFrame()
 	{
-		
+
 	}
 	void YuiSwapBuffers()
 	{
@@ -231,6 +222,7 @@ void QtYabause::appendLog( const char* str )
 #else
   printf("%s\n", str);
 #endif
+	mUIYabause->appendLog(str);
 }
 
 
@@ -515,7 +507,7 @@ SoundInterface_struct QtYabause::defaultSNDCore()
 VideoInterface_struct QtYabause::defaultVIDCore()
 {
 #ifdef HAVE_LIBGL
-        return VIDCS;
+  return VIDCS;
 #else
 	return VIDSoft;
 #endif
@@ -548,11 +540,7 @@ M68K_struct QtYabause::default68kCore()
 
 SH2Interface_struct QtYabause::defaultSH2Core()
 {
-#if DYNAREC_KRONOS
    return SH2KronosInterpreter;
-#else
-   return SH2Interpreter;
-#endif
 }
 
 QMap<uint, PerPad_struct*>* QtYabause::portPadsBits( uint portNumber )
