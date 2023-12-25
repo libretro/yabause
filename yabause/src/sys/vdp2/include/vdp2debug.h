@@ -27,10 +27,12 @@ extern "C" {
 #endif
 
 void Vdp2DebugStatsRBG0(char *outstring, int *isenabled);
+void Vdp2DebugStatsRBG1(char *outstring, int *isenabled);
 void Vdp2DebugStatsNBG0(char *outstring, int *isenabled);
 void Vdp2DebugStatsNBG1(char *outstring, int *isenabled);
 void Vdp2DebugStatsNBG2(char *outstring, int *isenabled);
 void Vdp2DebugStatsNBG3(char *outstring, int *isenabled);
+void Vdp2DebugStatsSprite(char *outstring, int *isenabled);
 void Vdp2DebugStatsGeneral(char *outstring, int *isenabled);
 pixel_t *Vdp2DebugTexture(u32 screen, int * w, int * h);
 

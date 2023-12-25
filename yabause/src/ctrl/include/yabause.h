@@ -63,7 +63,6 @@ typedef struct
    int video_upscale_type;
    int polygon_generation_mode;
    int stretch;
-   int use_cs;
    int meshmode;
    int bandingmode;
    int resolution_mode;
@@ -109,8 +108,6 @@ void DisableAutoFrameSkip(void);
 #define YABSYS_TIMING_BITS  20
 #define YABSYS_TIMING_MASK  ((1 << YABSYS_TIMING_BITS) - 1)
 
-#define DECILINE_STEP (20)
-
 typedef struct
 {
    int DecilineCount;
@@ -124,14 +121,11 @@ typedef struct
    int IsPal;
    int isRotated;
    u8 isSTV;
-   u8 UseThreads;
-   int NumThreads;
    u8 IsSSH2Running;
    u64 OneFrameTime;
    u64 tickfreq;
    int emulatebios;
    int usequickload;
-   int wait_line_count;
    u32 frame_count;
    int usecache;
    int vsyncon;
@@ -139,7 +133,6 @@ typedef struct
    int wireframe_mode;
    int stvInputType;
    int vdp1cycles;
-   u32 LineCycle[DECILINE_STEP];
 } yabsys_struct;
 
 extern yabsys_struct yabsys;
@@ -151,7 +144,6 @@ extern void dropFrameDisplay();
 extern void resetFrameSkip();
 
 extern u32 saved_scsp_cycles;
-#define SCSP_FRACTIONAL_BITS 20
 u32 YabauseGetCpuTime();
 
 #ifdef __cplusplus

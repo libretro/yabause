@@ -44,19 +44,21 @@
 # include "psp/localtime.h"
 #endif
 
+extern YabSem * g_cpu_ready;
+
 Smpc * SmpcRegs;
 SmpcInternal * SmpcInternalVars;
 
 static u8 * SmpcRegsT;
-static int intback_wait_for_line = 0;
+static int intback_wait_for_vblankout = 0;
 static u8 bustmp = 0;
 static const char *smpcfilename = NULL;
 
-//#define SMPCLOG printf
+// #define SMPCLOG printf
 
 //////////////////////////////////////////////////////////////////////////////
 
-int SmpcInit(u8 regionid, int clocksync, u32 basetime, const char *smpcpath, u8 languageid) {
+int SmpcInit(u8 regionid, u32 basetime, const char *smpcpath, u8 languageid) {
    if ((SmpcRegsT = (u8 *) calloc(1, sizeof(Smpc))) == NULL)
       return -1;
 
@@ -67,7 +69,6 @@ int SmpcInit(u8 regionid, int clocksync, u32 basetime, const char *smpcpath, u8 
 
    SmpcInternalVars->regionsetting = regionid;
    SmpcInternalVars->regionid = regionid;
-   SmpcInternalVars->clocksync = clocksync;
    SmpcInternalVars->basetime = basetime ? basetime : time(NULL);
    SmpcInternalVars->languageid = languageid;
 
@@ -211,17 +212,19 @@ static void SmpcSYSRES(void) {
 
 //////////////////////////////////////////////////////////////////////////////
 
+static void SmpcPreCKCHG(void) {
+  ScspHalt();
+}
+
 void SmpcCKCHG352(void) {
    // Set DOTSEL
    SmpcInternalVars->dotsel = 1;
 
-   // Send NMI
-   SH2NMI(MSH2);
    // Reset VDP1, VDP2, SCU, and SCSP
+   ScspReset();
    Vdp1Reset();
    Vdp2Reset();
-   ScuReset();
-   ScspReset();
+   ScuReset(0);
 
    // Clear VDP1/VDP2 ram
 
@@ -229,6 +232,10 @@ void SmpcCKCHG352(void) {
 
    // change clock
    YabauseChangeTiming(CLKTYPE_28MHZ);
+   // Send NMI
+   SH2NMI(MSH2);
+
+   YabSemPost(g_cpu_ready);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -238,14 +245,12 @@ void SmpcCKCHG320(void) {
    // Set DOTSEL
    SmpcInternalVars->dotsel = 0;
 
-   // Send NMI
-   SH2NMI(MSH2);
 
    // Reset VDP1, VDP2, SCU, and SCSP
+   ScspReset();
    Vdp1Reset();
    Vdp2Reset();
-   ScuReset();
-   ScspReset();
+   ScuReset(0);
 
    // Clear VDP1/VDP2 ram
 
@@ -253,6 +258,10 @@ void SmpcCKCHG320(void) {
 
    // change clock
    YabauseChangeTiming(CLKTYPE_26MHZ);
+   // Send NMI
+   SH2NMI(MSH2);
+
+   YabSemPost(g_cpu_ready);
 }
 
 struct movietime {
@@ -283,11 +292,11 @@ static void SmpcINTBACKStatus(void) {
    //SmpcRegs->OREG[0] = 0x0 | (SmpcInternalVars->resd << 6);  // goto setclock/setlanguage screen
 
    // write time data in OREG1-7
-   if (SmpcInternalVars->clocksync) {
-      tmp = SmpcInternalVars->basetime + ((u64)framecounter * 1001 / 60000);
-   } else {
-      tmp = time(NULL);
-   }
+   if (yabsys.IsPal)
+         tmp = SmpcInternalVars->basetime + ((u64)yabsys.frame_count * 1000 / 50000);
+   else
+    tmp = SmpcInternalVars->basetime + ((u64)yabsys.frame_count * 1001 / 60000);
+
 #ifdef WIN32
    memcpy(&times, localtime(&tmp), sizeof(times));
 #elif defined(_arch_dreamcast) || defined(PSP)
@@ -490,33 +499,34 @@ static void SmpcINTBACKPeripheral(void) {
 static void SmpcINTBACK(void) {
   if (SmpcInternalVars->firstPeri == 1) {
      //in a continous mode.
+      SMPCLOG("Continue on command SF %d\n", SmpcRegs->SF);
       SmpcINTBACKPeripheral();
-      SmpcRegs->SF = 0;
-      SmpcRegs->OREG[31] = 0x10;
+      SmpcRegs->SF = (SmpcRegs->SR & 0x20)!=0;
+      SMPCLOG("Continue on command now SF is %d\n", SmpcRegs->SF);
       ScuSendSystemManager();
       return;
   }
   if (SmpcRegs->IREG[0] != 0x0) {
       // Return non-peripheral data
+      SMPCLOG("non peripheral require controlers %d\n", (SmpcRegs->IREG[1]&0x8)!=0);
       SmpcInternalVars->firstPeri = ((SmpcRegs->IREG[1] & 0x8) >> 3);
       for(int i=0;i<31;i++) SmpcRegs->OREG[i] = 0xff;
       m_pmode = (SmpcRegs->IREG[0]>>4);
       SmpcINTBACKStatus();
       SmpcRegs->SR = 0x40 | (SmpcInternalVars->firstPeri << 5); // the low nibble is undefined(or 0xF)
-      SmpcRegs->SF = 0;
+      SmpcRegs->SF = (SmpcRegs->IREG[1]&0x8)!=0;
       ScuSendSystemManager();
       return;
   }
   if (SmpcRegs->IREG[1] & 0x8) {
+      SMPCLOG("controlers only\n");
       SmpcInternalVars->firstPeri = ((SmpcRegs->IREG[1] & 0x8) >> 3);
       SmpcINTBACKPeripheral();
-      SmpcRegs->OREG[31] = 0x10;
       ScuSendSystemManager();
-      SmpcRegs->SF = 0;
+      SmpcRegs->SF = (SmpcRegs->SR & 0x20)!=0;
   }
   else {
     SMPCLOG("Nothing to do\n");
-    SmpcRegs->OREG[31] = 0x10;
     SmpcRegs->SF = 0;
   }
 }
@@ -539,7 +549,7 @@ static void SmpcSETSMEM(void) {
 //////////////////////////////////////////////////////////////////////////////
 
 static void SmpcNMIREQ(void) {
-   SH2SendInterrupt(MSH2, 0xB, 16);
+   SH2IntcSetNmi(MSH2);
    SmpcRegs->OREG[31] = 0x18;
 }
 
@@ -550,7 +560,7 @@ void SmpcResetButton(void) {
    if (SmpcInternalVars->resd)
       return;
 
-   SH2SendInterrupt(MSH2, 0xB, 16);
+   SH2IntcSetNmi(MSH2);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -569,7 +579,6 @@ static void SmpcRESDISA(void) {
 
 //////////////////////////////////////////////////////////////////////////////
 static void processCommand(void) {
-  intback_wait_for_line = 0;
   switch(SmpcRegs->COMREG) {
      case 0x0:
         SMPCLOG("smpc\t: MSHON not implemented\n");
@@ -650,21 +659,22 @@ static void processCommand(void) {
 }
 
 void SmpcExec(s32 t) {
-   if (SmpcInternalVars->timing > 0) {
-
-      if (intback_wait_for_line)
-      {
-         if (yabsys.LineCount == 207)
-         {
-            SmpcInternalVars->timing = -1;
-            intback_wait_for_line = 0;
-         }
-      }
-      SmpcInternalVars->timing -= t;
-      if (SmpcInternalVars->timing <= 0) {
-         processCommand();
-      }
-   }
+  if (intback_wait_for_vblankout != 0)
+  {
+    if (yabsys.LineCount == yabsys.MaxLineCount - 1)
+    {
+      intback_wait_for_vblankout = 0;
+      SmpcInternalVars->timing = 1;
+      SMPCLOG("Intback after vblank out\n");
+    }
+  }
+  if (SmpcInternalVars->timing > 0) {
+    SmpcInternalVars->timing -= t;
+    if (SmpcInternalVars->timing <= 0) {
+        SMPCLOG("Command due to timing %d (%d)\n", SmpcInternalVars->timing, yabsys.LineCount);
+        processCommand();
+    }
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -672,6 +682,11 @@ void SmpcExec(s32 t) {
 
 
 void SmpcINTBACKEnd(void) {
+  if ((SmpcRegs->COMREG == 0x10) && ((SmpcRegs->SF != 0) || (SmpcInternalVars->timing>0))) {
+      SMPCLOG("Intback Abort %d\n", SmpcInternalVars->timing);
+      SmpcRegs->SF = 0; //End command without interrupt - not enough time
+      SmpcInternalVars->timing = -1;
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -684,17 +699,16 @@ u8 FASTCALL SmpcReadByte(SH2_struct *context, u8* mem, u32 addr) {
    if (addr == 0x063) {
      bustmp = SmpcRegsT[addr >> 1] & 0xFE;
      bustmp |= SmpcRegs->SF;
-     SMPCLOG("Read SMPC[0x63] 0x%x\n", bustmp);
+     SMPCLOG("Read SMPC[0x63] 0x%x %d\n", bustmp, yabsys.LineCount);
      return bustmp;
    }
-
    if (addr == 0x77){
      //PDR2
     if((SmpcRegs->DDR[1] & 0x7F) == 0x18) {
      u8 val = (((0x67 & ~0x19) | 0x18 | (eeprom_do_read()<<0)) & ~SmpcRegs->DDR[1]) | m_pdr2_readback;
      return val; //Shall use eeprom normally look at mame stv driver
    } else {
-     return (SmpcRegsT[addr >> 1] & SmpcRegs->DDR[1]) | (PORTDATA2.data[2] & ~SmpcRegs->DDR[1]);
+     return SmpcRegsT[addr >> 1];
    }
    }
    if (addr == 0x75){
@@ -702,29 +716,12 @@ u8 FASTCALL SmpcReadByte(SH2_struct *context, u8* mem, u32 addr) {
      if ((SmpcRegs->DDR[0] & 0x7F) == 0x3f) {
        u8 val = (((0x40 & 0x40) | 0x3f) & ~SmpcRegs->DDR[0]) | m_pdr1_readback;
        return val;
-     // } else {
-     //   return (SmpcRegsT[addr >> 1] & SmpcRegs->DDR[0]) | (PORTDATA1.data[2] & ~SmpcRegs->DDR[0]);
+     } else {
+       return SmpcRegsT[addr >> 1];
      }
    }
 
-   if ((addr >= 0x21) && (addr <= 0x5D)) { //OREG[0-30]
-     if ((SmpcRegs->SF == 1) && (SmpcRegs->COMREG == 0x10)){
-       //Output register [0-30] are read but a intback command is pending
-       //Force the command processing
-       processCommand();
-     }
-   }
-
-   if ((addr == 0x5F) && (addr <= 0x5D)) { //OREG[31]
-     if (SmpcRegs->SF == 1){
-       //Output register 31 is read but a command is pending
-       //Force the command processing
-       processCommand();
-     }
-   }
-
-
-   SMPCLOG("Read SMPC[0x%x] = 0x%x\n",addr, SmpcRegsT[addr >> 1]);
+   SMPCLOG("Read SMPC[0x%x] = 0x%x (%d %d)\n",addr, SmpcRegsT[addr >> 1], yabsys.LineCount, yabsys.DecilineCount);
    return SmpcRegsT[addr >> 1];
 }
 
@@ -763,33 +760,54 @@ static void SmpcSetTiming(void) {
       case 0xD:
       case 0xE:
       case 0xF:
-         SmpcInternalVars->timing = 1; // this has to be tested on a real saturn
+        //CLKCHG => 100ms (64 cycles/16ms) => 64*100/16 = 400
+         SmpcPreCKCHG();
+         SmpcInternalVars->timing = 400; // this has to be tested on a real saturn
          return;
       case 0x10:
           if (SmpcInternalVars->firstPeri == 1) {
-            SmpcInternalVars->timing = 16000;
-            intback_wait_for_line = 1;
+            //Continue
+            if (yabsys.LineCount >= yabsys.VBlankLineCount) {
+              SMPCLOG("Continue on read for peri 1 - wait for vblankout\n");
+              SmpcInternalVars->timing = 0;
+              intback_wait_for_vblankout = 1;
+              SmpcRegs->SF = 1;
+            }
+            else {
+              SmpcInternalVars->timing = 15;
+            }
           } else {
             // Calculate timing based on what data is being retrieved
 
             if ((SmpcRegs->IREG[0] == 0x01) && (SmpcRegs->IREG[1] & 0x8))
             {
                //status followed by peripheral data
-               SmpcInternalVars->timing = 250;
+               // A voir s'il faut attendre Vblankout
+               SmpcInternalVars->timing = 18; //4.5ms => 18
             }
             else if ((SmpcRegs->IREG[0] == 0x01) && ((SmpcRegs->IREG[1] & 0x8) == 0))
             {
                //status only
-               SmpcInternalVars->timing = 250;
+               //Pas de lecture des periph, peut se faire tout le temps
+               SmpcInternalVars->timing = 18;
             }
             else if ((SmpcRegs->IREG[0] == 0) && (SmpcRegs->IREG[1] & 0x8))
             {
                //peripheral only
-               SmpcInternalVars->timing = 16000;
-               intback_wait_for_line = 1;
+               //In case of Vblank - wait for Vblankout
+               if (yabsys.LineCount >= yabsys.VBlankLineCount) {
+                 SMPCLOG("Peripheral only - wait for vblankout\n");
+                 SmpcInternalVars->timing = 0;
+                 intback_wait_for_vblankout = 1;
+                 SmpcRegs->SF = 1;
+               }
+               else {
+                 SmpcInternalVars->timing = 272;
+               }
             }
-            else SmpcInternalVars->timing = 1;
+            else SmpcInternalVars->timing = 10;
          }
+         SmpcRegs->OREG[31] = 0x10;
          return;
       case 0x17:
          SmpcInternalVars->timing = 1;
@@ -857,12 +875,12 @@ void FASTCALL SmpcWriteByte(SH2_struct *context, u8* mem, u32 addr, u8 val) {
       SmpcRegsT[0xF] = val&0x1F;
    } else
      SmpcRegsT[addr >> 1] = val;
-
-      SMPCLOG("Write SMPC[0x%x] = 0x%x\n",addr, SmpcRegsT[addr >> 1]);
+      SMPCLOG("Write SMPC[0x%x] = 0x%x SF = 0x%x (%d %d) %d \n",addr, SmpcRegsT[addr >> 1], SmpcRegs->SF, yabsys.LineCount, yabsys.DecilineCount, yabsys.VBlankLineCount);
 
    switch(addr) {
       case 0x01: // Maybe an INTBACK continue/break request
-         if (SmpcInternalVars->firstPeri != 0)
+         if (SmpcRegs->SF ==0) SMPCLOG("Request a continue/break but no intback on going\n");
+         if ((SmpcInternalVars->firstPeri != 0) && (SmpcInternalVars->timing <= 0))
          {
             if (SmpcRegs->IREG[0] & 0x40) {
                // Break
@@ -872,7 +890,7 @@ void FASTCALL SmpcWriteByte(SH2_struct *context, u8* mem, u32 addr, u8 val) {
                SmpcRegs->SF = 0;
                break;
             }
-            else if (SmpcRegs->IREG[0] & 0x80) {
+            else if ((SmpcRegs->IREG[0] & 0x80)^(oldVal& 0x80)) {
                // Continue
                SMPCLOG("INTBACK Continue\n");
                SmpcSetTiming();
@@ -885,6 +903,7 @@ void FASTCALL SmpcWriteByte(SH2_struct *context, u8* mem, u32 addr, u8 val) {
          return;
       case 0x63:
          SmpcRegs->SF &= val;
+         SMPCLOG("Limit SF = 0%x (0%x)\n", SmpcRegs->SF, val);
          return;
       case 0x75: // PDR1
          // FIX ME (should support other peripherals)
@@ -896,6 +915,8 @@ void FASTCALL SmpcWriteByte(SH2_struct *context, u8* mem, u32 addr, u8 val) {
                break;
             //th control mode (acquire id)
             case 0x40:
+              if(PERCore)
+                   PERCore->HandleEvents();
                SmpcRegs->PDR[0] = do_th_mode(val, &PORTDATA1);
                SMPCLOG("PDR 0 %x %x %x => %x\n", val, PORTDATA1.data[2], PORTDATA1.data[3], SmpcRegs->PDR[0]);
                break;
@@ -941,6 +962,8 @@ void FASTCALL SmpcWriteByte(SH2_struct *context, u8* mem, u32 addr, u8 val) {
 			  break;
         //th control mode (acquire id)
       case 0x40:
+        if(PERCore)
+             PERCore->HandleEvents();
          SmpcRegs->PDR[1] = do_th_mode(val, &PORTDATA2);
          SMPCLOG("PDR 1 %x %x %x => %x\n", val, PORTDATA2.data[2], PORTDATA2.data[3], SmpcRegs->PDR[1]);
          break;

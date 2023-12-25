@@ -232,8 +232,6 @@ typedef struct {
 	int flip;
 	int priority;
 	int dst;
-  int uclipmode;
-  int blendmode;
   s32 cor;
   s32 cog;
   s32 cob;
@@ -274,10 +272,7 @@ typedef struct {
 	GLuint pixelBufferID;
 } YglTextureManager;
 
-extern YglTextureManager * YglTM_vdp1[2];
 extern YglTextureManager * YglTM_vdp2;
-
-extern int getCSUsage();
 
 YglTextureManager * YglTMInit(unsigned int, unsigned int);
 void YglTMDeInit(YglTextureManager ** tm );
@@ -286,7 +281,6 @@ void YglTMReserve(YglTextureManager * tm, unsigned int w, unsigned int h);
 void YglTMAllocate(YglTextureManager * tm, YglTexture *, unsigned int, unsigned int, unsigned int *, unsigned int *);
 void YglTmPush(YglTextureManager * tm);
 void YglTmPull(YglTextureManager * tm, u32 flg);
-void YglTMCheck();
 
 void YglCacheInit(YglTextureManager * tm);
 void YglCacheDeInit(YglTextureManager * tm);
@@ -297,30 +291,18 @@ void setupMaxSize();
 
 void YglCheckFBSwitch(int sync);
 
-#define VDP2_CC_NONE 0x00
-
 #define BLIT_TEXTURE_NB_PROG (16*2*4*14*5*4)
 
 enum
 {
-   //VDP1 Programs
-   //From 0 to 2*3*2*7*2
-
-   PG_VDP1_START = 1,
-   PG_VDP1_VDP2 = (2*2*3*2*2*14)+1,
-
-   PG_VDP1_STARTUSERCLIP=800,
-   PG_VDP1_ENDUSERCLIP=801,
-
-
-   PG_VDP2_NORMAL=803,
-   PG_VDP2_MOSAIC=804,
-   PG_VDP2_NORMAL_CRAM=805,
-   PG_VDP2_MOSAIC_CRAM=806,
+   PG_VDP2_NORMAL=1,
+   PG_VDP2_MOSAIC=2,
+   PG_VDP2_NORMAL_CRAM=3,
+   PG_VDP2_MOSAIC_CRAM=4,
 
 
 
-   PG_VDP2_DRAWFRAMEBUFF_NONE=1024,
+   PG_VDP2_DRAWFRAMEBUFF_NONE=8,
    PG_VDP2_DRAWFRAMEBUFF_LESS_NONE=(PG_VDP2_DRAWFRAMEBUFF_NONE+1),
    PG_VDP2_DRAWFRAMEBUFF_EUQAL_NONE=(PG_VDP2_DRAWFRAMEBUFF_NONE+2),
    PG_VDP2_DRAWFRAMEBUFF_MORE_NONE=(PG_VDP2_DRAWFRAMEBUFF_NONE+3),
@@ -333,8 +315,6 @@ enum
 
 typedef struct {
     GLint  sprite;
-    GLint  tessLevelInner;
-    GLint  tessLevelOuter;
     GLint  fbo;
     GLint  texsize;
     GLuint mtxModelView;
@@ -345,11 +325,6 @@ typedef struct {
     GLint vertexp;
     GLint texcoordp;
 } YglVdp1CommonParam;
-
-#define TESS_COUNT (8)
-void Ygl_Vdp1CommonGetUniformId(GLuint pgid, YglVdp1CommonParam * param);
-int Ygl_uniformVdp1CommonParam(void * p, YglTextureManager *tm, Vdp2 *varVdp2Regs, int id);
-int Ygl_cleanupVdp1CommonParam(void * p, YglTextureManager *tm);
 
 // std140
 typedef struct  {
@@ -377,10 +352,7 @@ typedef struct {
    int currentQuad;
    int maxQuad;
    int vaid;
-   char uClipMode;
    short ux1,uy1,ux2,uy2;
-   int blendmode;
-   int preblendmode;
    GLuint vertexp;
    GLuint texcoordp;
    GLuint mtxModelView;
@@ -409,7 +381,6 @@ typedef struct {
    int prgcurrent;
    int uclipcurrent;
    short ux1,uy1,ux2,uy2;
-   int blendmode;
    YglProgram * prg;
 } YglLevel;
 
@@ -435,7 +406,7 @@ typedef enum
   UP_NONE = 0,
   UP_HQ4X,
   UP_4XBRZ,
-  UP_2XBRZ,
+  UP_6XBRZ,
 } UPMODE;
 
 typedef enum
@@ -444,12 +415,6 @@ typedef enum
     CPU_TESSERATION,
     GPU_TESSERATION
 } POLYGONMODE;
-
-typedef enum
-{
-    COMPUTE_RBG_OFF = 0,
-    COMPUTE_RBG_ON,
-} COMPUTESHADERMODE;
 
 typedef enum
 {
@@ -559,7 +524,7 @@ typedef struct {
    float heightRatio;
    int drawframe;
    int readframe;
-   int vdp1On[2];
+   int shallVdp1Erase[2];
    GLuint rboid_depth;
    GLuint vdp1fbo;
    GLuint vdp1FrameBuff[4];
@@ -611,12 +576,10 @@ typedef struct {
    int WinS_mode[enBGMAX+1];
    int Win_op[enBGMAX+1];
 
-   YglMatrix mtxModelView;
    YglMatrix rbgModelView;
 
    YglProgram windowpg;
 
-   YglLevel * vdp1levels;
    YglLevel * vdp2levels;
 
    // Thread
@@ -651,7 +614,6 @@ typedef struct {
    int wireframe_mode;
    RATIOMODE stretch;
    RESOLUTION_MODE resolution_mode;
-   COMPUTESHADERMODE use_cs;
    GLsync sync;
    GLuint default_fbo;
    int vpd1_running;
@@ -689,7 +651,6 @@ typedef struct {
 
    int vdp1_stencil_mode;
 
-   int rbg_use_compute_shader;
    int useLineColorOffset[2];
 
    float vdp1wratio;
@@ -706,11 +667,17 @@ typedef struct {
 extern Ygl * _Ygl;
 
 // Rotate Screen
+typedef struct {
+  vdp2draw_struct info;
+  YglTexture texture;
+  Vdp2 *regs;
+  u8 order;
+} Vdp2Ctrl;
 
 typedef struct {
+  Vdp2Ctrl ctrl;
   int useb;
-  YglTexture texture;
-  int rgb_type;
+  int rbg_type;
   int pagesize;
   int patternshift;
   u32 LineColorRamAdress;
@@ -721,11 +688,9 @@ typedef struct {
   volatile int vdp2_sync_flg;
   vdp2rotationparameter_struct  paraA;
   vdp2rotationparameter_struct  paraB;
-  Vdp2 *varVdp2Regs;
-  int use_cs;
   int alpha[270];
-  vdp2draw_struct info;
 } RBGDrawInfo;
+
 
 int YglInit(int, int, unsigned int);
 void YglDeInit(void);
@@ -734,7 +699,6 @@ int YglQuadRbg0(RBGDrawInfo * rbg, YglTexture * output, YglCache * c, int rbg_ty
 void YglQuadOffset(vdp2draw_struct * input, YglTexture * output, YglCache * c, int cx, int cy, float sx, float sy, YglTextureManager *tm);
 void YglCachedQuadOffset(vdp2draw_struct * input, YglCache * cache, int cx, int cy, float sx, float sy, YglTextureManager *tm);
 void YglCachedQuad(vdp2draw_struct *, YglCache *, YglTextureManager *tm);
-void YglRender(Vdp2 *varVdp2Regs);
 void YglReset(YglLevel level);
 void YglShowTexture(void);
 void YglChangeResolution(int, int);
@@ -751,16 +715,13 @@ void YglDirtyColorRamWord(void);
 void YglUpdateColorRam();
 void updateVdp2ColorRam(int line);
 void syncColorRam(void);
-int YglInitShader(int id, const GLchar * vertex[], int vcount, const GLchar * frag[], int fcount, const GLchar * tc[], const GLchar * te[], const GLchar * g[] );
+int YglInitShader(int id, const GLchar * vertex[], int vcount, const GLchar * frag[], int fcount);
 
 int YglTriangleGrowShading(YglSprite * input, YglTexture * output, float * colors, YglCache * c, YglTextureManager *tm);
 void YglCacheTriangleGrowShading(YglSprite * input, float * colors, YglCache * cache, YglTextureManager *tm);
 
 u32 * YglGetPerlineBuf(void);
 void YglSetPerlineBuf(u32 * pbuf);
-
-// 0.. no belnd, 1.. Alpha, 2.. Add
-int YglSetLevelBlendmode( int pri, int mode );
 
 extern int YglBlitSimple(int texture, int blend);
 extern int YglBlitTexture(int* prioscreens, int* modescreens, int* isRGB, int * isBlur, int* isPerline, int* isShadow, int* lncl, GetFBFunc vdp1fb, int win_s, int win_s_mode, int Win0, int Win0_mode, int Win1, int Win1_mode, int Win_op, int* use_lncl_off, Vdp2 *varVdp2Regs);
@@ -770,11 +731,7 @@ extern u8 * YglGetVDP2RegPointer();
 
 int Ygl_uniformVDP2DrawFramebuffer(float * offsetcol, int nb_screen, Vdp2* varVdp2Regs);
 
-void YglScalef(YglMatrix *result, GLfloat sx, GLfloat sy, GLfloat sz);
-void YglTranslatef(YglMatrix *result, GLfloat tx, GLfloat ty, GLfloat tz);
-void YglRotatef(YglMatrix *result, GLfloat angle, GLfloat x, GLfloat y, GLfloat z);
-void YglFrustum(YglMatrix *result, float left, float right, float bottom, float top, float nearZ, float farZ);
-void YglPerspective(YglMatrix *result, float fovy, float aspect, float nearZ, float farZ);
+void showMatrix(YglMatrix *mat, const char* name);
 void YglOrtho(YglMatrix *result, float left, float right, float bottom, float top, float nearZ, float farZ);
 void YglLoadIdentity(YglMatrix *result);
 void YglMatrixMultiply(YglMatrix *result, YglMatrix *srcA, YglMatrix *srcB);
@@ -792,15 +749,14 @@ int YglBlitVDP1(u32 srcTexture, float w, float h, int flip);
 int YglBlitFramebuffer(u32 srcTexture, float w, float h, float dispw, float disph);
 int YglUpscaleFramebuffer(u32 srcTexture, u32 targetFbo, float w, float h, float texw, float texh);
 
-void YglRenderVDP1(void);
 u32 * YglGetLineColorScreenPointer();
 void YglSetLineColorScreen(u32 * pbuf, int size);
 
 //To be removed
 void vdp1_write_gl();
-u32* vdp1_read_gl();
+u32* vdp1_read_gl(int);
 void vdp1_write();
-u32* vdp1_read();
+u32* vdp1_read(int);
 //End of remove
 
 u32 * YglGetLineColorOffsetPointer(int id, int start, int size);
@@ -820,11 +776,10 @@ int Ygl_cleanupNormal(void * p, YglTextureManager *tm);
 int YglSetupWindow(YglProgram * prg);
 void Vdp2GenerateWindowInfo(Vdp2 *varVdp2Regs);
 
-void YglEraseWriteVDP1(int id);
-void YglFrameChangeVDP1();
+void clearVDP1Framebuffer(int frame);
 
-void YglEraseWriteCSVDP1(int id);
-void YglFrameChangeCSVDP1();
+int VIDCSEraseWriteVdp1(int id);
+void VIDCSFrameChangeVdp1();
 
 extern void RBGGenerator_init(int width, int height);
 extern void RBGGenerator_resize(int width, int height);

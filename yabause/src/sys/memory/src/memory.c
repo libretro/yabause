@@ -56,8 +56,6 @@
 #include "ygl.h"
 #endif
 
-#include "vidsoft.h"
-#include "vidogl.h"
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -702,7 +700,7 @@ void MappedMemoryInit()
                                 &HighWramMemoryWriteLong,
                                 &HighWram);
 
-     FillMemoryArea( ((backup_file_addr >> 16) & 0xFFF) , (((backup_file_addr + (backup_file_size<<1)) >> 16) & 0xFFF)+1, &BupRamMemoryReadByte,
+     FillMemoryArea( ((backup_file_addr >> 16) & 0xFFF) , (((backup_file_addr + (backup_file_size<<1)-1) >> 16) & 0xFFF), &BupRamMemoryReadByte,
      &BupRamMemoryReadWord,
      &BupRamMemoryReadLong,
      &BupRamMemoryWriteByte,
@@ -721,13 +719,14 @@ CACHE_LOG("rb %x %x\n", addr, addr >> 29);
    {
       case 0x1:
       {
-        context->isAccessingCPUBUS = 1; //When cpu access CPU-BUs at the same time as SCU, there might be a penalty
+        context->isAccessingCPUBUS |= A_BUS_ACCESS; //When cpu access CPU-BUs at the same time as SCU, there might be a penalty
         return ReadByteList[(addr >> 16) & 0xFFF](context, *(MemoryBuffer[(addr >> 16) & 0xFFF]), addr);
       }
       case 0x0:
       case 0x4:
       {
-         context->isAccessingCPUBUS = !context->cacheOn;
+         if (context->cacheOn) context->isAccessingCPUBUS &= ~A_BUS_ACCESS;
+         else context->isAccessingCPUBUS |= A_BUS_ACCESS;
          return CacheReadByteList[(addr >> 16) & 0xFFF](context, *(MemoryBuffer[(addr >> 16) & 0xFFF]), addr);
       }
       case 0x2:
@@ -779,11 +778,12 @@ u16 FASTCALL SH2MappedMemoryReadWord(SH2_struct *context, u32 addr)
    {
       case 0x1:
       {
-        context->isAccessingCPUBUS = 1; //When cpu access CPU-BUs at the same time as SCU, there might be a penalty
+        context->isAccessingCPUBUS |= A_BUS_ACCESS; //When cpu access CPU-BUs at the same time as SCU, there might be a penalty
         return ReadWordList[(addr >> 16) & 0xFFF](context, *(MemoryBuffer[(addr >> 16) & 0xFFF]), addr);
       }
       case 0x0: //0x0 cache
-           context->isAccessingCPUBUS = !context->cacheOn;
+      if (context->cacheOn) context->isAccessingCPUBUS &= ~A_BUS_ACCESS;
+      else context->isAccessingCPUBUS |= A_BUS_ACCESS;
            return CacheReadWordList[(addr >> 16) & 0xFFF](context, *(MemoryBuffer[(addr >> 16) & 0xFFF]), addr);
       case 0x2:
       case 0x5:
@@ -834,12 +834,13 @@ u32 FASTCALL SH2MappedMemoryReadLong(SH2_struct *context, u32 addr)
    {
       case 0x1: //0x0 no cache
       {
-        context->isAccessingCPUBUS = 1; //When cpu access CPU-BUs at the same time as SCU, there might be a penalty
+        context->isAccessingCPUBUS |= A_BUS_ACCESS; //When cpu access CPU-BUs at the same time as SCU, there might be a penalty
         return ReadLongList[(addr >> 16) & 0xFFF](context, *(MemoryBuffer[(addr >> 16) & 0xFFF]), addr);
       }
       case 0x0:
       {
-         context->isAccessingCPUBUS = !context->cacheOn;
+        if (context->cacheOn) context->isAccessingCPUBUS &= ~A_BUS_ACCESS;
+        else context->isAccessingCPUBUS |= A_BUS_ACCESS;
          return CacheReadLongList[(addr >> 16) & 0xFFF](context, *(MemoryBuffer[(addr >> 16) & 0xFFF]), addr);
       }
       case 0x2:
@@ -884,6 +885,8 @@ LOG("Unhandled SH2 Long R %x %d\n", addr,(addr >> 29));
 
 void FASTCALL DMAMappedMemoryWriteByte(u32 addr, u8 val)
 {
+  SH2WriteNotify(MSH2, addr, 1);
+  SH2WriteNotify(SSH2, addr, 1);
     WriteByteList[(addr >> 16) & 0xFFF](NULL, *(MemoryBuffer[(addr >> 16) & 0xFFF]), addr, val);
 }
 
@@ -896,14 +899,15 @@ void FASTCALL SH2MappedMemoryWriteByte(SH2_struct *context, u32 addr, u8 val)
    {
       case 0x1:
       {
-        context->isAccessingCPUBUS = 1; //When cpu access CPU-BUs at the same time as SCU, there might be a penalty
+        context->isAccessingCPUBUS |= A_BUS_ACCESS; //When cpu access CPU-BUs at the same time as SCU, there might be a penalty
         WriteByteList[(addr >> 16) & 0xFFF](context, *(MemoryBuffer[(addr >> 16) & 0xFFF]), addr, val);
         return;
       }
       case 0x0:
       {
-CACHE_LOG("wb %x %x\n", addr, addr >> 29);
-          context->isAccessingCPUBUS = !context->cacheOn;
+        CACHE_LOG("wb %x %x\n", addr, addr >> 29);
+        if (context->cacheOn) context->isAccessingCPUBUS &= ~A_BUS_ACCESS;
+        else context->isAccessingCPUBUS |= A_BUS_ACCESS;
          CacheWriteByteList[(addr >> 16) & 0xFFF](context, *(MemoryBuffer[(addr >> 16) & 0xFFF]), addr, val);
          return;
       }
@@ -950,6 +954,8 @@ LOG("Unhandled Byte W %x\n", addr);
 
 void FASTCALL DMAMappedMemoryWriteWord(u32 addr, u16 val)
 {
+  SH2WriteNotify(MSH2, addr, 2);
+  SH2WriteNotify(SSH2, addr, 2);
   WriteWordList[(addr >> 16) & 0xFFF](NULL, *(MemoryBuffer[(addr >> 16) & 0xFFF]), addr, val);
 }
 
@@ -962,7 +968,7 @@ void FASTCALL SH2MappedMemoryWriteWord(SH2_struct *context, u32 addr, u16 val)
    {
       case 0x1:
       {
-        context->isAccessingCPUBUS = 1; //When cpu access CPU-BUs at the same time as SCU, there might be a penalty
+        context->isAccessingCPUBUS |= A_BUS_ACCESS; //When cpu access CPU-BUs at the same time as SCU, there might be a penalty
         WriteWordList[(addr >> 16) & 0xFFF](context, *(MemoryBuffer[(addr >> 16) & 0xFFF]), addr, val);
         return;
       }
@@ -970,7 +976,8 @@ void FASTCALL SH2MappedMemoryWriteWord(SH2_struct *context, u32 addr, u16 val)
       {
 CACHE_LOG("ww %x %x\n", addr, addr >> 29);
          // Cache/Non-Cached
-         context->isAccessingCPUBUS = !context->cacheOn;
+         if (context->cacheOn) context->isAccessingCPUBUS &= ~A_BUS_ACCESS;
+         else context->isAccessingCPUBUS |= A_BUS_ACCESS;
          CacheWriteWordList[(addr >> 16) & 0xFFF](context, *(MemoryBuffer[(addr >> 16) & 0xFFF]), addr, val);
          return;
       }
@@ -1018,6 +1025,8 @@ LOG("Unhandled Word W %x\n", addr);
 
 void FASTCALL DMAMappedMemoryWriteLong(u32 addr, u32 val)
 {
+  SH2WriteNotify(MSH2, addr, 4);
+  SH2WriteNotify(SSH2, addr, 4);
   WriteLongList[(addr >> 16) & 0xFFF](NULL, *(MemoryBuffer[(addr >> 16) & 0xFFF]), addr, val);
 }
 
@@ -1030,7 +1039,7 @@ void FASTCALL SH2MappedMemoryWriteLong(SH2_struct *context, u32 addr, u32 val)
    {
       case 0x1:
       {
-        context->isAccessingCPUBUS = 1; //When cpu access CPU-BUs at the same time as SCU, there might be a penalty
+        context->isAccessingCPUBUS |= A_BUS_ACCESS; //When cpu access CPU-BUs at the same time as SCU, there might be a penalty
         WriteLongList[(addr >> 16) & 0xFFF](context, *(MemoryBuffer[(addr >> 16) & 0xFFF]), addr, val);
         return;
       }
@@ -1038,7 +1047,8 @@ void FASTCALL SH2MappedMemoryWriteLong(SH2_struct *context, u32 addr, u32 val)
       {
 CACHE_LOG("wl %x %x\n", addr, addr >> 29);
          // Cache/Non-Cached
-         context->isAccessingCPUBUS = !context->cacheOn;
+         if (context->cacheOn) context->isAccessingCPUBUS &= ~A_BUS_ACCESS;
+         else context->isAccessingCPUBUS |= A_BUS_ACCESS;
          CacheWriteLongList[(addr >> 16) & 0xFFF](context, *(MemoryBuffer[(addr >> 16) & 0xFFF]), addr, val);
          return;
       }
@@ -1498,7 +1508,6 @@ int YabSaveState(const char *filename)
 //    yabsys.DecilineStop (new format)
 //    yabsys.SH2CycleFrac (new field)
 //    yabsys.DecilineUSed (new field)
-//    yabsys.UsecFrac (new field)
 //    [scsp2.c] It would be nice to redo the format entirely because so
 //              many fields have changed format/size from the old scsp.c
 //    [scsp2.c] scsp_clock, scsp_clock_frac, ScspState.sample_timer (timing)
@@ -1574,7 +1583,7 @@ int YabSaveStateStream(void ** stream)
    MemStateWrite((void *)&temp, sizeof(int), 1, stream);
    temp = (yabsys.CurSH2FreqType == CLKTYPE_26MHZ) ? 268 : 286;
    MemStateWrite((void *)&temp, sizeof(int), 1, stream);
-   temp32 = (yabsys.UsecFrac * temp / 10) >> YABSYS_TIMING_BITS;
+   temp32 = 0;
    MemStateWrite((void *)&temp32, sizeof(u32), 1, stream);
    MemStateWrite((void *)&yabsys.CurSH2FreqType, sizeof(int), 1, stream);
    MemStateWrite((void *)&yabsys.IsPal, sizeof(int), 1, stream);
@@ -1841,7 +1850,7 @@ int YabLoadStateStream(const void * stream, size_t size_stream)
    MemStateRead((void *)&yabsys.CurSH2FreqType, sizeof(int), 1, stream);
    MemStateRead((void *)&yabsys.IsPal, sizeof(int), 1, stream);
    YabauseChangeTiming(yabsys.CurSH2FreqType);
-   yabsys.UsecFrac = (temp32 << YABSYS_TIMING_BITS) * temp / 10;
+   yabsys.UsecFrac = 0;
 
    if (headerversion > 1) {
 
@@ -1858,13 +1867,6 @@ int YabLoadStateStream(const void * stream, size_t size_stream)
       MemStateRead((void *)buf, totalsize, 1, stream);
 
       YuiTimedSwapBuffers();
-
-#ifdef USE_OPENGL
-      if(VIDCore->id == VIDCORE_SOFT)
-         glRasterPos2i(0, outputheight);
-      if(VIDCore->id == VIDCORE_OGL)
-         glRasterPos2i(0, outputheight/2);
-#endif
 
       VIDCore->GetGlSize(&curroutputwidth, &curroutputheight);
 #ifdef USE_OPENGL

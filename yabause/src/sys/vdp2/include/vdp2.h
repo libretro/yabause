@@ -386,7 +386,6 @@ typedef struct {
    int cpu_cycle_a;
    int cpu_cycle_b;
    u8 AC_VRAM[4][8];
-   int frame_render_flg;
 } Vdp2External_struct;
 
 extern Vdp2External_struct Vdp2External;
@@ -395,9 +394,12 @@ int Vdp2Init(void);
 void Vdp2DeInit(void);
 void Vdp2Reset(void);
 void Vdp2VBlankIN(void);
+void Vdp2VBlankIN_It(void);
 void Vdp2HBlankIN(void);
+void Vdp2HBlankIN_It(void);
 void Vdp2StartVisibleLine(void);
 void Vdp2VBlankOUT(void);
+void Vdp2VBlankOUT_It(void);
 void Vdp2SendExternalLatch(int valid, int hcnt, int vcnt);
 void SpeedThrottleEnable(void);
 void SpeedThrottleDisable(void);

@@ -100,8 +100,8 @@ UIYabause::UIYabause( QWidget* parent )
 	connect(mYabauseGL, &YabauseGL::glInitialized, [&]
 	{
 		auto const * const vs = QtYabause::volatileSettings();
-		if (vs->value("autostart").toBool())
-			aEmulationRun->trigger();
+		// if (vs->value("autostart").toBool())
+		// 	aEmulationRun->trigger();
 	});
 
 	connect(mYabauseGL, &YabauseGL::glResized, [&]
@@ -110,6 +110,18 @@ UIYabause::UIYabause( QWidget* parent )
 	});
 
 	setCentralWidget( container );
+	// create log widget
+	teLog = new QTextEdit( this );
+	teLog->setReadOnly( true );
+	teLog->setWordWrapMode( QTextOption::NoWrap );
+	teLog->setVerticalScrollBarPolicy( Qt::ScrollBarAlwaysOn );
+	teLog->setHorizontalScrollBarPolicy( Qt::ScrollBarAlwaysOn );
+	mLogDock = new QDockWidget( this );
+	mLogDock->setWindowTitle( "Log" );
+	mLogDock->setWidget( teLog );
+	addDockWidget( Qt::BottomDockWidgetArea, mLogDock );
+	mLogDock->setVisible( false );
+	mCanLog = true;
 	oldMouseX = oldMouseY = 0;
 	mouseCaptured = false;
 	cursorShown = false;
@@ -124,6 +136,8 @@ UIYabause::UIYabause( QWidget* parent )
 	connect( mYabauseThread, SIGNAL( requestSize( const QSize& ) ), this, SLOT( sizeRequested( const QSize& ) ) );
 	connect( mYabauseThread, SIGNAL( requestFullscreen( bool ) ), this, SLOT( fullscreenRequested( bool ) ) );
 	connect( mYabauseThread, SIGNAL( requestVolumeChange( int ) ), this, SLOT( on_sVolume_valueChanged( int ) ) );
+	connect( aViewLog, SIGNAL( toggled( bool ) ), mLogDock, SLOT( setVisible( bool ) ) );
+	connect( mLogDock->toggleViewAction(), SIGNAL( toggled( bool ) ), aViewLog, SLOT( setChecked( bool ) ) );
 	connect( mYabauseThread, SIGNAL( error( const QString&, bool ) ), this, SLOT( errorReceived( const QString&, bool ) ) );
 	connect( mYabauseThread, SIGNAL( pause( bool ) ), this, SLOT( pause( bool ) ) );
 	connect( mYabauseThread, SIGNAL( reset() ), this, SLOT( reset() ) );
@@ -180,6 +194,7 @@ UIYabause::UIYabause( QWidget* parent )
 
 UIYabause::~UIYabause()
 {
+	mCanLog = false;
 }
 
 void UIYabause::showEvent( QShowEvent* e )
@@ -359,6 +374,23 @@ void UIYabause::swapBuffers()
 	mYabauseGL->swapBuffers();
 }
 
+void UIYabause::appendLog( const char* s )
+{
+	if (! mCanLog)
+	{
+		qWarning( "%s", s );
+		return;
+	}
+
+	teLog->moveCursor( QTextCursor::End );
+	teLog->append( s );
+
+	VolatileSettings* vs = QtYabause::volatileSettings();
+	if (( !mLogDock->isVisible( )) && ( vs->value( "View/LogWindow" ).toInt() == 1 )) {
+		mLogDock->setVisible( true );
+	}
+}
+
 bool UIYabause::eventFilter( QObject* o, QEvent* e )
 {
 	 if (QEvent::MouseButtonPress == e->type()) {
@@ -394,7 +426,7 @@ void UIYabause::errorReceived( const QString& error, bool internal )
 		QtYabause::appendLog( error.toLocal8Bit().constData() );
 	}
 	else {
-		CommonDialogs::information( error );
+		if (!CommonDialogs::information( error )) exit(-1);
 	}
 }
 
@@ -619,25 +651,6 @@ void UIYabause::on_aFileSettings_triggered()
 			else EnableAutoFrameSkip();
 		}
 
-		if (newhash["General/EnableMultiThreading"] != hash["General/EnableMultiThreading"] ||
-			 newhash["General/NumThreads"] != hash["General/NumThreads"])
-		{
-			if (newhash["General/EnableMultiThreading"].toBool())
-			{
-				int num = newhash["General/NumThreads"].toInt() < 1 ? 1 : newhash["General/NumThreads"].toInt();
-				VIDSoftSetVdp1ThreadEnable(num == 1 ? 0 : 1);
-				VIDSoftSetNumLayerThreads(num);
-				VIDSoftSetNumPriorityThreads(num);
-			}
-			else
-			{
-				VIDSoftSetVdp1ThreadEnable(0);
-				VIDSoftSetNumLayerThreads(1);
-				VIDSoftSetNumPriorityThreads(1);
-			}
-		}
-
-
 		if (newhash["Sound/SoundCore"] != hash["Sound/SoundCore"])
 			ScspChangeSoundCore(newhash["Sound/SoundCore"].toInt());
 
@@ -672,8 +685,8 @@ void UIYabause::on_aFileOpenISO_triggered()
 	else{
 		const QString fn = CommonDialogs::getOpenFileName( QtYabause::volatileSettings()->value( "Recents/ISOs" ).toString(), QtYabause::translate( "Select your iso/cue/bin/zip/chd file" ), QtYabause::translate( "CD Images (*.iso *.ISO *.cue *.CUE *.bin *.BIN *.mds *.MDS *.ccd *.CCD *.zip *.ZIP *.chd *.CHD)" ) );
 		loadGameFromFile(fn);
-                  }
-	        }
+	}
+}
 
 void UIYabause::on_aFileOpenCDRom_triggered()
 {
@@ -691,12 +704,12 @@ void UIYabause::on_aFileOpenCDRom_triggered()
 
 		QtYabause::settings()->setValue( "Recents/CDs", fn );
 
-		vs->setValue( "autostart", false );
+		// vs->setValue( "autostart", false );
 		vs->setValue( "General/CdRom", QtYabause::defaultCDCore().id );
 		vs->setValue( "General/CdRomISO", fn );
-
-		mYabauseThread->pauseEmulation( false, true );
-
+		if (vs->value("autostart").toBool()){
+			mYabauseThread->pauseEmulation( false, true );
+		}
 		refreshStatesActions();
 	}
 }
@@ -934,13 +947,13 @@ void UIYabause::on_aViewDebugSSH2_triggered()
 void UIYabause::on_aViewDebugVDP1_triggered()
 {
 	YabauseLocker locker( mYabauseThread );
-	UIDebugVDP1( this ).exec();
+	UIDebugVDP1( NULL , &locker).exec();
 }
 
 void UIYabause::on_aViewDebugVDP2_triggered()
 {
 	YabauseLocker locker( mYabauseThread );
-	UIDebugVDP2( this ).exec();
+	UIDebugVDP2( NULL, &locker ).exec();
 }
 
 void UIYabause::on_aHelpReport_triggered()
@@ -971,24 +984,10 @@ void UIYabause::on_aViewDebugSCSPChan_triggered()
       UIDebugSCSPChan(this).exec();
 }
 
-void UIYabause::on_aViewDebugSCSPDSP_triggered()
-{
-	YabauseLocker locker( mYabauseThread );
-	UIDebugSCSPDSP( mYabauseThread, this ).exec();
-}
-
 void UIYabause::on_aViewDebugMemoryEditor_triggered()
 {
 	YabauseLocker locker( mYabauseThread );
 	UIMemoryEditor( UIDebugCPU::PROC_MSH2, mYabauseThread, this ).exec();
-}
-
-void UIYabause::on_aTraceLogging_triggered( bool toggled )
-{
-#ifdef SH2_TRACE
-	SH2SetInsTracing(toggled? 1 : 0);
-#endif
-	return;
 }
 
 void UIYabause::on_aHelpCompatibilityList_triggered()
@@ -1088,14 +1087,19 @@ int UIYabause::loadGameFromFile(QString const& fileName)
 
 	QtYabause::settings()->setValue("Recents/ISOs", fileName);
 
-	vs->setValue("autostart", false);
+	// vs->setValue("autostart", false);
 	vs->setValue("General/CdRom", ISOCD.id);
 	vs->setValue("General/CdRomISO", fileName);
-
-	if (mYabauseThread->CloseTray() != 0) {
-		mYabauseThread->pauseEmulation(false, true);
+	if (QFile::exists(fileName))
+	{
+		if (mYabauseThread->CloseTray() != 0) {
+			if (vs->value("autostart").toBool()){
+				mYabauseThread->pauseEmulation(false, true);
+			}
 	}
-	mIsCdIn = true;
+
+		mIsCdIn = true;
+	}
 
 	refreshStatesActions();
 	return 0;
@@ -1115,8 +1119,5 @@ void UIYabause::dropEvent(QDropEvent* e)
 	QString const& fileName = url.toLocalFile();
 	qDebug() << "Dropped file:" << fileName;
 
-	if (QFile::exists(fileName))
-	{
-		loadGameFromFile(fileName);
-	}
+	loadGameFromFile(fileName);
 }

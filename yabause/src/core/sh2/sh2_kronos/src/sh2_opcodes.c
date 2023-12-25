@@ -34,20 +34,19 @@
 #include "opcode_functions_define.h"
 
 extern void SH2HandleInterrupts(SH2_struct *context);
+extern void SH2ExecCb(SH2_struct *context);
 
 //////////////////////////////////////////////////////////////////////////////
 
 static void SH2delay(SH2_struct * sh, u32 addr)
 {
    sh->instruction = krfetchlist[(addr >> 20) & 0xFFF](sh, addr);
-   sh->regs.PC -= 2;
    opcodeTable[sh->instruction](sh);
 }
 
 static void SH2next(SH2_struct * sh)
 {
-   sh->instruction = krfetchlist[(sh->regs.PC >> 20) & 0xFFF](sh, sh->regs.PC);
-   opcodeTable[sh->instruction](sh);
+   sh->doNotInterrupt = 1;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -229,7 +228,9 @@ static void SH2bfs(SH2_struct * sh, u32 d)
    {
       s32 disp = (s32)(s8)d;
 
-      sh->regs.PC = sh->regs.PC + (disp * 2) + 4;
+      sh->regs.PC = sh->regs.PC + (disp * 2);
+
+      sh->regs.PC += 2;
 
       sh->cycles += 2;
       SH2delay(sh, temp + 2);
@@ -253,8 +254,9 @@ static void SH2bra(SH2_struct * sh, u32 disp)
    if ((disp&0x800) != 0)
       disp |= 0xFFFFF000;
 
-   sh->regs.PC = sh->regs.PC + (disp<<1) + 4;
+   sh->regs.PC = sh->regs.PC + (disp<<1);
 
+   sh->regs.PC += 2;
    sh->cycles += 2;
    SH2delay(sh, temp + 2);
 }
@@ -267,8 +269,8 @@ static void SH2braf(SH2_struct * sh, u32 m)
    u32 temp;
 
    temp = sh->regs.PC;
-   sh->regs.PC += sh->regs.R[m] + 4; 
-
+   sh->regs.PC += sh->regs.R[m];
+   sh->regs.PC += 2;
    sh->cycles += 2;
    SH2delay(sh, temp + 2);
 }
@@ -280,10 +282,12 @@ static void SH2bsr(SH2_struct * sh, u32 disp)
 {
    u32 temp;
 
+   if (sh->interruptReturnAddress != 0) sh->branchDepth++;
    temp = sh->regs.PC;
    if ((disp&0x800) != 0) disp |= 0xFFFFF000;
    sh->regs.PR = sh->regs.PC + 4;
-   sh->regs.PC = sh->regs.PC+(disp<<1) + 4;
+   sh->regs.PC = sh->regs.PC+(disp<<1);
+   sh->regs.PC += 2;
 
    sh->cycles += 2;
    SH2delay(sh, temp + 2);
@@ -293,9 +297,11 @@ static void SH2bsr(SH2_struct * sh, u32 disp)
 
 static void SH2bsrf(SH2_struct * sh, u32 n)
 {
+   if (sh->interruptReturnAddress != 0) sh->branchDepth++;
    u32 temp = sh->regs.PC;
    sh->regs.PR = sh->regs.PC + 4;
-   sh->regs.PC += sh->regs.R[n] + 4;
+   sh->regs.PC += sh->regs.R[n];
+   sh->regs.PC += 2;
    sh->cycles += 2;
    SH2delay(sh, temp + 2);
 }
@@ -329,7 +335,8 @@ static void SH2bts(SH2_struct * sh, u32 d)
    {
       s32 disp = (s32)(s8)d;
 
-      sh->regs.PC += (disp * 2) + 4;
+      sh->regs.PC += (disp * 2);
+      sh->regs.PC += 2;
       sh->cycles += 2;
       SH2delay(sh, temp + 2);
    }
@@ -527,7 +534,7 @@ static void SH2div1(SH2_struct * sh, u32 n, u32 m)
 {
    u32 tmp0;
    u8 old_q, tmp1;
-  
+
    old_q = sh->regs.SR.part.Q;
    sh->regs.SR.part.Q = (u8)((0x80000000 & sh->regs.R[n])!=0);
    sh->regs.R[n] <<= 1;
@@ -640,19 +647,19 @@ static void SH2dmulu(SH2_struct * sh, u32 n, u32 m)
    temp1 = RmH * RnL;
    temp2 = RmL * RnH;
    temp3 = RmH * RnH;
-  
+
    Res2 = 0;
    Res1 = temp1 + temp2;
    if (Res1 < temp1)
       Res2 += 0x00010000;
-  
+
    temp1 = (Res1 << 16) & 0xFFFF0000;
    Res0 = temp0 + temp1;
    if (Res0 < temp0)
       Res2++;
-  
+
    Res2 = Res2 + ((Res1 >> 16) & 0x0000FFFF) + temp3;
- 
+
    sh->regs.MACH = Res2;
    sh->regs.MACL = Res0;
    sh->regs.PC += 2;
@@ -722,7 +729,8 @@ static void SH2jmp(SH2_struct * sh, u32 m)
    u32 temp;
 
    temp=sh->regs.PC;
-   sh->regs.PC = sh->regs.R[m];
+   sh->regs.PC = sh->regs.R[m] - 4;
+   sh->regs.PC += 2;
    sh->cycles += 2;
    SH2delay(sh, temp + 2);
 }
@@ -735,8 +743,10 @@ static void SH2jsr(SH2_struct * sh, u32 m)
    u32 temp;
 
    temp = sh->regs.PC;
+   if (sh->interruptReturnAddress != 0) sh->branchDepth++;
    sh->regs.PR = sh->regs.PC + 4;
-   sh->regs.PC = sh->regs.R[m];
+   sh->regs.PC = sh->regs.R[m] - 4;
+   sh->regs.PC += 2;
    sh->cycles += 2;
    SH2delay(sh, temp + 2);
 }
@@ -774,6 +784,7 @@ static void SH2ldcmsr(SH2_struct * sh, u32 m)
    sh->regs.PC += 2;
    sh->cycles += 3;
    SH2next(sh);
+   SH2EvaluateInterrupt(sh);
 }
 
 
@@ -796,8 +807,12 @@ static void SH2ldcsr(SH2_struct * sh, u32 m)
    sh->regs.SR.all = sh->regs.R[m]&0x000003F3;
    sh->regs.PC += 2;
    sh->cycles++;
-   SH2next(sh);
-   SH2HandleInterrupts(sh);
+   //execute the next
+   sh->instruction = krfetchlist[(sh->regs.PC >> 20) & 0xFFF](sh, sh->regs.PC);
+   SH2ExecCb(sh);
+   opcodeTable[sh->instruction](sh);
+   //SR has changed, Handle interrupt now
+   SH2EvaluateInterrupt(sh);
 }
 
 
@@ -860,6 +875,7 @@ static void SH2ldsmmacl(SH2_struct * sh, u32 m)
 
 static void SH2ldsmpr(SH2_struct * sh, u32 m)
 {
+   if (sh->interruptReturnAddress != 0) sh->branchDepth++;
    sh->regs.PR = SH2MappedMemoryReadLong(sh, sh->regs.R[m]);
    sh->regs.R[m] += 4;
    sh->regs.PC += 2;
@@ -871,6 +887,7 @@ static void SH2ldsmpr(SH2_struct * sh, u32 m)
 
 static void SH2ldspr(SH2_struct * sh, u32 m)
 {
+  if (sh->interruptReturnAddress != 0) sh->branchDepth++;
    sh->regs.PR = sh->regs.R[m];
    sh->regs.PC += 2;
    sh->cycles++;
@@ -902,7 +919,7 @@ static void SH2macl(SH2_struct * sh, u32 n, u32 m)
          sum = 0x00007FFFFFFFFFFFULL;
      }
    }
-   sh->regs.MACL = sum; 
+   sh->regs.MACL = sum;
    sh->regs.MACH = sum >> 32;
 #else
    if ((s32) (tempn^tempm) < 0)
@@ -1463,7 +1480,7 @@ static void SH2neg(SH2_struct * sh, u32 n, u32 m)
 static void SH2negc(SH2_struct * sh, u32 n, u32 m)
 {
    u32 temp;
-  
+
    temp=0-sh->regs.R[m];
    sh->regs.R[n] = temp - sh->regs.SR.part.T;
    if (0 < temp)
@@ -1635,12 +1652,18 @@ static void SH2rte(SH2_struct * sh)
 {
    u32 temp;
    temp=sh->regs.PC;
-   sh->regs.PC = SH2MappedMemoryReadLong(sh, sh->regs.R[15]);
+   sh->regs.PC = SH2MappedMemoryReadLong(sh, sh->regs.R[15]) - 4;
    sh->regs.R[15] += 4;
    sh->regs.SR.all = SH2MappedMemoryReadLong(sh, sh->regs.R[15]) & 0x000003F3;
    sh->regs.R[15] += 4;
+   sh->regs.PC += 2;
    sh->cycles += 4;
    SH2delay(sh, temp + 2);
+   if ((sh->interruptReturnAddress != sh->regs.PC) && (SH2Core->updateInterruptReturnHandling != NULL)) {
+     sh->branchDepth--;
+     SH2Core->updateInterruptReturnHandling(sh);
+   }
+   SH2EvaluateInterrupt(sh);
 }
 
 
@@ -1651,10 +1674,16 @@ static void SH2rts(SH2_struct * sh)
    u32 temp;
 
    temp = sh->regs.PC;
-   sh->regs.PC = sh->regs.PR;
-
+   sh->regs.PC = sh->regs.PR - 4;
    sh->cycles += 2;
+   sh->regs.PC += 2;
    SH2delay(sh, temp + 2);
+   if (sh->interruptReturnAddress != 0) {
+     sh->branchDepth--;
+     if ((sh->branchDepth < 0) && (SH2Core->updateInterruptReturnHandling != NULL)) {
+       SH2Core->updateInterruptReturnHandling(sh);
+     }
+   }
 }
 
 
@@ -1716,7 +1745,7 @@ static void SH2shll(SH2_struct * sh, u32 n)
       sh->regs.SR.part.T=0;
    else
       sh->regs.SR.part.T=1;
- 
+
    sh->regs.R[n]<<=1;
    sh->regs.PC+=2;
    sh->cycles++;
@@ -1878,7 +1907,7 @@ static void SH2stsmacl(SH2_struct * sh, u32 n)
 static void SH2stsmmach(SH2_struct * sh, u32 n)
 {
    sh->regs.R[n] -= 4;
-   SH2MappedMemoryWriteLong(sh, sh->regs.R[n],sh->regs.MACH); 
+   SH2MappedMemoryWriteLong(sh, sh->regs.R[n],sh->regs.MACH);
    sh->regs.PC+=2;
    sh->cycles++;
    SH2next(sh);
@@ -1930,7 +1959,7 @@ static void SH2sub(SH2_struct * sh, u32 n, u32 m)
 static void SH2subc(SH2_struct * sh, u32 n, u32 m)
 {
    u32 tmp0,tmp1;
-  
+
    tmp1 = sh->regs.R[n] - sh->regs.R[m];
    tmp0 = sh->regs.R[n];
    sh->regs.R[n] = tmp1 - sh->regs.SR.part.T;

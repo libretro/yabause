@@ -92,7 +92,6 @@ int PERSDLJoyInit(void) {
    SDL_SetMainReady();
 #endif
 
-YuiMsg("µSDL joy init\n");
 	// init joysticks
 	if ( SDL_InitSubSystem( SDL_INIT_JOYSTICK ) == -1 )
 	{

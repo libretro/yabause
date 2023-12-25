@@ -537,8 +537,7 @@ static const GLchar Yglprg_vdp2_common_draw[] =
 "  if (ram_mode != 1) u_color_ram_offset = u_color_ram_offset & 0x300;\n"
 "  fbmode = 1;\n"
 "  vdp1mode = 1;\n"
-"  ivec2 fbCoord = addr + ivec2(x*vdp1Ratio.x, 0);\n"
-"  fbCoord = ivec2(getFBCoord(vec2(fbCoord)));\n"
+"  ivec2 fbCoord = getFBCoord() + ivec2(x*vdp1Ratio.x, 0);\n"
 "  vec4 col = texelFetch(s_vdp1FrameBuffer, fbCoord, 0);\n"
 "  vec4 meshpix = texelFetch(s_vdp1Mesh, fbCoord, 0);\n"
 "  FBTest = col;\n"
@@ -593,7 +592,7 @@ static const GLchar Yglprg_vdp2_common_draw[] =
 "    tmpColor.b += (int(col.a*255.0)&0x7)/255.0;\n"
 "    msb = 1;\n"
 "  } \n"
-"  ret.offset_color = texelFetch( s_perline, ivec2(int( (u_vheight-PosY) * u_emu_height), is_perline[6]), 0 ).rgb;\n"
+"  ret.offset_color = texelFetch( s_perline, ivec2(int(PosY * u_emu_height), is_perline[6]), 0 ).rgb;\n"
 "  ret.offset_color = (ret.offset_color - vec3(0.5))*2.0;\n"
 "  if (fbmode != 0) {\n";
 
@@ -605,7 +604,7 @@ static const GLchar Yglprg_vdp2_common_part[] =
 "void initLineWindow() {\n"
 "  ivec2 linepos; \n "
 "  linepos.y = 0; \n "
-"  linepos.x = int( (u_vheight-PosY) * u_emu_height);\n"
+"  linepos.x = int( PosY * u_emu_height);\n"
 "  vec4 lineW0 = texelFetch(s_win0,linepos,0);\n"
 "  startW0.x = int(((lineW0.r*255.0) + (int(lineW0.g*255.0)<<8))*u_emu_vdp2_width);\n"
 "  endW0.x = int(((lineW0.b*255.0) + (int(lineW0.a*255.0)<<8))*u_emu_vdp2_width);\n"
@@ -672,8 +671,8 @@ static const GLchar Yglprg_vdp2_common_part[] =
 "}\n"
 
 "bool inTransparentWindow(int id) {\n"
-"  return inWindow(id)\n;"
-"}\n;"
+"  return inWindow(id);\n"
+"}\n"
 "bool inCCWindow() {\n"
 "  if ((((win1>>7)&0x1) != 0) || (((win0>>7)&0x1) != 0) || (((win_s>>7)&0x1)!= 0)) {\n"
 "    return inWindow(7);\n"
@@ -1174,13 +1173,12 @@ vec4 cl_off_rbg0 = vec4(0.0);\n \
 vec4 cl_off_rbg1 = vec4(0.0);\n \
 ivec2 addr = ivec2(textureSize(s_back, 0) * v_texcoord.st);\n \
 colorback = texelFetch( s_back, addr,0 );\n \
-ivec2 linepos = ivec2(int( (u_vheight-PosY) * u_emu_height), 0);\n \
+ivec2 linepos = ivec2(int(PosY * u_emu_height), 0);\n \
 linepos.y = is_perline[7];\n \
 if (mod(PosY,2) == nbFrame) discard;\n \
 offset_color = texelFetch( s_perline, linepos,0 ).rgb;\n \
 offset_color.rgb = (offset_color.rgb - vec3(0.5))*2.0;\n \
-addr = ivec2(tvSize * vdp1Ratio * v_texcoord.st);\n \
-addr.y += textureSize(s_vdp1FrameBuffer, 0).y - int(tvSize.y*vdp1Ratio.y);\n \
+addr = ivec2(gl_FragCoord.xy);\n \
 initLineWindow();\n \
 colortop = colorback;\n \
 isRGBtop = 1;\n \
@@ -1803,10 +1801,6 @@ void initVDP2DrawCode(const GLchar* start[7], const GLchar* draw, const GLchar* 
               int index = 4*(5*(14*(16*(2*j+k)+l)+m)+i)+n;
 
               LOG_SHADER("index = %d (%d %d %d %d %d)\n", index, j, k, l, m, i);
-              #ifndef FORCE_VDP2_DIVERSITY
-              if (getCSUsage() == 0) pYglprg_vdp2_blit_f[index][0] = start[6];
-              else
-              #endif
               pYglprg_vdp2_blit_f[index][0] = start[m%7];
               pYglprg_vdp2_blit_f[index][1] = Yglprg_vdp2_common_start;
               pYglprg_vdp2_blit_f[index][2] = vdp2blit_palette_mode_f[k];
@@ -1851,7 +1845,7 @@ static void YglCommon_printShaderError( GLuint shader )
   }
 }
 
-int YglInitShader(int id, const GLchar * vertex[], int vcount, const GLchar * frag[], int fcount, const GLchar * tc[], const GLchar * te[], const GLchar * g[] )
+int YglInitShader(int id, const GLchar * vertex[], int vcount, const GLchar * frag[], int fcount)
 {
     GLint compiled,linked;
     GLuint vshader;
@@ -1884,62 +1878,7 @@ int YglInitShader(int id, const GLchar * vertex[], int vcount, const GLchar * fr
      }
     glAttachShader(_prgid[id], vshader);
     glAttachShader(_prgid[id], fshader);
-#if defined(_OGL3_)
-  if (tc != NULL){
-    if (tc[0] != NULL){
-      tcsHandle = glCreateShader(GL_TESS_CONTROL_SHADER);
-      if (tcsHandle == 0){
-        YGLLOG("GL_TESS_CONTROL_SHADER is not supported\n");
-      }
-      glShaderSource(tcsHandle, 1, tc, NULL);
-      glCompileShader(tcsHandle);
-      glGetShaderiv(tcsHandle, GL_COMPILE_STATUS, &compiled);
-      if (compiled == GL_FALSE) {
-        YGLLOG("Compile error in GL_TESS_CONTROL_SHADER shader.\n");
-        YglCommon_printShaderError(tcsHandle);
-        _prgid[id] = 0;
-        return -1;
-      }
-      glAttachShader(_prgid[id], tcsHandle);
-    }
-  }
-  if (te != NULL){
-    if (te[0] != NULL){
-      tesHandle = glCreateShader(GL_TESS_EVALUATION_SHADER);
-      if (tesHandle == 0){
-        YGLLOG("GL_TESS_EVALUATION_SHADER is not supported\n");
-      }
-      glShaderSource(tesHandle, 1, te, NULL);
-      glCompileShader(tesHandle);
-      glGetShaderiv(tesHandle, GL_COMPILE_STATUS, &compiled);
-      if (compiled == GL_FALSE) {
-        YGLLOG("Compile error in GL_TESS_EVALUATION_SHADER shader.\n");
-        YglCommon_printShaderError(tesHandle);
-        _prgid[id] = 0;
-        return -1;
-      }
-      glAttachShader(_prgid[id], tesHandle);
-    }
-  }
-  if (g != NULL){
-    if (g[0] != NULL){
-      gsHandle = glCreateShader(GL_GEOMETRY_SHADER);
-      if (gsHandle == 0){
-        YGLLOG("GL_GEOMETRY_SHADER is not supported\n");
-      }
-      glShaderSource(gsHandle, 1, g, NULL);
-      glCompileShader(gsHandle);
-      glGetShaderiv(gsHandle, GL_COMPILE_STATUS, &compiled);
-      if (compiled == GL_FALSE) {
-        YGLLOG("Compile error in GL_TESS_EVALUATION_SHADER shader.\n");
-        YglCommon_printShaderError(gsHandle);
-        _prgid[id] = 0;
-        return -1;
-      }
-      glAttachShader(_prgid[id], gsHandle);
-    }
-  }
-#endif
+
     glLinkProgram(_prgid[id]);
     glGetProgramiv(_prgid[id], GL_LINK_STATUS, &linked);
     if (linked == GL_FALSE) {
@@ -1970,7 +1909,9 @@ int setupVDP2Prog(Vdp2* varVdp2Regs, int nb_screen, int CS) {
   int spritetype =  (varVdp2Regs->SPCTL & 0xF); // 16x
 
   int screen_nb = nb_screen; //14x
-  screen_nb += 7;
+  if (Vdp1External.disptoggle != 0) {
+    screen_nb += 7;
+  }
 
   if (spritetype > 0x7) {
     //VDP2 use FB as 8 bits
@@ -2029,7 +1970,7 @@ void compileVDP2Prog(int id, const GLchar **v, int CS){
   YGLLOG("PG_VDP2_DRAWFRAMEBUFF_NONE --START [%d]--\n", arrayid);
   LOG_SHADER("%d %d %d\n", id, PG_VDP2_DRAWFRAMEBUFF_NONE, id-PG_VDP2_DRAWFRAMEBUFF_NONE);
   if (CS == 0) {
-    if (YglInitShader(id, v, 1, pYglprg_vdp2_blit_f[id-PG_VDP2_DRAWFRAMEBUFF_NONE], 17, NULL, NULL, NULL) != 0) { YuiMsg("Error init prog %d\n",id); abort(); }
+    if (YglInitShader(id, v, 1, pYglprg_vdp2_blit_f[id-PG_VDP2_DRAWFRAMEBUFF_NONE], 17) != 0) { YuiMsg("Error init prog %d\n",id); abort(); }
   } else {
     if (createCSProgram(id, 17, pYglprg_vdp2_blit_f[id-PG_VDP2_DRAWFRAMEBUFF_NONE])!= 0) { YuiMsg("Error init prog %d\n",id); abort(); }
   }

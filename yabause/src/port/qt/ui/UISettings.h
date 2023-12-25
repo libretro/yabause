@@ -58,6 +58,7 @@ protected slots:
 	void on_cbCdRom_currentIndexChanged( int id );
 	void on_cbClockSync_stateChanged( int state );
 	void on_cbCartridge_currentIndexChanged( int id );
+	void on_cbAutostart_toggled(bool enable);
 	void accept();
 	void changeResolution(int id);
         void changeFilterMode(int id);
@@ -68,8 +69,6 @@ protected slots:
 				void changeMeshMode(int id);
 				void changeBandingMode(int id);
 				void changePolygonMode(int id);
-				void changeCSMode(int id);
-
 private:
 	QString getCartridgePathSettingsKey(int cartridgeType = -1) const;
 	void updateVolatileSettings() const;

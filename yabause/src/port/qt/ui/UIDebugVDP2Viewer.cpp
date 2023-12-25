@@ -19,9 +19,42 @@
 
 #include "UIDebugVDP2Viewer.h"
 #include "CommonDialogs.h"
+#include "ygl.h"
 
 #include <QImageWriter>
 #include <QGraphicsPixmapItem>
+
+void UIDebugVDP2Viewer::addItem(int id) {
+	switch(id) {
+		case NBG0:
+			cbScreen->addItem("NBG0", NBG0);
+		break;
+		case NBG1:
+			cbScreen->addItem("NBG1", NBG1);
+		break;
+		case NBG2:
+			cbScreen->addItem("NBG2", NBG2);
+		break;
+		case NBG3:
+			cbScreen->addItem("NBG3", NBG3);
+		break;
+		case RBG0:
+			cbScreen->addItem("RBG0", RBG0);
+		break;
+		case RBG1:
+			cbScreen->addItem("RBG1", RBG1);
+		break;
+		case SPRITE:
+			cbScreen->addItem("SPRITE", SPRITE);
+		break;
+		default:
+		break;
+	}
+}
+
+int UIDebugVDP2Viewer::exec() {
+	return QDialog::exec();
+}
 
 UIDebugVDP2Viewer::UIDebugVDP2Viewer( QWidget* p )
 	: QDialog( p )
@@ -33,54 +66,55 @@ UIDebugVDP2Viewer::UIDebugVDP2Viewer( QWidget* p )
    gvScreen->setScene(scene);
 
    vdp2texture = NULL;
-	width = 0;
-	height = 0;
-
-   cbScreen->addItem("NBG0/RBG1");
-   cbScreen->addItem("NBG1");
-   cbScreen->addItem("NBG2");
-   cbScreen->addItem("NBG3");
-   cbScreen->addItem("RBG0");
-   cbScreen->setCurrentIndex(0);
-
+	 width = 0;
+	 height = 0;
 	// retranslate widgets
 	QtYabause::retranslateWidget( this );
 }
 
-void UIDebugVDP2Viewer::on_cbScreen_currentIndexChanged ( int index )
+void UIDebugVDP2Viewer::displayCurrentScreen()
 {
-    if (!Vdp2Regs)
-        return;
+	if (!Vdp2Regs)
+			return;
+ int index = cbScreen->itemData( cbScreen->currentIndex() ).toInt();
 
-   if (vdp2texture)
-      free(vdp2texture);
+	if (vdp2texture != NULL) free(vdp2texture);
 
-   vdp2texture = Vdp2DebugTexture(index, &width, &height);
-   pbSaveAsBitmap->setEnabled(vdp2texture ? true : false);
+	vdp2texture = Vdp2DebugTexture(index, &width, &height);
+	if (vdp2texture != NULL) {
+		pbSaveAsBitmap->setEnabled(vdp2texture ? true : false);
 
-   // Redraw screen
-   QGraphicsScene *scene = gvScreen->scene();
+		// Redraw screen
+		QGraphicsScene *scene = gvScreen->scene();
+		QImage::Format format = QImage::Format_ARGB32;
+		if (cbOpaque->isChecked()) {
+			format = QImage::Format_RGB32;
+		}
+		QImage img((uchar *)vdp2texture, width, height, format);
 
-#ifdef USE_RGB_555
-   QImage img((uchar *)vdp2texture, width, height, QImage::Format_RGB555);
-#elif USE_RGB_565
-   QImage img((uchar *)vdp2texture, width, height, QImage::Format_RGB16);
-#else
-   QImage img((uchar *)vdp2texture, width, height, QImage::Format_ARGB32);
-#endif
-   QPixmap pixmap = QPixmap::fromImage(img.rgbSwapped());
-   scene->clear();
-   scene->addPixmap(pixmap);
-   scene->setSceneRect(scene->itemsBoundingRect());
-// VBT : corrige le premier affichage du graphicView (permet le calcul de la taille du frameRec)
-   show();
-   gvScreen->fitInView(scene->sceneRect());
-   gvScreen->invalidateScene();
+		bool YMirrored = true;
+		if (index == SPRITE) YMirrored = false;
+		QPixmap pixmap = QPixmap::fromImage(img.mirrored(false, YMirrored).rgbSwapped());
+		scene->clear();
+		scene->setBackgroundBrush(Qt::Dense7Pattern);
+		scene->addPixmap(pixmap);
+		scene->setSceneRect(scene->itemsBoundingRect());
+	}
+}
+
+void UIDebugVDP2Viewer::on_cbScreen_currentIndexChanged ( int id)
+{
+	 displayCurrentScreen();
+}
+
+void UIDebugVDP2Viewer::showEvent(QShowEvent *) {
+    gvScreen->fitInView(gvScreen->scene()->sceneRect());
 }
 
 void UIDebugVDP2Viewer::on_pbSaveAsBitmap_clicked ()
 {
 	QStringList filters;
+	int index = cbScreen->itemData( cbScreen->currentIndex() ).toInt();
 	foreach ( QByteArray ba, QImageWriter::supportedImageFormats() )
 		if ( !filters.contains( ba, Qt::CaseInsensitive ) )
 			filters << QString( ba ).toLower();
@@ -89,17 +123,27 @@ void UIDebugVDP2Viewer::on_pbSaveAsBitmap_clicked ()
 
 	if (!vdp2texture)
 		return;
-	
+
 	// take screenshot of gl view
-   QImage img((uchar *)vdp2texture, width, width, QImage::Format_ARGB32);
-   img = img.rgbSwapped();
-	
+	QImage::Format format = QImage::Format_ARGB32;
+	if (cbOpaque->isChecked()) {
+		format = QImage::Format_RGB32;
+	}
+	bool YMirrored = true;
+	if (index == SPRITE) YMirrored = false;
+   QImage img((uchar *)vdp2texture, width, width, format);
+   img = img.mirrored(false, YMirrored).rgbSwapped();
+
 	// request a file to save to to user
 	const QString s = CommonDialogs::getSaveFileName( QString(), QtYabause::translate( "Choose a location for your bitmap" ), filters.join( ";;" ) );
-	
+
 	// write image if ok
 	if ( !s.isEmpty() )
 		if ( !img.save( s ) )
 			CommonDialogs::information( QtYabause::translate( "An error occured while writing file." ) );
+}
+
+void UIDebugVDP2Viewer::on_cbOpaque_toggled(bool enable) {
+	displayCurrentScreen();
 }
 

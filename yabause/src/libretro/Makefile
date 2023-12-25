@@ -304,34 +304,43 @@ CFLAGS += $(FLAGS) -std=gnu17
 
 all: $(TARGET)
 
+full: generate-files $(TARGET)
+
 generate-files:
-	$(CC) -o $(SOURCE_DIR)/core/m68k/musashi/$(M68KMAKE_EXE) $(SOURCE_DIR)/core/m68k/musashi/m68kmake.c;\
+	@echo Building Musashi...
+	@$(CC) -o $(SOURCE_DIR)/core/m68k/musashi/$(M68KMAKE_EXE) $(SOURCE_DIR)/core/m68k/musashi/m68kmake.c;\
 	$(SOURCE_DIR)/core/m68k/musashi/$(M68KMAKE_EXE) $(SOURCE_DIR)/core/m68k/musashi/ $(SOURCE_DIR)/core/m68k/musashi/m68k_in.c
 
 generate-files-clean:
 	rm -f $(M68KMAKE_INC_SOURCES) $(SOURCE_DIR)/core/m68k/musashi/$(M68KMAKE_EXE)
 
 $(TARGET): $(OBJECTS)
+	@echo Linking $@
 ifeq ($(STATIC_LINKING), 1)
-	$(AR) rcs $@ $(OBJECTS)
+	@$(AR) rcs $@ $(OBJECTS)
 else
-	$(CXX) -o $@ $^ $(LDFLAGS)
+	@$(CXX) -o $@ $^ $(LDFLAGS)
 endif
 
 %.S.o: %.S
-	$(CC_AS) $(CFLAGS) -c $^ -o $@
+	@echo Compiling $@
+	@$(CC_AS) $(CFLAGS) -c $^ -o $@
 
 %.s.o: %.s
-	$(CC_AS) $(CFLAGS) -c $^ -o $@
+	@echo Compiling $@
+	@$(CC_AS) $(CFLAGS) -c $^ -o $@
 
 %.cpp.o: %.cpp
-	$(CXX) -c -o $@ $< $(CXXFLAGS)
+	@echo Compiling $@
+	@$(CXX) -c -o $@ $< $(CXXFLAGS)
 
 %.c.o: %.c
-	$(CC) -c -o $@ $< $(CFLAGS)
+	@echo Compiling $@
+	@$(CC) -c -o $@ $< $(CFLAGS)
 
 $(C68KEXEC_OBJECT): $(C68KEXEC_SOURCE)
-	$(CC) -c -o $@ $< $(CFLAGS) -O0
+	@echo Compiling $@
+	@$(CC) -c -o $@ $< $(CFLAGS) -O0
 
 clean:
 	rm -f $(TARGET) $(OBJECTS) $(SOURCE_DIR)/core/m68k/musashi/$(M68KMAKE_EXE)

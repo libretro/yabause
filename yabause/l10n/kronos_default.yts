@@ -178,7 +178,6 @@ Enable|
 Enable Bios Emulation|
 Enable Code : %1 %2|
 Enable Frame Skip/Limiter|
-Enable Multithreading|
 Enabled|
 Enter new assembly code|
 Enter New Value|
@@ -271,7 +270,6 @@ None|
 None|
 Normal format not available, trying alternative|
 North America (NTSC)|
-Number of Threads|
 On fullscreen|
 On message|
 Open &CD Rom...|
@@ -344,7 +342,7 @@ Set PC to Start Address|
 Settings|
 SH2 Debugger Interpreter|
 SH2 Interpreter|
-SH2 Kronos Interpreter|
+SH2 Performance|
 SH2 Registers|
 Shortcuts|
 Show FPS|

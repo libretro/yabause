@@ -18,12 +18,12 @@ class MovaTest : public ::testing::Test {
     pctx_ = SH2Core;
   }
 
-  virtual ~MovaTest() {  
-  }   
+  virtual ~MovaTest() {
+  }
 
 virtual void SetUp() {
- 
-  
+
+
 }
 
 virtual void TearDown() {
@@ -47,7 +47,7 @@ TEST_F(MovaTest, mova) {
   MSH2->regs.PC =( 0x0600024c );
   SH2TestExec(MSH2, 1);
 
-  EXPECT_EQ( 0x0600030c, MSH2->regs.R[0] );
+  EXPECT_EQ( 0x06000308, MSH2->regs.R[0] );
 
 
   MSH2->regs.R[0]=0xFFFFFFFF;
@@ -59,7 +59,7 @@ TEST_F(MovaTest, mova) {
   MSH2->regs.PC =( 0x0600024a );
   SH2TestExec(MSH2, 1);
 
-  EXPECT_EQ( 0x06000488, MSH2->regs.R[0] );
+  EXPECT_EQ( 0x06000484, MSH2->regs.R[0] );
 
 }
 
@@ -122,10 +122,10 @@ TEST_F(MovaTest, movli) {
   SH2MappedMemoryWriteWord(MSH2, 0x0600024e, 0x000b );  // rts
   SH2MappedMemoryWriteWord(MSH2, 0x06000250, 0x0009 );  // nop
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000270, 0xDEAD );
-  SH2MappedMemoryWriteWord(MSH2, 0x06000272 ,0xCAFE);
+  SH2MappedMemoryWriteWord(MSH2, 0x0600026C, 0xDEAD );
+  SH2MappedMemoryWriteWord(MSH2, 0x0600026E ,0xCAFE);
 
-  MSH2->regs.PC =( 0x0600024c );
+  MSH2->regs.PC =( 0x0600024C );
   SH2TestExec(MSH2, 1);
 
  EXPECT_EQ( 0xDEADCAFE, MSH2->regs.R[7] );
@@ -134,11 +134,11 @@ TEST_F(MovaTest, movli) {
 
   MSH2->regs.R[0]=0xFFFFFFFF;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0xD003 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0xD003 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
   SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
-  SH2MappedMemoryWriteLong(MSH2, 0x06000256, 0xDEADDEAD ); 
-  SH2MappedMemoryWriteLong(MSH2, 0x06000254, 0xCAFECAFE ); 
+  SH2MappedMemoryWriteLong(MSH2, 0x06000252, 0xDEADDEAD );
+  SH2MappedMemoryWriteLong(MSH2, 0x06000250, 0xCAFECAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -147,11 +147,11 @@ TEST_F(MovaTest, movli) {
 
   MSH2->regs.R[0]=0xFFFFFFFF;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0xD083 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0xD083 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
   SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
-  SH2MappedMemoryWriteLong(MSH2, 0x06000456, 0xDEADDEAD ); 
-  SH2MappedMemoryWriteLong(MSH2, 0x06000454, 0xCAFECAFE ); 
+  SH2MappedMemoryWriteLong(MSH2, 0x06000452, 0xDEADDEAD );
+  SH2MappedMemoryWriteLong(MSH2, 0x06000450, 0xCAFECAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -185,10 +185,10 @@ TEST_F(MovaTest, movbs) {
   MSH2->regs.R[0]=0x0600024C;
   MSH2->regs.R[3]=0xDEADCAFE;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x2030);  
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x2030);
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
   SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
-  SH2MappedMemoryWriteLong(MSH2, 0x0600024C, 0xFFFFFFFF ); 
+  SH2MappedMemoryWriteLong(MSH2, 0x0600024C, 0xFFFFFFFF );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -205,7 +205,7 @@ TEST_F(MovaTest, movbs) {
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
 
- EXPECT_EQ( (0x06000246 & 0xFFFFFFFC)  + (0x1C << 2) + 4, MSH2->regs.R[0] );
+ EXPECT_EQ( (0x06000246 & 0xFFFFFFFC)  + (0x1C << 2), MSH2->regs.R[0] );
 }
 
 TEST_F(MovaTest, movls) {
@@ -217,7 +217,7 @@ TEST_F(MovaTest, movls) {
   SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x2032 );  //MOVLS
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
   SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
-  SH2MappedMemoryWriteLong(MSH2, 0x0600024C, 0xFFFFFFFF ); 
+  SH2MappedMemoryWriteLong(MSH2, 0x0600024C, 0xFFFFFFFF );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -295,10 +295,10 @@ TEST_F(MovaTest, movlp) {
   MSH2->regs.R[0]=0x0600024C;
   MSH2->regs.R[4]=0xFFFFFFFF;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x6406 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x6406 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x0600024C, 0xDEADCAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x0600024C, 0xDEADCAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -308,10 +308,10 @@ TEST_F(MovaTest, movlp) {
 
   MSH2->regs.R[0]=0x0600024C;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x6006 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x6006 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x0600024C, 0xDEADCAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x0600024C, 0xDEADCAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -325,10 +325,10 @@ TEST_F(MovaTest, movbm) {
   MSH2->regs.R[1]=0x0600024D;
   MSH2->regs.R[7]=0xDEADEAD;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x2174 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x2174 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x0600024C, 0xCAFECAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x0600024C, 0xCAFECAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -344,10 +344,10 @@ TEST_F(MovaTest, movwm) {
   MSH2->regs.R[1]=0x0600024E;
   MSH2->regs.R[7]=0xDEADEAD;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x2175 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x2175 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x0600024C, 0xCAFECAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x0600024C, 0xCAFECAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -363,10 +363,10 @@ TEST_F(MovaTest, movlm) {
   MSH2->regs.R[1]=0x06000250;
   MSH2->regs.R[2]=0xDEADCAFE;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x2126 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x2126 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x0600024C, 0xFFFFFFFF ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x0600024C, 0xFFFFFFFF );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -380,10 +380,10 @@ TEST_F(MovaTest, movbl4) {
 
   MSH2->regs.R[1]=0x06000246;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x841A ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x841A );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x06000250, 0xDEADCAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x06000250, 0xDEADCAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -393,10 +393,10 @@ TEST_F(MovaTest, movbl4) {
 
   MSH2->regs.R[1]=0x06000246;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x841A ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x841A );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x06000250, 0x7EADCAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x06000250, 0x7EADCAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -410,10 +410,10 @@ TEST_F(MovaTest, movwl4) {
 
   MSH2->regs.R[1]=0x06000246;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x851A ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x851A );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xDEADCAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xDEADCAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -423,10 +423,10 @@ TEST_F(MovaTest, movwl4) {
 
   MSH2->regs.R[1]=0x06000246;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x851A ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x851A );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0x7EADCAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0x7EADCAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -441,10 +441,10 @@ TEST_F(MovaTest, movll4) {
   MSH2->regs.R[1]=0x06000246;
   MSH2->regs.R[2]=0xDEADDEAD;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x5215 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x5215 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xCAFECAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xCAFECAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -455,10 +455,10 @@ TEST_F(MovaTest, movll4) {
   MSH2->regs.R[1]=0x06000246;
   MSH2->regs.R[2]=0xDEADDEAD;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x5218 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x5218 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x06000266, 0xCAFECAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x06000266, 0xCAFECAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -473,10 +473,10 @@ TEST_F(MovaTest, movbs4) {
   MSH2->regs.R[1]=0x06000246;
   MSH2->regs.R[0]=0xDEADDEAD;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x801A ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x801A );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x06000250, 0xCAFECAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x06000250, 0xCAFECAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -493,10 +493,10 @@ TEST_F(MovaTest, movws4) {
   MSH2->regs.R[1]=0x06000246;
   MSH2->regs.R[0]=0xDEADDEAD;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x8115 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x8115 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x06000250, 0xCAFECAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x06000250, 0xCAFECAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -513,10 +513,10 @@ TEST_F(MovaTest, movls4) {
   MSH2->regs.R[1]=0x06000246;
   MSH2->regs.R[2]=0xDEADDEAD;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x1125 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x1125 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xCAFECAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xCAFECAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -533,10 +533,10 @@ TEST_F(MovaTest, movbl0) {
   MSH2->regs.R[1]=0x06000000;
   MSH2->regs.R[2]=0xDEADDEAD;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x021C ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x021C );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xCAFECAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xCAFECAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -549,10 +549,10 @@ TEST_F(MovaTest, movbl0) {
   MSH2->regs.R[1]=0x06000000;
   MSH2->regs.R[2]=0xDEADDEAD;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x021C ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x021C );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0x7AFECAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0x7AFECAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -569,10 +569,10 @@ TEST_F(MovaTest, movwl0) {
   MSH2->regs.R[1]=0x06000000;
   MSH2->regs.R[2]=0xDEADDEAD;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x021D ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x021D );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xCAFECAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xCAFECAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -585,10 +585,10 @@ TEST_F(MovaTest, movwl0) {
   MSH2->regs.R[1]=0x06000000;
   MSH2->regs.R[2]=0xDEADDEAD;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x021D ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x021D );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0x7AFECAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0x7AFECAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -605,10 +605,10 @@ TEST_F(MovaTest, movll0) {
   MSH2->regs.R[1]=0x06000000;
   MSH2->regs.R[2]=0xDEADDEAD;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x021E ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x021E );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xCAFECAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xCAFECAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -625,10 +625,10 @@ TEST_F(MovaTest, movbs0) {
   MSH2->regs.R[1]=0x06000000;
   MSH2->regs.R[2]=0xDEADDEAD;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x0124 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x0124 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xCAFECAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xCAFECAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -645,10 +645,10 @@ TEST_F(MovaTest, movws0) {
   MSH2->regs.R[1]=0x06000000;
   MSH2->regs.R[2]=0xDEADDEAD;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x0125 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x0125 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xCAFECAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xCAFECAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -665,10 +665,10 @@ TEST_F(MovaTest, movls0) {
   MSH2->regs.R[1]=0x06000000;
   MSH2->regs.R[2]=0xDEADDEAD;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x0126 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x0126 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xCAFECAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xCAFECAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -684,10 +684,10 @@ TEST_F(MovaTest, movblg) {
   MSH2->regs.R[0]=0xDEADDEAD;
   MSH2->regs.GBR =(0x06000252);
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0xC408 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0xC408 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xCAFECAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xCAFECAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -697,10 +697,10 @@ TEST_F(MovaTest, movblg) {
   MSH2->regs.R[0]=0xDEADDEAD;
   MSH2->regs.GBR =(0x06000252);
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0xC488 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0xC488 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x060002DA, 0x7AFECAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x060002DA, 0x7AFECAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -714,10 +714,10 @@ TEST_F(MovaTest, movwlg) {
   MSH2->regs.R[0]=0xDEADDEAD;
   MSH2->regs.GBR =(0x06000252);
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0xC504 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0xC504 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xCAFECAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xCAFECAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -727,10 +727,10 @@ TEST_F(MovaTest, movwlg) {
   MSH2->regs.R[0]=0xDEADDEAD;
   MSH2->regs.GBR =(0x06000252);
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0xC504 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0xC504 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0x7AFECAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0x7AFECAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -744,10 +744,10 @@ TEST_F(MovaTest, movllg) {
   MSH2->regs.R[0]=0xDEADDEAD;
   MSH2->regs.GBR =(0x06000252);
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0xC602 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0xC602 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xCAFECAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xCAFECAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -757,10 +757,10 @@ TEST_F(MovaTest, movllg) {
   MSH2->regs.R[0]=0xDEADDEAD;
   MSH2->regs.GBR =(0x06000252);
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0xC602 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0xC602 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0x7AFECAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0x7AFECAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -774,10 +774,10 @@ TEST_F(MovaTest, movbsg) {
   MSH2->regs.R[0]=0xDEADDEAD;
   MSH2->regs.GBR =(0x06000252);
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0xC008 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0xC008 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xCAFECAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xCAFECAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -791,10 +791,10 @@ TEST_F(MovaTest, movwsg) {
   MSH2->regs.R[0]=0xDEADDEAD;
   MSH2->regs.GBR =(0x06000252);
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0xC104 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0xC104 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xCAFECAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xCAFECAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -808,10 +808,10 @@ TEST_F(MovaTest, movlsg) {
   MSH2->regs.R[0]=0xDEADDEAD;
   MSH2->regs.GBR =(0x06000252);
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0xC202 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0xC202 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xCAFECAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x0600025A, 0xCAFECAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -825,9 +825,9 @@ TEST_F(MovaTest, movt) {
   MSH2->regs.R[1]=0xDEADDEAD;
   MSH2->regs.SR.all =(0xFFFFF3);
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x0129 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x0129 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -837,9 +837,9 @@ TEST_F(MovaTest, movt) {
   MSH2->regs.R[1]=0xDEADDEAD;
   MSH2->regs.SR.all =(0xFFFFF2);
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x0129 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x0129 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -851,9 +851,9 @@ TEST_F(MovaTest, movt) {
   MSH2->regs.R[1]=0xFFFFFFFF;
   MSH2->regs.R[7]=0xDEADCAFE;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x6173 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x6173 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -863,9 +863,9 @@ TEST_F(MovaTest, movt) {
 
   MSH2->regs.R[2]=0xFFFFFFFF;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0xE216 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0xE216 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -874,9 +874,9 @@ TEST_F(MovaTest, movt) {
 
   MSH2->regs.R[2]=0x000000FF;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0xE296 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0xE296 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -889,9 +889,9 @@ TEST_F(MovaTest, movbl) {
   MSH2->regs.R[0]=0x0600024C;
   MSH2->regs.R[1]=0xFFFFFFFF;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x6100 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x6100 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
   SH2MappedMemoryWriteLong(MSH2, 0x0600024C, 0xFEADCADE);
 
   MSH2->regs.PC =( 0x06000246 );
@@ -903,9 +903,9 @@ TEST_F(MovaTest, movbl) {
   MSH2->regs.R[0]=0x0600024C;
   MSH2->regs.R[1]=0xFFFFFFFF;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x6100 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x6100 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
   SH2MappedMemoryWriteLong(MSH2, 0x0600024C, 0x7EADCADE);
 
   MSH2->regs.PC =( 0x06000246 );
@@ -920,10 +920,10 @@ TEST_F(MovaTest, movwl) {
   MSH2->regs.R[0]=0x06000250;
   MSH2->regs.R[1]=0xFFFFFFFF;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x6101 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x6101 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x06000250, 0xDEADCAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x06000250, 0xDEADCAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -933,10 +933,10 @@ TEST_F(MovaTest, movwl) {
   MSH2->regs.R[0]=0x06000250;
   MSH2->regs.R[1]=0xFFF00FFF;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x6101 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x6101 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x06000250, 0x7EADCAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x06000250, 0x7EADCAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -949,10 +949,10 @@ TEST_F(MovaTest, movwi) {
 
   MSH2->regs.R[0]=0xFFFFFFFF;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x9003 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x9003 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x06000250, 0x7EADCAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x06000250, 0x7EADCAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -961,10 +961,10 @@ TEST_F(MovaTest, movwi) {
 
   MSH2->regs.R[0]=0xFFFFFFFF;
 
-  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x9083 ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x9083 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
-  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop 
-  SH2MappedMemoryWriteLong(MSH2, 0x06000350, 0xDEADCAFE ); 
+  SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
+  SH2MappedMemoryWriteLong(MSH2, 0x06000350, 0xDEADCAFE );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);
@@ -981,7 +981,7 @@ TEST_F(MovaTest, movws) {
   SH2MappedMemoryWriteWord(MSH2, 0x06000246, 0x2021 );
   SH2MappedMemoryWriteWord(MSH2, 0x06000248, 0x000b );  // rts
   SH2MappedMemoryWriteWord(MSH2, 0x0600024A, 0x0009 );  // nop
-  SH2MappedMemoryWriteLong(MSH2, 0x06000256, 0xDEADDEAD ); 
+  SH2MappedMemoryWriteLong(MSH2, 0x06000256, 0xDEADDEAD );
 
   MSH2->regs.PC =( 0x06000246 );
   SH2TestExec(MSH2, 1);

@@ -38,8 +38,52 @@
 #define LOCK(A)
 #define UNLOCK(A)
 
-
 extern void SH2undecoded(SH2_struct * sh);
+
+static void SH2KronosNotifyInterrupt(SH2_struct *context);
+static void insertInterruptReturnHandling(SH2_struct *context);
+
+static void BUPDetectInit(SH2_struct *context);
+
+extern void BiosBUPSelectPartition(SH2_struct * context);
+extern void BiosBUPFormat(SH2_struct * context);
+extern void BiosBUPStatus(SH2_struct * context);
+extern void BiosBUPWrite(SH2_struct * context);
+extern void BiosBUPRead(SH2_struct * context);
+extern void BiosBUPDelete(SH2_struct * context);
+extern void BiosBUPDirectory(SH2_struct * context);
+extern void BiosBUPVerify(SH2_struct * context);
+extern void BiosBUPGetDate(SH2_struct * context);
+extern void BiosBUPSetDate(SH2_struct * context);
+
+void decode(SH2_struct *context);
+
+//////////////////////////////////////////////////////////////////////////////
+
+void SH2ExecCb(SH2_struct *context) {
+  if (SH2Core->id == SH2CORE_KRONOS_DEBUG_INTERPRETER) {
+    SH2HandleBreakpoints(context);
+    SH2HandleBackTrace(context);
+    SH2HandleStepOverOut(context);
+    SH2HandleTrackInfLoop(context);
+  }
+}
+
+static void showCPUState(SH2_struct *context)
+{
+  int i;
+
+  YuiMsg("=================== %s ===================\n", (context == MSH2)?"MSH2":"SSH2");
+  YuiMsg("PC = 0x%x\n", context->regs.PC);
+  YuiMsg("PR = 0x%x\n", context->regs.PR);
+  YuiMsg("SR = 0x%x\n", context->regs.SR);
+  YuiMsg("GBR = 0x%x\n", context->regs.GBR);
+  YuiMsg("VBR = 0x%x\n", context->regs.VBR);
+  YuiMsg("MACH = 0x%x\n", context->regs.MACH);
+  YuiMsg("MACL = 0x%x\n", context->regs.MACL);
+  for (int i = 0; i<16; i++)
+    YuiMsg("R[%d] = 0x%x\n", i, context->regs.R[i]);
+}
 
 void SH2KronosIOnFrame(SH2_struct *context) {
 }
@@ -49,27 +93,27 @@ void SH2KronosIOnFrame(SH2_struct *context) {
 void SH2HandleInterrupts(SH2_struct *context)
 {
   LOCK(context);
-  if (context->NumberOfInterrupts != 0)
+  if (context->intPriority != 0x0)
   {
-    if (context->interrupts[context->NumberOfInterrupts - 1].level > context->regs.SR.part.I)
-    {
-      u32 oldpc = context->regs.PC;
-      u32 persr = context->regs.SR.part.I;
-      context->regs.R[15] -= 4;
-      SH2MappedMemoryWriteLong(context, context->regs.R[15], context->regs.SR.all);
-      context->regs.R[15] -= 4;
-      SH2MappedMemoryWriteLong(context, context->regs.R[15], context->regs.PC);
-      if (context->interrupts[context->NumberOfInterrupts - 1].level == 0x10) {
-        //NMI
-        context->regs.SR.part.I = 0xF;
-      }
-      else {
-        context->regs.SR.part.I = context->interrupts[context->NumberOfInterrupts - 1].level;
-      }
-      context->regs.PC = SH2MappedMemoryReadLong(context,context->regs.VBR + (context->interrupts[context->NumberOfInterrupts - 1].vector << 2));
-      context->NumberOfInterrupts--;
-      context->isSleeping = 0;
+    u32 oldpc = context->regs.PC;
+    u32 persr = context->regs.SR.part.I;
+    context->regs.R[15] -= 4;
+    SH2MappedMemoryWriteLong(context, context->regs.R[15], context->regs.SR.all);
+    context->regs.R[15] -= 4;
+    SH2MappedMemoryWriteLong(context, context->regs.R[15], context->regs.PC);
+    context->regs.SR.part.I = context->intPriority;
+
+    context->intPriority = 0; //Flag for next IT
+    context->branchDepth = 0;
+    insertInterruptReturnHandling(context); //Insert a new interrupt handling once this one will have been executed
+    // force the next PC (or PC+2?) to be decodeWithInterrupt so that next interrupt is evaluated when back from IT
+    context->regs.PC = SH2MappedMemoryReadLong(context,context->regs.VBR + (context->intVector << 2));
+    if (SH2Core->id == SH2CORE_KRONOS_DEBUG_INTERPRETER) {
+      //Show the interrupt as a JSR
+      context->instruction = 0x400B;
+      SH2HandleBackTrace(context);
     }
+    context->isSleeping = 0;
   }
   UNLOCK(context);
 }
@@ -103,58 +147,212 @@ static u16 FASTCALL FetchVram(SH2_struct *context, u32 addr)
   return SH2MappedMemoryReadWord(context, addr);
 }
 
-opcode_func cacheCode[2][7][0x80000];
+static const int const cacheMask[9] = {
+  0x3FFFF, //Bios
+  0x7FFFF, //LowWram
+  0x1FFFFF, //CS0
+  0x7FFFF, //SoundRam
+  0x3FFFF, //VDP1Ram
+  0x3FFFF, //VDP2Ram
+  0x7FFFF, //HighWRam
+  0x7FF, //Data Array
+  0x7FFFF //Undecoded
+};
+
+static const int const cacheSize[9] = {
+  0x40000, //Bios
+  0x80000, //LowWram
+  0x200000, //CS0
+  0x80000, //SoundRam
+  0x40000, //VDP1Ram
+  0x40000, //VDP2Ram
+  0x80000, //HighWRam
+  0x800, //Data Array
+  0x80000 //Undecoded
+};
+
+static opcode_func cache_master_bios[0x40000];
+static opcode_func cache_slave_bios[0x40000];
+static opcode_func cache_master_lowram[0x80000];
+static opcode_func cache_slave_lowram[0x80000];
+static opcode_func cache_master_cs0[0x200000];
+static opcode_func cache_slave_cs0[0x200000];
+static opcode_func cache_master_sound[0x80000];
+static opcode_func cache_slave_sound[0x80000];
+static opcode_func cache_master_vdp1[0x40000];
+static opcode_func cache_master_vdp2[0x40000];
+static opcode_func cache_slave_vdp1[0x40000];
+static opcode_func cache_slave_vdp2[0x40000];
+static opcode_func cache_master_hiram[0x80000];
+static opcode_func cache_slave_hiram[0x80000];
+static opcode_func cache_master_array[0x800];
+static opcode_func cache_slave_array[0x800];
+static opcode_func cache_master_undecoded[0x80000];
+static opcode_func cache_slave_undecoded[0x80000];
+
+static opcode_func* cacheCode[2][9] = {
+  {
+    cache_master_bios,
+    cache_master_lowram,
+    cache_master_cs0,
+    cache_master_sound,
+    cache_master_vdp1,
+    cache_master_vdp2,
+    cache_master_hiram,
+    cache_master_array,
+    cache_master_undecoded
+  },
+  {
+    cache_slave_bios,
+    cache_slave_lowram,
+    cache_slave_cs0,
+    cache_slave_sound,
+    cache_slave_vdp1,
+    cache_slave_vdp2,
+    cache_slave_hiram,
+    cache_slave_array,
+    cache_slave_undecoded
+  }
+};
+
+opcode_func BUPEntries[10] = {
+  BiosBUPSelectPartition,
+  BiosBUPFormat,
+  BiosBUPStatus,
+  BiosBUPWrite,
+  BiosBUPRead,
+  BiosBUPDelete,
+  BiosBUPDirectory,
+  BiosBUPVerify,
+  BiosBUPGetDate,
+  BiosBUPSetDate
+};
 //////////////////////////////////////////////////////////////////////////////
 
 static u16 FASTCALL FetchInvalid(SH2_struct *context, UNUSED u32 addr)
 {
    return 0xFFFF;
 }
+
+static void BUPInstallHooks(SH2_struct *context) {
+
+  LOG_BUP("BUPInstallHooks\n");
+  u32 startTableAdress = context->BUPTableAddr+0x4;
+  for (int i =0; i<10; i++) {
+    u32 addr = startTableAdress+i*0x4;
+    u32 vector = DMAMappedMemoryReadLong(addr);
+    LOG_BUP("BUPInstallHooks replace vector @0x%x pointed @0x%x\n", vector, addr);
+    int id = (vector >> 20) & 0xFFF;
+    cacheCode[context->isslave][cacheId[id]][(vector>>1) & cacheMask[cacheId[id]]] = BUPEntries[i];
+  }
+
+  //Free the hook
+  int id = (context->regs.PC >> 20) & 0xFFF;
+  u16 opcode = krfetchlist[id](context, context->regs.PC);
+  cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[opcode];
+
+  //And finally execute the code
+  context->instruction = opcode;
+  if (SH2Core->id == SH2CORE_KRONOS_DEBUG_INTERPRETER) {
+    SH2HandleBackTrace(context);
+    SH2HandleStepOverOut(context);
+    SH2HandleTrackInfLoop(context);
+  }
+  opcodeTable[opcode](context);
+}
+
+static void BUPDetectInit(SH2_struct *context)
+{
+  //Execute a dedicated task on BackupMemory Init
+
+   LOG_BUP("BiosBUPInit. arg1 = %08X, arg2 = %08X, arg3 = %08X PR=0x%x\n", context->regs.R[4], context->regs.R[5], context->regs.R[6], context->regs.PR);
+   //Store the Backup function adress table
+   context->BUPTableAddr = context->regs.R[5];
+
+   //Wait for the function to return to setup all the hooks
+   int id = (context->regs.PR >> 20) & 0xFFF;
+   int addr = context->regs.PR >> 1;
+   cacheCode[context->isslave][cacheId[id]][addr & cacheMask[cacheId[id]]] = BUPInstallHooks;
+
+   //And finally execute the code
+   context->instruction = krfetchlist[id](context, context->regs.PC);
+   if (SH2Core->id == SH2CORE_KRONOS_DEBUG_INTERPRETER) {
+     SH2HandleBackTrace(context);
+     SH2HandleStepOverOut(context);
+     SH2HandleTrackInfLoop(context);
+   }
+   opcodeTable[context->instruction](context);
+}
+
 //////////////////////////////////////////////////////////////////////////////
 void decode(SH2_struct *context) {
   int id = (context->regs.PC >> 20) & 0xFFF;
   u16 opcode = krfetchlist[id](context, context->regs.PC);
 
-  cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & 0x7FFFF] = opcodeTable[opcode];
+// if (cacheId[id] == 6) YabErrorMsg("Decode intstructions from Data array\n");
+if (cacheId[id] == 7) YabErrorMsg("Decode intstructions from unxpected area @0x%x\n", context->regs.PC);
+  cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[opcode];
+  context->instruction = opcode;
+  if (SH2Core->id == SH2CORE_KRONOS_DEBUG_INTERPRETER) {
+    SH2HandleBackTrace(context);
+    SH2HandleStepOverOut(context);
+    SH2HandleTrackInfLoop(context);
+  }
   opcodeTable[opcode](context);
 }
 
-void biosDecode(SH2_struct *context) {
-  int isBUPHandled = BackupHandled(context, context->regs.PC);
-  if (isBUPHandled == 0) {
-    decode(context);
+static void executeLastPC(SH2_struct *context) {
+  int id = (context->regs.PC >> 20) & 0xFFF;
+  u16 opcode = krfetchlist[id](context, context->regs.PC);
+  u32 oldPC = context->regs.PC;
+  cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[opcode];
+  if (context->regs.PC != oldPC) {
+    //There was an interrupt to execute
+    //Update the command to execute
+    id = (context->regs.PC >> 20) & 0xFFF;
+    opcode = krfetchlist[id](context, context->regs.PC);
+    cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[opcode];
   }
+  context->instruction = opcode;
+  if (SH2Core->id == SH2CORE_KRONOS_DEBUG_INTERPRETER) {
+    SH2HandleBackTrace(context);
+    SH2HandleStepOverOut(context);
+    SH2HandleTrackInfLoop(context);
+  }
+  opcodeTable[opcode](context);
 }
 
+static void decodeInt(SH2_struct *context) {
+  executeLastPC(context);
+  SH2HandleInterrupts(context);
+}
+
+static void outOfInt(SH2_struct *context) {
+  context->interruptReturnAddress = 0;
+  executeLastPC(context);
+}
 
 int SH2KronosInterpreterInit(void)
 {
 
    int i,j;
 
-
-   for(i=1; i<6; i++)
-     for(j=0; j<0x80000; j++) {
-       cacheCode[0][i][j] = decode;
-       cacheCode[1][i][j] = decode;
-     }
-
-   for(j=0; j<0x80000; j++) {
-     cacheCode[0][6][j] = SH2undecoded;
-     cacheCode[1][6][j] = SH2undecoded;
+   for (i = 0; i < 8; i++) {
+       for (j = 0; j < cacheSize[i]; j++) {
+           cacheCode[0][i][j] = decode;
+           cacheCode[1][i][j] = decode;
+       }
    }
 
-   for(j=0; j<0x80000; j++) {
-     //Special BAckupHandled case
-     cacheCode[0][0][j] = biosDecode;
-     cacheCode[1][0][j] = biosDecode;
+   for (j = 0; j < cacheSize[8]; j++) {
+       cacheCode[0][8][j] = SH2undecoded;
+       cacheCode[1][8][j] = SH2undecoded;
    }
-
 
    for (i = 0; i < 0x1000; i++)
    {
       krfetchlist[i] = FetchInvalid;
-      cacheId[i] = 6;
+      cacheId[i] = 8;
       if (((i>>8) == 0x0) || ((i>>8) == 0x2)) {
         switch (i&0xFF)
         {
@@ -170,9 +368,17 @@ int SH2KronosInterpreterInit(void)
             krfetchlist[i] = SH2MappedMemoryReadWord;
             cacheId[i] = 2;
             break;
-          case 0x05c: // Fighting Viper
+          case 0x05a: // SoundRam
             krfetchlist[i] = SH2MappedMemoryReadWord;
             cacheId[i] = 3;
+            break;
+          case 0x05c: // Fighting Viper
+            krfetchlist[i] = SH2MappedMemoryReadWord;
+            cacheId[i] = 4;
+            break;
+          case 0x05e: // PGA Tour 97
+            krfetchlist[i] = SH2MappedMemoryReadWord;
+            cacheId[i] = 5;
             break;
           case 0x060: // High Work Ram
           case 0x061:
@@ -191,19 +397,33 @@ int SH2KronosInterpreterInit(void)
           case 0x06E:
           case 0x06F:
             krfetchlist[i] = SH2MappedMemoryReadWord;
-            cacheId[i] = 4;
+            cacheId[i] = 6;
             break;
           default:
             krfetchlist[i] = FetchInvalid;
-            cacheId[i] = 6;
+            cacheId[i] = 8;
             break;
         }
      }
      if ((i>>8) == 0xC) {
        krfetchlist[i] = SH2MappedMemoryReadWord;
-       cacheId[i] = 5;
+       cacheId[i] = 7;
      }
    }
+   cacheCode[0][0][0x7d600>>1] = BUPDetectInit;
+   cacheCode[1][0][0x7d600>>1] = BUPDetectInit;
+
+   SH2ClearCodeBreakpoints(MSH2);
+   SH2ClearCodeBreakpoints(SSH2);
+   SH2ClearMemoryBreakpoints(MSH2);
+   SH2ClearMemoryBreakpoints(SSH2);
+   MSH2->breakpointEnabled = 0;
+   SSH2->breakpointEnabled = 0;
+   MSH2->backtraceEnabled = 0;
+   SSH2->backtraceEnabled = 0;
+   MSH2->stepOverOut.enabled = 0;
+   SSH2->stepOverOut.enabled = 0;
+
    return 0;
 }
 
@@ -211,7 +431,6 @@ int SH2KronosInterpreterInit(void)
 
 void SH2KronosInterpreterDeInit(void)
 {
-   // DeInitialize any internal variables here
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -238,81 +457,62 @@ static INLINE void SH2UBCInterrupt(SH2_struct *context, u32 flag)
    context->onchip.BRCR |= flag;
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
-#if 0
-static void showCPUState(SH2_struct *context)
-{
-  int i;
-
-  printf("=================== %s ===================\n", (context == MSH2)?"MSH2":"SSH2");
-  printf("PC = 0x%x\n", context->regs.PC);
-  printf("PR = 0x%x\n", context->regs.PR);
-  printf("SR = 0x%x\n", context->regs.SR);
-  printf("GBR = 0x%x\n", context->regs.GBR);
-  printf("VBR = 0x%x\n", context->regs.VBR);
-  printf("MACH = 0x%x\n", context->regs.MACH);
-  printf("MACL = 0x%x\n", context->regs.MACL);
-  for (int i = 0; i<16; i++)
-    printf("R[%d] = 0x%x\n", i, context->regs.R[i]);
-
-   printf("Cs2Area HIRQ = 0%x\n",  Cs2Area->reg.HIRQ);
-   printf("Cs2Area Disc Changed = %d\n", Cs2Area->isdiskchanged);
-   printf("Cs2Area CR1 = 0x%x\n", Cs2Area->reg.CR1);
-   printf("Cs2Area CR2 = 0x%x\n", Cs2Area->reg.CR2);
-   printf("Cs2Area CR3 = 0x%x\n", Cs2Area->reg.CR3);
-   printf("Cs2Area CR4 = 0x%x\n", Cs2Area->reg.CR4);
-   printf("Cs2Area satauth = 0x%x\n", Cs2Area->satauth);
-
-   printf("============Prog=============\n");
-   for (i=0; i<0x100000; i+=4) {
-     u32 addr = 0x6000000 + i;
-     printf("@0x%x : 0x%x\n", addr, MappedMemoryReadLong(MSH2, addr));
-   }
-   printf("===========================================\n");
-}
-#endif
-
-u8 execInterrupt = 0;
-
 FASTCALL void SH2KronosInterpreterExec(SH2_struct *context, u32 cycles)
 {
   context->target_cycles = context->cycles + cycles;
-  SH2HandleInterrupts(context);
-  while (context->cycles < context->target_cycles){
-    cacheCode[context->isslave][cacheId[(context->regs.PC >> 20) & 0xFFF]][(context->regs.PC >> 1) & 0x7FFFF](context);
+    SH2HandleInterrupts(context);
+  while ((context->cycles < context->target_cycles) || (context->doNotInterrupt != 0)) {
+    context->doNotInterrupt = 0;
+    //NOTE: it can happen that next cachecode is generating a SH2HandleInterrupts which is normally forbidden when context->doNotInterrupt is not 0
+    //Not sure it has a functionnal effect anyway
+    // if (context == SSH2) YuiMsg("%x\n", context->regs.PC);
+    u32 id = cacheId[(context->regs.PC >> 20) & 0xFFF];
+    cacheCode[context->isslave][id][(context->regs.PC >> 1) & cacheMask[id]](context);
   }
+  context->target_cycles = 0;
 }
 
 FASTCALL void SH2KronosInterpreterExecSave(SH2_struct *context, u32 cycles, sh2regs_struct *oldRegs)
 {
   context->target_cycles = context->cycles + cycles;
   SH2HandleInterrupts(context);
-  while (context->cycles < context->target_cycles){
+  while ((context->cycles < context->target_cycles) || (context->doNotInterrupt != 0)) {
+    context->doNotInterrupt = 0;
+    //NOTE: it can happen that next cachecode is generating a SH2HandleInterrupts which is normally forbidden when context->doNotInterrupt is not 0
+    //Not sure it has a functionnal effect anyway
     memcpy(oldRegs, &context->regs, sizeof(sh2regs_struct));
     int id = (context->regs.PC >> 20) & 0xFFF;
+    // if (context == SSH2) YuiMsg("%x\n", context->regs.PC);
     u16 opcode = krfetchlist[id](context, context->regs.PC);
     if(context->isAccessingCPUBUS == 0) opcodeTable[opcode](context);
     if(context->isAccessingCPUBUS != 0) {
       context->cycles = context->target_cycles;
       memcpy(&context->regs, oldRegs, sizeof(sh2regs_struct));
+      context->target_cycles = 0;
       return;
     }
   }
+  context->target_cycles = 0;
+  if (context == MSH2) printf("done cycle %d\n", context->target_cycles);
 }
 
 static int enableTrace = 0;
 
 FASTCALL void SH2KronosDebugInterpreterExecSave(SH2_struct *context, u32 cycles, sh2regs_struct *oldRegs) {
-  u32 target_cycle = context->cycles + cycles;
+  context->target_cycles = context->cycles + cycles;
 
-   SH2HandleInterrupts(context);
+    SH2HandleInterrupts(context);
 
-   while (context->cycles < target_cycle)
+   while ((context->cycles < context->target_cycles) || (context->doNotInterrupt != 0))
    {
+     context->doNotInterrupt = 0;
+     //NOTE: it can happen that next cachecode is generating a SH2HandleInterrupts which is normally forbidden when context->doNotInterrupt is not 0
+     //Not sure it has a functionnal effect anyway
 #ifdef SH2_UBC
       int ubcinterrupt=0, ubcflag=0;
 #endif
+
+      SH2HandleBreakpoints(context);
 
 #ifdef SH2_UBC
       if (context->onchip.BBRA & (BBR_CPA_CPU | BBR_IDA_INST | BBR_RWA_READ)) // Break on cpu, instruction, read cycles
@@ -357,8 +557,26 @@ FASTCALL void SH2KronosDebugInterpreterExecSave(SH2_struct *context, u32 cycles,
 
       // Fetch Instruction
       int id = (context->regs.PC >> 20) & 0xFFF;
-      context->instruction = krfetchlist[id](context, context->regs.PC);
-      cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & 0x7FFFF] = opcodeTable[context->instruction];
+      uint8_t shallExecute = 1;
+      if (cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] == BUPDetectInit) {
+        shallExecute = 0;
+        BUPDetectInit(context);
+      }
+      if (cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] == BUPInstallHooks) {
+        shallExecute = 0;
+        BUPInstallHooks(context);
+      }
+      for (int i = 0; i<10; i++) {
+        if (cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] == BUPEntries[i]) {
+          shallExecute = 0;
+          BUPEntries[i](context);
+          break;
+        }
+      }
+      if (cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] == outOfInt) {
+        //OutOfInt
+        context->interruptReturnAddress = 0;
+      }
 
 #ifdef DMPHISTORY
     context->pchistory_index++;
@@ -366,13 +584,17 @@ FASTCALL void SH2KronosDebugInterpreterExecSave(SH2_struct *context, u32 cycles,
     context->regshistory[context->pchistory_index & (MAX_DMPHISTORY - 1)] = context->regs;
 #endif
 
-      SH2HandleBackTrace(context);
-      SH2HandleStepOverOut(context);
-      SH2HandleTrackInfLoop(context);
 
       // Execute it
-      if(context->isAccessingCPUBUS == 0) {
-        opcodeTable[context->instruction](context);
+      if (shallExecute != 0) {
+        context->instruction = krfetchlist[id](context, context->regs.PC);
+        cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[context->instruction];
+        if(context->isAccessingCPUBUS == 0) {
+          SH2HandleBackTrace(context);
+          SH2HandleStepOverOut(context);
+          SH2HandleTrackInfLoop(context);
+          opcodeTable[context->instruction](context);
+        }
       }
       if(context->isAccessingCPUBUS != 0) {
         context->cycles = context->target_cycles;
@@ -390,12 +612,14 @@ FASTCALL void SH2KronosDebugInterpreterExecSave(SH2_struct *context, u32 cycles,
 
 FASTCALL void SH2KronosDebugInterpreterExec(SH2_struct *context, u32 cycles)
 {
-  u32 target_cycle = context->cycles + cycles;
+  context->target_cycles = context->cycles + cycles;
 
-   SH2HandleInterrupts(context);
+    SH2HandleInterrupts(context);
+   while ((context->cycles < context->target_cycles) || (context->doNotInterrupt != 0))
 
-   while (context->cycles < target_cycle)
    {
+     context->doNotInterrupt = 0;
+     SH2HandleBreakpoints(context);
 #ifdef SH2_UBC
       int ubcinterrupt=0, ubcflag=0;
 #endif
@@ -441,7 +665,6 @@ FASTCALL void SH2KronosDebugInterpreterExec(SH2_struct *context, u32 cycles)
 
       // Fetch Instruction
       int id = (context->regs.PC >> 20) & 0xFFF;
-      context->instruction = krfetchlist[id](context, context->regs.PC);
 
 #ifdef DMPHISTORY
 	  context->pchistory_index++;
@@ -449,13 +672,37 @@ FASTCALL void SH2KronosDebugInterpreterExec(SH2_struct *context, u32 cycles)
 	  context->regshistory[context->pchistory_index & (MAX_DMPHISTORY - 1)] = context->regs;
 #endif
 
-      SH2HandleBackTrace(context);
-      SH2HandleStepOverOut(context);
-      SH2HandleTrackInfLoop(context);
 
+
+      uint8_t shallExecute = 1;
+      if (cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] == BUPDetectInit) {
+        shallExecute = 0;
+        BUPDetectInit(context);
+      }
+      if (cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] == BUPInstallHooks) {
+        shallExecute = 0;
+        BUPInstallHooks(context);
+      }
+      for (int i = 0; i<10; i++) {
+        if (cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] == BUPEntries[i]) {
+          shallExecute = 0;
+          BUPEntries[i](context);
+          break;
+        }
+      }
+      if (cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] == outOfInt) {
+        //OutOfInt
+        context->interruptReturnAddress = 0;
+      }
       // Execute it
-      cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & 0x7FFFF] = opcodeTable[context->instruction];
-      opcodeTable[context->instruction](context);
+      if (shallExecute != 0) {
+        context->instruction = krfetchlist[id](context, context->regs.PC);
+        SH2HandleBackTrace(context);
+        SH2HandleStepOverOut(context);
+        SH2HandleTrackInfLoop(context);
+        cacheCode[context->isslave][cacheId[id]][(context->regs.PC >> 1) & cacheMask[cacheId[id]]] = opcodeTable[context->instruction];
+        opcodeTable[context->instruction](context);
+      }
 
 #ifdef SH2_UBC
 	  if (ubcinterrupt)
@@ -468,7 +715,9 @@ FASTCALL void SH2KronosDebugInterpreterExec(SH2_struct *context, u32 cycles)
 FASTCALL void SH2KronosInterpreterTestExec(SH2_struct *context, u32 cycles)
 {
   context->target_cycles = context->cycles + cycles;
-  cacheCode[context->isslave][cacheId[(context->regs.PC >> 20) & 0xFFF]][(context->regs.PC >> 1) & 0x7FFFF](context);
+  u32 id = cacheId[(context->regs.PC >> 20) & 0xFFF];
+  cacheCode[context->isslave][id][(context->regs.PC >> 1) & cacheMask[id]](context);
+  context->target_cycles = 0;
 }
 
 
@@ -603,115 +852,95 @@ void SH2KronosInterpreterSetPC(SH2_struct *context, u32 value)
     context->regs.PC = value;
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
-void SH2KronosInterpreterSendInterrupt(SH2_struct *context, u8 vector, u8 level)
-{
-   u32 i, i2;
-   interrupt_struct tmp;
-   LOCK(context);
-
-   if ((context == SSH2) && (yabsys.IsSSH2Running == 0)) return;
-   // Make sure interrupt doesn't already exist
-   for (i = 0; i < context->NumberOfInterrupts; i++)
-   {
-      if (context->interrupts[i].vector == vector) {
-         UNLOCK(context);
-         return;
-      }
-   }
-
-   // Ignore Timer0 and Timer1 when masked
-   //if ((vector == 67 || vector == 68) && level <= context->regs.SR.part.I){
-   //  UNLOCK(context);
-   //  return;
-   //}
-
-   context->interrupts[context->NumberOfInterrupts].level = level;
-   context->interrupts[context->NumberOfInterrupts].vector = vector;
-   context->NumberOfInterrupts++;
-
-   // Sort interrupts
-   for (i = 0; i < (context->NumberOfInterrupts-1); i++)
-   {
-      for (i2 = i+1; i2 < context->NumberOfInterrupts; i2++)
-      {
-         if (context->interrupts[i].level > context->interrupts[i2].level)
-         {
-            tmp.level = context->interrupts[i].level;
-            tmp.vector = context->interrupts[i].vector;
-            context->interrupts[i].level = context->interrupts[i2].level;
-            context->interrupts[i].vector = context->interrupts[i2].vector;
-            context->interrupts[i2].level = tmp.level;
-            context->interrupts[i2].vector = tmp.vector;
-         }
-      }
-   }
-   UNLOCK(context);
+void SH2KronosUpdateInterruptReturnHandling(SH2_struct *context) {
+  //Clear previous hook
+  int addr = context->interruptReturnAddress>>1;
+  int id = (addr >> 19) & 0xFFF;
+  cacheCode[context->isslave][cacheId[id]][addr & cacheMask[cacheId[id]]] = decode;
+  //update hook reference to new PC
+  context->interruptReturnAddress = context->regs.PC;
+  addr = (context->regs.PC)>>1;
+  id = (addr >> 19) & 0xFFF;
+  cacheCode[context->isslave][cacheId[id]][addr & cacheMask[cacheId[id]]] = outOfInt;
+}
+void SH2KronosUpdateInterruptDebugReturnHandling(SH2_struct *context) {
+  // while (context->branchDepth < 0) {
+  //   //negative if coming from RTS
+  //   //0 means we need to remove the trace of interrupt from RTS or RTE
+  //   context->instruction = 0x000B; //Simulate rts to remove extra backtrace
+  //   SH2HandleBackTrace(context);
+  //   context->branchDepth++;
+  // }
+  SH2KronosUpdateInterruptReturnHandling(context);
 }
 
-void SH2KronosInterpreterRemoveInterrupt(SH2_struct *context, u8 vector, u8 level) {
-  u32 i, i2;
-  interrupt_struct tmp;
-  int hit = -1;
+//////////////////////////////////////////////////////////////////////////////
 
-  for (i = 0; i < context->NumberOfInterrupts; i++) {
-    if (context->interrupts[i].vector == vector) {
-      context->interrupts[i].level = 0;
-      context->interrupts[i].vector = 0;
-      hit = i;
-      break;
-    }
+static void SH2KronosNotifyInterrupt(SH2_struct *context) {
+  if (SH2MappedMemoryReadWord(context, context->regs.PC) == 0x1B) {
+    //SH2 on a sleep command, wake it up
+    context->regs.PC+=2;
   }
 
-  if (hit != -1) {
-    i2 = 0;
-    for (i = 0; i < context->NumberOfInterrupts; i++) {
-      if (i != hit) {
-        context->interrupts[i2].level = context->interrupts[i].level;
-        context->interrupts[i2].vector = context->interrupts[i].vector;
-        i2++;
-      }
-    }
-    context->NumberOfInterrupts--;
+  if (context->interruptReturnAddress == 0) {
+    int addr = (context->regs.PC + 2)>>1;
+    if (context->target_cycles == 0)
+      addr = context->regs.PC>>1;
+
+    int id = (addr >> 19) & 0xFFF;
+    cacheCode[context->isslave][cacheId[id]][addr & cacheMask[cacheId[id]]] = decodeInt;
   }
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
-int SH2KronosInterpreterGetInterrupts(SH2_struct *context,
-                                interrupt_struct interrupts[MAX_INTERRUPTS])
-{
-   memcpy(interrupts, context->interrupts, sizeof(interrupt_struct) * MAX_INTERRUPTS);
-   return context->NumberOfInterrupts;
+static void insertInterruptReturnHandling(SH2_struct *context) {
+  if (context->interruptReturnAddress == 0) {
+    int addr = (context->regs.PC)>>1;
+    int id = (addr >> 19) & 0xFFF;
+    context->interruptReturnAddress = context->regs.PC;
+    cacheCode[context->isslave][cacheId[id]][addr & cacheMask[cacheId[id]]] = outOfInt;
+  }
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
-void SH2KronosInterpreterSetInterrupts(SH2_struct *context, int num_interrupts,
-                                 const interrupt_struct interrupts[MAX_INTERRUPTS])
-{
-   memcpy(context->interrupts, interrupts, sizeof(interrupt_struct) * MAX_INTERRUPTS);
-   context->NumberOfInterrupts = num_interrupts;
-}
-
-void SH2KronosWriteNotify(SH2_struct *context, u32 start, u32 length){
+static void notify(SH2_struct *context, u32 start, u32 length) {
   int i;
   for (i=0; i<length; i+=2) {
     int id = ((start + i) >> 20) & 0xFFF;
     int addr = (start + i) >> 1;
-    if (cacheId[id] == 0) {  //Special BAckupHandled case
-      cacheCode[context->isslave][cacheId[id]][addr & 0x7FFFF] = biosDecode;
-    }
-    else
-      cacheCode[context->isslave][cacheId[id]][(addr) & 0x7FFFF] = decode;
+    if (cacheCode[context->isslave][cacheId[id]][addr & cacheMask[cacheId[id]]] != outOfInt)
+      cacheCode[context->isslave][cacheId[id]][addr & cacheMask[cacheId[id]]] = decode;
   }
+}
+
+void SH2KronosWriteNotify(SH2_struct *context, u32 start, u32 length){
+  int id = start>>29;
+ if((id == 0x0) || (id == 0x1)) {
+   //in case of standard access
+   notify(context, start & 0x1FFFFFFF, length);
+   notify(context, (start & 0x1FFFFFFF)|0x20000000, length);
+   //If the other core does not have the cache on, then it needs to see the modification
+   if ((context->isslave != 0) && (MSH2->cacheOn == 0)) {
+     notify(MSH2, start & 0x1FFFFFFF, length);
+     notify(MSH2, (start & 0x1FFFFFFF)|0x20000000, length);
+   }
+   if ((context->isslave == 0) && (SSH2->cacheOn == 0)) {
+     notify(SSH2, start & 0x1FFFFFFF, length);
+     notify(SSH2, (start & 0x1FFFFFFF)|0x20000000, length);
+   }
+}
+else {
+  if (id == 0x6) {
+    //Data Array access
+    notify(context, start, length);
+  }
+}
+//Need to add verification of cacheId in case non cacheable area is updated
+//Maybe need to fix accessing equivalent non cacheable area in any case
 }
 
 //////////////////////////////////////////////////////////////////////////////
 SH2Interface_struct SH2KronosInterpreter = {
    SH2CORE_KRONOS_INTERPRETER,
-   "SH2 Kronos Interpreter",
+   "SH2 Performance",
 
    SH2KronosInterpreterInit,
    SH2KronosInterpreterDeInit,
@@ -741,19 +970,17 @@ SH2Interface_struct SH2KronosInterpreter = {
    SH2KronosInterpreterSetPC,
    SH2KronosIOnFrame,
 
-   SH2KronosInterpreterSendInterrupt,
-   SH2KronosInterpreterRemoveInterrupt,
-   SH2KronosInterpreterGetInterrupts,
-   SH2KronosInterpreterSetInterrupts,
+   SH2KronosNotifyInterrupt,
 
    SH2KronosWriteNotify,
-   SH2KronosInterpreterAddCycles
+   SH2KronosInterpreterAddCycles,
+   SH2KronosUpdateInterruptReturnHandling
 };
 
 //////////////////////////////////////////////////////////////////////////////
 SH2Interface_struct SH2KronosDebugInterpreter = {
    SH2CORE_KRONOS_DEBUG_INTERPRETER,
-   "SH2 Kronos Debug Interpreter",
+   "SH2 Debug",
 
    SH2KronosInterpreterInit,
    SH2KronosInterpreterDeInit,
@@ -783,11 +1010,9 @@ SH2Interface_struct SH2KronosDebugInterpreter = {
    SH2KronosInterpreterSetPC,
    SH2KronosIOnFrame,
 
-   SH2KronosInterpreterSendInterrupt,
-   SH2KronosInterpreterRemoveInterrupt,
-   SH2KronosInterpreterGetInterrupts,
-   SH2KronosInterpreterSetInterrupts,
+   SH2KronosNotifyInterrupt,
 
    SH2KronosWriteNotify,
-   SH2KronosInterpreterAddCycles
+   SH2KronosInterpreterAddCycles,
+   SH2KronosUpdateInterruptDebugReturnHandling
 };
