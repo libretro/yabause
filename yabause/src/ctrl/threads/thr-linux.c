@@ -57,27 +57,6 @@ static void thread_exit_handler(int signum_unused) {
 
 int YabThreadStart(unsigned int id, void* (*func)(void *), void *arg)
 {
-   // Set up a dummy signal handler for SIGUSR1 so we can return from pause()
-   // in YabThreadSleep()
-   struct sigaction sa;
-   sa.sa_handler = dummy_sighandler;
-   sigemptyset (&sa.sa_mask);
-   sa.sa_flags = 0;
-   if (sigaction(SIGUSR1, &sa, NULL) != 0)
-   {
-      perror("sigaction(SIGUSR1)");
-      return -1;
-   }
-   struct sigaction sb;
-   sb.sa_handler = thread_exit_handler;
-   sigemptyset (&sb.sa_mask);
-   sb.sa_flags = 0;
-   if (sigaction(SIGUSR2, &sb, NULL) != 0)
-   {
-      perror("sigaction(SIGUSR2)");
-      return -1;
-   }
-
    if (thread_handle[id])
    {
       fprintf(stderr, "YabThreadStart: thread %u is already started!\n", id);
@@ -105,14 +84,6 @@ void YabThreadWait(unsigned int id)
    thread_handle[id] = 0;
 }
 
-void YabThreadCancel(unsigned int id)
-{
-   if (!thread_handle[id])
-      return;  // Thread wasn't running in the first place
-
-   pthread_kill(thread_handle[id], SIGUSR2);
-}
-
 //////////////////////////////////////////////////////////////////////////////
 
 void YabThreadYield(void)
@@ -125,11 +96,6 @@ void YabThreadYield(void)
 
 //////////////////////////////////////////////////////////////////////////////
 
-void YabThreadSleep(void)
-{
-   pause();
-}
-
 u32 YabThreadUSleep( unsigned int stime )
 {
 #ifdef MIMIC_WINDOWS
@@ -139,13 +105,6 @@ u32 YabThreadUSleep( unsigned int stime )
   usleep(stime);
   return 0;
 #endif
-}
-
-
-//////////////////////////////////////////////////////////////////////////////
-
-void YabThreadRemoteSleep(unsigned int id)
-{
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -315,26 +274,6 @@ void YabThreadFreeMutex( YabMutex * mtx ){
 
 //////////////////////////////////////////////////////////////////////////////
 
-typedef struct YabBarrier_pthread
-{
-  pthread_barrier_t barrier;
-} YabBarrier_pthread;
-
-void YabThreadBarrierWait(YabBarrier *bar){
-    if (bar == NULL) return;
-    YabBarrier_pthread * pctx;
-    pctx = (YabBarrier_pthread *)bar;
-    pthread_barrier_wait(&pctx->barrier);
-}
-
-YabBarrier * YabThreadCreateBarrier(int nbWorkers){
-    YabBarrier_pthread * mtx = (YabBarrier_pthread *)malloc(sizeof(YabBarrier_pthread));
-    pthread_barrier_init( &mtx->barrier,NULL, nbWorkers);
-    return (YabBarrier *)mtx;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
 typedef struct YabCond_pthread
 {
   pthread_cond_t cond;
@@ -470,40 +409,6 @@ extern void       __sched_cpufree(cpu_set_t* set);
 extern int __sched_cpucount(size_t setsize, cpu_set_t* set);
 
 #endif
-
-void YabThreadSetCurrentThreadAffinityMask(int mask)
-{
-#if 0
-    int err, syscallres;
-    pid_t pid = gettid();
-
-	cpu_set_t my_set;        /* Define your cpu_set bit mask. */
-	CPU_ZERO(&my_set);       /* Initialize it all to 0, i.e. no CPUs selected. */
-	CPU_SET(mask, &my_set);
-	CPU_SET(mask+4, &my_set);
-	sched_setaffinity(pid,sizeof(my_set), &my_set);
-#endif
-}
-
-#include <sys/syscall.h>
-#ifndef ARCH_IS_MACOSX
-//...
-int getCpuId() {
-
-    unsigned cpu;
-    if (syscall(__NR_getcpu, &cpu, NULL, NULL) < 0) {
-        return -1;
-    } else {
-        return (int) cpu;
-    }
-}
-#endif
-
-int YabThreadGetCurrentThreadAffinityMask()
-{
-	//return sched_getcpu(); //my_set.__bits;
-    return 0;
-}
 
 
 

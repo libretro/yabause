@@ -117,20 +117,6 @@ u32 YabThreadUSleep( u32 stime )
   return stime%1000;
 }
 
-void YabThreadSleep(void)
-{
-   struct thd_s *thd = (struct thd_s *)TlsGetValue(hnd_key);
-   WaitForSingleObject(thd->cond,INFINITE);
-}
-
-void YabThreadRemoteSleep(unsigned int id)
-{
-   if (!thread_handle[id].thd)
-      return;  // Thread wasn't running in the first place
-
-   WaitForSingleObject(thread_handle[id].cond,INFINITE);
-}
-
 void YabThreadWake(unsigned int id)
 {
    if (!thread_handle[id].thd)
@@ -305,60 +291,6 @@ static void DoDynamicInit() {
 }
 #endif
 
-typedef struct YabBarrier_win32
-{
-  SYNCHRONIZATION_BARRIER barrier;
-  CRITICAL_SECTION mutex;
-  HANDLE empty;
-  int capacity;
-  int current;
-  int reset;
-} YabBarrier_win32;
-
-void YabThreadBarrierWait(YabBarrier *bar){
-    int wait = 0;
-    if (bar == NULL) return;
-    YabBarrier_win32 * pctx;
-    pctx = (YabBarrier_win32 *)bar;
-    //if (enterSynchronizationBarrier != NULL) {
-    //  enterSynchronizationBarrier(&pctx->barrier, 0);
-    //} else {
-      EnterCriticalSection(&pctx->mutex);
-      if (pctx->reset == 1) pctx->current = pctx->capacity;
-      pctx->reset = 0;
-      pctx->current--;
-      wait = (pctx->current != 0);
-      if (!wait) {
-        pctx->reset = 1;
-      }
-      LeaveCriticalSection(&pctx->mutex);
-      SetEvent(pctx->empty);
-      if (wait) {
-        while (pctx->current != 0)
-          WaitForSingleObject(pctx->empty,INFINITE);
-      }
-    //}
-}
-
-YabBarrier * YabThreadCreateBarrier(int nbWorkers){
-    //if (init == 0) {
-    //  DoDynamicInit();
-    //  init = 1;
-    //}
-    YabBarrier_win32 * mtx = (YabBarrier_win32 *)malloc(sizeof(YabBarrier_win32));
-    //if (initializeSynchronizationBarrier != NULL) {
-    //  initializeSynchronizationBarrier( &mtx->barrier, nbWorkers, -1 );
-    //  return (YabBarrier *)mtx;
-    //} else {
-      InitializeCriticalSection(&mtx->mutex);
-      mtx->empty = CreateEvent(NULL, FALSE, FALSE, NULL);
-      mtx->capacity = nbWorkers;
-      mtx->current = nbWorkers;
-      mtx->reset = 0;
-      return (YabBarrier *)mtx;
-    //}
-}
-
 //////////////////////////////////////////////////////////////////////////////
 
 typedef struct YabCond_win32
@@ -396,15 +328,6 @@ void YabThreadFreeCond( YabCond *mtx ) {
 	if (mtx != NULL){
 		free(mtx);
 	}
-}
-
-void YabThreadSetCurrentThreadAffinityMask(int mask)
-{
-	SetThreadIdealProcessor(GetCurrentThread(), mask);
-}
-
-int YabThreadGetCurrentThreadAffinityMask(){
-	return GetCurrentProcessorNumber();
 }
 
 //////////////////////////////////////////////////////////////////////////////
