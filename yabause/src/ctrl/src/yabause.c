@@ -959,7 +959,7 @@ u64 YabauseGetTicks(void) {
     LARGE_INTEGER ticks;
     if (!QueryPerformanceCounter(&ticks))
     {
-        printf("GetCounter failed!\n");
+        YuiMsg("GetCounter failed!\n");
     }
     return ticks.QuadPart;
 #elif defined(_arch_dreamcast)
