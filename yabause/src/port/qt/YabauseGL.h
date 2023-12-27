@@ -42,11 +42,8 @@ public:
 	void swapBuffers();
 	void getScale(float *xRatio, float *yRatio, int *xUp, int *yUp);
 	void pause(bool);
-#ifndef HAVE_LIBGL
-        QImage grabFrameBuffer();
-	virtual void paintEvent( QPaintEvent * event );
+  QImage grabFrameBuffer();
 	void makeCurrent();
-#endif
 
 private:
 	void requestFrame();

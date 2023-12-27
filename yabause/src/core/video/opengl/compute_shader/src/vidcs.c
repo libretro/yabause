@@ -4439,6 +4439,16 @@ static pixel_t *VIDCSGetVdp2ScreenExtract(u32 screen, int * w, int * h)
     }
     return pixels;
   }
+  if (screen = 0xFF)
+  {
+    //Get full framebuffer
+    pixel_t* pixels = (pixel_t*)malloc(_Ygl->width*_Ygl->height * sizeof(pixel_t));
+    *w = _Ygl->width;
+    *h = _Ygl->height;
+    glBindFramebuffer(GL_FRAMEBUFFER, _Ygl->default_fbo);
+    glReadPixels(0,0,_Ygl->width,_Ygl->height,GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    return pixels;
+  }
 }
 
 #endif

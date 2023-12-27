@@ -106,6 +106,15 @@ void YabauseGL::resizeGL( int w, int h )
     glInitialized();
  }
 
+QImage YabauseGL::grabFrameBuffer()
+{
+	int width, height;
+
+  pixel_t *vdp2texture = Vdp2DebugTexture(0xFF, &width, &height);
+  QImage img((uchar *)vdp2texture, width, height, QImage::Format_RGB32);
+	return img;
+}
+
 void YabauseGL::getScale(float *xRatio, float* yRatio, int* xUp, int *yUp) {
   if ( VIDCore ) {
     VIDCore->getScale(xRatio, yRatio, xUp, yUp);
