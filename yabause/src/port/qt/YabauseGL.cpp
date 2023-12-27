@@ -76,7 +76,6 @@ void YabauseGL::initializeGL()
   initializeOpenGLFunctions();
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
-  glInitialized();
 }
 
 bool YabauseGL::event(QEvent *event)
@@ -104,6 +103,7 @@ void YabauseGL::resizeGL( int w, int h )
   if ( VIDCore ) {
     VIDCore->Resize(0, 0, w, h, 0);
   }
+    glInitialized();
  }
 
 void YabauseGL::getScale(float *xRatio, float* yRatio, int* xUp, int *yUp) {

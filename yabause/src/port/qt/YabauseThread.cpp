@@ -97,8 +97,8 @@ bool YabauseThread::pauseEmulation( bool pause, bool reset )
 
 	if (vs->value("autostart").toBool())
 	{
-		if (vs->value("autostart/load").toBool()) {
-			YabLoadStateSlot( QtYabause::volatileSettings()->value( "General/SaveStates", getDataDirPath() ).toString().toLatin1().constData(), vs->value("autostart/load/slot").toInt() );
+		if (vs->value("autorun/load").toBool()) {
+			YabLoadStateSlot( QtYabause::volatileSettings()->value( "General/SaveStates", getDataDirPath() ).toString().toLatin1().constData(), vs->value("autorun/load/slot").toInt() );
 		}
 		vs->setValue("autostart", false);
 	}

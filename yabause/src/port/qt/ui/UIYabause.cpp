@@ -100,8 +100,8 @@ UIYabause::UIYabause( QWidget* parent )
 	connect(mYabauseGL, &YabauseGL::glInitialized, [&]
 	{
 		auto const * const vs = QtYabause::volatileSettings();
-		// if (vs->value("autostart").toBool())
-		// 	aEmulationRun->trigger();
+		if (vs->value("autorun").toBool())
+			aEmulationRun->trigger();
 	});
 
 	setCentralWidget( container );
