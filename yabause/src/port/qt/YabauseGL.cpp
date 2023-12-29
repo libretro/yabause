@@ -21,6 +21,8 @@
 #include "YabauseGL.h"
 #include "QtYabause.h"
 #include <QKeyEvent>
+#include <QApplication>
+
 
 YabauseGL::YabauseGL( ) : QOpenGLWindow()
 {
@@ -53,6 +55,20 @@ YabauseGL::YabauseGL( ) : QOpenGLWindow()
 
   format.setProfile(QSurfaceFormat::CoreProfile);
   setFormat(format);
+  mPause = true;
+}
+
+void YabauseGL::requestFrame() {
+  QApplication::postEvent(this, new FrameRequest());
+}
+
+void YabauseGL::pause(bool pause) {
+  if (pause != mPause) {
+    mPause = pause;
+    if (!mPause) {
+      requestFrame();
+    }
+  }
 }
 
 void YabauseGL::initializeGL()
@@ -60,7 +76,20 @@ void YabauseGL::initializeGL()
   initializeOpenGLFunctions();
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
-  glInitialized();
+}
+
+bool YabauseGL::event(QEvent *event)
+{
+    switch (event->type()) {
+    case FrameRequest::mType:
+        if ( !mPause ) {
+          YabauseExec();
+          requestFrame();
+        }
+        return true;
+    default:
+        return QWindow::event(event);
+    }
 }
 
 void YabauseGL::swapBuffers()
@@ -70,8 +99,21 @@ void YabauseGL::swapBuffers()
 
 void YabauseGL::resizeGL( int w, int h )
 {
-  glResized();
+  QOpenGLWindow::resizeGL(w, h);
+  if ( VIDCore ) {
+    VIDCore->Resize(0, 0, w, h, 0);
+  }
+    glInitialized();
  }
+
+QImage YabauseGL::grabFrameBuffer()
+{
+	int width, height;
+
+  pixel_t *vdp2texture = Vdp2DebugTexture(0xFF, &width, &height);
+  QImage img((uchar *)vdp2texture, width, height, QImage::Format_RGB32);
+	return img;
+}
 
 void YabauseGL::getScale(float *xRatio, float* yRatio, int* xUp, int *yUp) {
   if ( VIDCore ) {

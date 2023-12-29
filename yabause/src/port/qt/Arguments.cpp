@@ -127,15 +127,15 @@ namespace Arguments
 	void autoload(const QString& param)
 	{
 		VolatileSettings * vs = QtYabause::volatileSettings();
-		vs->setValue("autostart", true);
-		vs->setValue("autostart/load", true);
-		vs->setValue("autostart/load/slot", param.toInt());
+		vs->setValue("autorun", true);
+		vs->setValue("autorun/load", true);
+		vs->setValue("autorun/load/slot", param.toInt());
 	}
 
 	void autostart(const QString& param)
 	{
 		VolatileSettings * vs = QtYabause::volatileSettings();
-		vs->setValue("autostart", true);
+		vs->setValue("autorun", true);
 	}
 
 	void binary(const QString& param)

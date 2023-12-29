@@ -124,28 +124,6 @@ void YabThreadYield(void)
 #endif
 }
 
-void YabThreadSleep(void)
-{
-#if !defined(ARCH_IS_LINUX) && !defined(ARCH_IS_MACOSX)
-#ifdef HAVE_THREAD_STORAGE
-	struct thd_s *thd = (struct thd_s *)sthread_tls_get(hnd_key);
-	WaitForSingleObject(thd->cond,INFINITE);
-#endif
-#else
-	pause();
-#endif
-}
-
-void YabThreadRemoteSleep(unsigned int id)
-{
-#if !defined(ARCH_IS_LINUX) && !defined(ARCH_IS_MACOSX)
-	if (thread_handle[id].running == 0)
-		return;
-
-	WaitForSingleObject(thread_handle[id].cond,INFINITE);
-#endif
-}
-
 void YabThreadWake(unsigned int id)
 {
 	if (thread_handle[id].running == 0)

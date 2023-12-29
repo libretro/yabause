@@ -29,34 +29,45 @@ class YabauseGL : public QOpenGLWindow, protected QOpenGLFunctions
 #else
 #include <QWidget>
 #include <QImage>
-
-
 class YabauseGL : public QWidget
 #endif
 {
 	Q_OBJECT
 
 public:
+
 	YabauseGL( );
 
 	void updateView( const QSize& size = QSize() );
 	void swapBuffers();
 	void getScale(float *xRatio, float *yRatio, int *xUp, int *yUp);
-#ifndef HAVE_LIBGL
-        QImage grabFrameBuffer();
-	virtual void paintEvent( QPaintEvent * event );
+	void pause(bool);
+  QImage grabFrameBuffer();
 	void makeCurrent();
-#endif
 
+private:
+	void requestFrame();
 Q_SIGNALS:
 	void glInitialized();
-	void glResized();
+	void frameSwapped();
 
 protected:
         void initializeGL() override;
         void resizeGL(int width, int height) override;
         void keyPressEvent( QKeyEvent* e ) override;
         void keyReleaseEvent( QKeyEvent* e ) override;
+
+protected:
+    bool event(QEvent *event) override;
+
+		bool mPause;
+
 };
 
+
+struct FrameRequest : public QEvent
+{
+	static const QEvent::Type mType = static_cast<QEvent::Type>(2000);
+	FrameRequest():QEvent(mType){};
+};
 #endif // YABAUSEGL_H

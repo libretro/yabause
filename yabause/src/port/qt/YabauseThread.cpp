@@ -23,6 +23,7 @@
 #include "VolatileSettings.h"
 #include "ui/UIPortManager.h"
 #include "ui/UIYabause.h"
+#include "YabauseGL.h"
 
 #include "peripheral.h"
 
@@ -34,7 +35,6 @@ YabauseThread::YabauseThread( QObject* o )
 	: QObject( o )
 {
 	mPause = true;
-	mTimerId = -1;
 	mInit = -1;
 	memset(&mYabauseConf, 0, sizeof(mYabauseConf));
 	showFPS = false;
@@ -87,23 +87,18 @@ bool YabauseThread::pauseEmulation( bool pause, bool reset )
 
 	if ( mPause ) {
 		ScspMuteAudio(SCSP_MUTE_SYSTEM);
-		if (mTimerId != -1) {
-			killTimer( mTimerId );
-			mTimerId = -1;
-		}
 	}
 	else {
     resetSyncVideo();
 		ScspUnMuteAudio(SCSP_MUTE_SYSTEM);
-		mTimerId = startTimer( 0, Qt::PreciseTimer );
 	}
 
 	VolatileSettings * vs = QtYabause::volatileSettings();
 
 	if (vs->value("autostart").toBool())
 	{
-		if (vs->value("autostart/load").toBool()) {
-			YabLoadStateSlot( QtYabause::volatileSettings()->value( "General/SaveStates", getDataDirPath() ).toString().toLatin1().constData(), vs->value("autostart/load/slot").toInt() );
+		if (vs->value("autorun/load").toBool()) {
+			YabLoadStateSlot( QtYabause::volatileSettings()->value( "General/SaveStates", getDataDirPath() ).toString().toLatin1().constData(), vs->value("autorun/load/slot").toInt() );
 		}
 		vs->setValue("autostart", false);
 	}
@@ -434,7 +429,7 @@ void YabauseThread::reloadSettings()
 bool YabauseThread::emulationRunning()
 {
 	//QMutexLocker l( &mMutex );
-	return mTimerId != -1 && !mPause;
+	return  !mPause;
 }
 
 bool YabauseThread::emulationPaused()
@@ -486,20 +481,4 @@ void YabauseThread::resetYabauseConf()
 	mYabauseConf.polygon_generation_mode = 0;
         mYabauseConf.resolution_mode = 1;
         mYabauseConf.stretch = 0;
-}
-
-void YabauseThread::timerEvent( QTimerEvent* )
-{
-	//mPause = true;
-	//mRunning = true;
-	//while ( mRunning )
-	{
-		if ( !mPause ) {
-			YabauseExec();
-                }
-		loopEnded();
-		//else
-			//msleep( 25 );
-		//sleep( 0 );
-	}
 }

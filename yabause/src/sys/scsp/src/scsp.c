@@ -5103,8 +5103,6 @@ void ScspHalt(void) {
 void
 ScspReset (void)
 {
-  // ScspLockThread();
-  // YabThreadUSleep(100000);
   scsp_reset();
   ScspUnLockThread();
 }
@@ -5313,7 +5311,6 @@ void new_scsp_update_samples(s32 *bufL, s32 *bufR, int scspsoundlen)
 
 void ScspLockThread() {
   g_scsp_lock = 1;
-  //YabThreadUSleep((1000000/fps)*2);
 }
 
 void ScspUnLockThread() {
@@ -5326,8 +5323,6 @@ void ScspUnLockThread() {
 u64 newCycles = 0;
 
 void* ScspAsynMainCpu( void * p ){
-
-  YabThreadSetCurrentThreadAffinityMask( 0x03 );
 
   const int samplecnt = 256; // 11289600/44100
   int frame = 0;
@@ -5371,7 +5366,6 @@ void* ScspAsynMainCpu( void * p ){
         ScspExecAsync();
         YabSemPost(g_scsp_ready);
         // YabThreadYield();
-        // YabThreadSleep();
         YabSemWait(g_cpu_ready);
         m68k_inc = 0;
         break;

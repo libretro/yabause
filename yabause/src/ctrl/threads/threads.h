@@ -89,17 +89,8 @@ int YabThreadStart(unsigned int id, void* (*func)(void *), void *arg);
 // immediately if no thread has been started on the given ID.
 void YabThreadWait(unsigned int id);
 
-// YabThreadCancel: send a cancellation request to a specific thread.
-void YabThreadCancel(unsigned int id);
-
 // YabThreadYield:  Yield CPU execution to another thread.
 void YabThreadYield(void);
-
-// YabThreadSleep:  Put the current thread to sleep.
-void YabThreadSleep(void);
-
-// YabThreadSleep:  Put the specified thread to sleep.
-void YabThreadRemoteSleep(unsigned int id);
 
 // YabThreadWake:  Wake up the given thread if it is asleep.
 void YabThreadWake(unsigned int id);
@@ -144,14 +135,6 @@ void YabThreadCondWait(YabCond *cond, YabMutex * mtx);
 void YabThreadCondSignal(YabCond *cond);
 YabCond * YabThreadCreateCond();
 void YabThreadFreeCond( YabCond * mtx );
-
-typedef void * YabBarrier;
-
-void YabThreadBarrierWait(YabBarrier *bar);
-YabBarrier * YabThreadCreateBarrier(int nbWorkers);
-
-void YabThreadSetCurrentThreadAffinityMask(int mask);
-int YabThreadGetCurrentThreadAffinityMask();
 
 u32 YabThreadUSleep( unsigned int stime );
 
