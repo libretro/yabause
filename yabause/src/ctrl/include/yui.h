@@ -43,7 +43,7 @@ void YuiErrorMsg(const char *string);
 int YuiGetFB(void);
 /* Tells the yui to exchange front and back video buffers. This may end
    up being moved to the Video Core - It is called only when frame has been drawn and dirty. */
-void YuiSwapBuffers(void);
+void YuiSwapBuffers();
 
 /* Tells the yui that a frame loop has been processed - It is
 reported for each frame. */
@@ -58,7 +58,7 @@ int YuiRevokeOGLOnThisThread();
 #ifndef TIMING_SWAP
 #define YuiTimedSwapBuffers YuiSwapBuffers
 #else
-void YuiTimedSwapBuffers(void);
+void YuiTimedSwapBuffers();
 #endif
 
 #ifdef __cplusplus

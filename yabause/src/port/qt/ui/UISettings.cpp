@@ -709,7 +709,7 @@ void UISettings::loadSettings()
 #endif
 	cbEnableVSync->setChecked( s->value( "General/EnableVSync", 1 ).toBool() );
 	cbShowFPS->setChecked( s->value( "General/ShowFPS" ).toBool() );
-	cbAutostart->setChecked( s->value( "autostart" ).toBool() );
+	cbAutostart->setChecked( s->value( "autostart", 1 ).toBool() );
 
 	bool clocksync = s->value( "General/ClockSync" ).toBool();
 	cbClockSync->setChecked( clocksync );

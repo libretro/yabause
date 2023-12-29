@@ -29,10 +29,6 @@ void YabThreadWait(unsigned int id) {}
 
 void YabThreadYield(void) {}
 
-void YabThreadSleep(void) {}
-
-void YabThreadRemoteSleep(unsigned int id) {}
-
 void YabThreadWake(unsigned int id) {}
 
 //////////////////////////////////////////////////////////////////////////////

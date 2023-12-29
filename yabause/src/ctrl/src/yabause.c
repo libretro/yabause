@@ -132,12 +132,12 @@ void print_usage(const char *program_name) {
 //////////////////////////////////////////////////////////////////////////////
 
 
-static unsigned long nextFrameTime = 0;
+static int64_t nextFrameTime = 0;
 static int autoframeskipenab=0;
 
 #ifdef TIMING_SWAP
 void YuiTimedSwapBuffers(){
-  unsigned long now = YabauseGetTicks();
+  unsigned u64 now = YabauseGetTicks();
   YuiSwapBuffers();
   YuiMsg("delay %ld\n",YabauseGetTicks() - now);
 }
@@ -149,22 +149,16 @@ static int fps = 0;
 static int vdp1fps = 0;
 
 static void syncVideoMode(void) {
-  unsigned long sleep = 0;
-  unsigned long now;
-  signed long delay = 0;
+  int64_t sleep = 0;
+  int64_t now;
+  int64_t delay = 0;
   YuiEndOfFrame();
   now = YabauseGetTicks();
   if (nextFrameTime == 0) nextFrameTime = YabauseGetTicks();
   if(nextFrameTime > now) {
     if (isAutoFrameSkip() == 0) {
       sleep = ((nextFrameTime - now)*1000000.0)/yabsys.tickfreq;
-// #ifdef WIN32
-//       while(YabauseGetTicks() < nextFrameTime) {
-//         YabThreadYield();
-//       }
-// #else
       delay = YabThreadUSleep(sleep) * yabsys.tickfreq/1000000.0;
-// #endif
       nextFrameTime += delay;
     }
   }
@@ -962,9 +956,12 @@ void YabauseStopSlave(void) {
 
 u64 YabauseGetTicks(void) {
 #ifdef WIN32
-   u64 ticks;
-   QueryPerformanceCounter((LARGE_INTEGER *)&ticks);
-   return ticks;
+    LARGE_INTEGER ticks;
+    if (!QueryPerformanceCounter(&ticks))
+    {
+        YuiMsg("GetCounter failed!\n");
+    }
+    return ticks.QuadPart;
 #elif defined(_arch_dreamcast)
    return (u64) timer_ms_gettime64();
 #elif defined(GEKKO)

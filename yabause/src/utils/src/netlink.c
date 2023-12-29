@@ -836,7 +836,6 @@ void* netlink_client(void *data)
             NetlinkArea->outbufferupdate = 1;
          }
       }
-      //YabThreadSleep();
    }
 
    free(data);
