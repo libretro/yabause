@@ -5694,14 +5694,14 @@ void ScspAsynMainRealtime(void * p) {
         }
         pthread_mutex_unlock(&sync_mutex);
 #elif defined(ARCH_IS_LINUX)    
-        time(&tm);    
+        time((time_t *)&tm);
         long n = tm.tv_nsec;
         tm.tv_nsec += sleeptime;
         if( n > tm.tv_nsec){
           tm.tv_sec += 1;
         }
         pthread_mutex_lock(&sync_mutex);
-        int rtn = pthread_cond_timedwait(&sync_cnd,&sync_mutex,ctime(&tm));
+        int rtn = pthread_cond_timedwait(&sync_cnd,&sync_mutex,(const struct timespec * restrict)ctime((time_t *)&tm));
         if(rtn == 0){
           for (i = 0; i < samplecnt; i += step) {
             MM68KExec(step);
@@ -5749,10 +5749,10 @@ void ScspExec(){
   if (thread_running == 0){
     thread_running = 1;
     if (g_scsp_main_mode == 0) {
-      YabThreadStart(YAB_THREAD_SCSP, ScspAsynMainCpuTime, NULL);
+      YabThreadStart(YAB_THREAD_SCSP, (void * (*)(void *))ScspAsynMainCpuTime, NULL);
     }
     else {
-      YabThreadStart(YAB_THREAD_SCSP, ScspAsynMainRealtime, NULL);
+      YabThreadStart(YAB_THREAD_SCSP, (void * (*)(void *))ScspAsynMainRealtime, NULL);
     }
     YabThreadUSleep(100000);
   }

@@ -34,6 +34,8 @@
 //#define YGLDEBUG yprintf
 //#define YGLLOG yprintf
 
+extern int YuiGetFB(void);
+extern void RBGGenerator_onFinish();
 extern u8 * Vdp1FrameBuffer[];
 static int rebuild_frame_buffer = 0;
 
@@ -859,7 +861,7 @@ void VIDOGLVdp1WriteFrameBuffer(u32 type, u32 addr, u32 val ) {
         }
         else {
           spritepixelinfo_struct spi = { 0 };
-          Vdp1GetSpritePixelInfo(Vdp2Regs->SPCTL & 0x0F, &val, &spi);
+          Vdp1GetSpritePixelInfo(Vdp2Regs->SPCTL & 0x0F, (u16 *)&val, &spi);
           _Ygl->CpuWriteFrameBuffer[texaddr] = VDP1COLOR(1, spi.colorcalc, spi.priority, 0, val);
         }
         break;
