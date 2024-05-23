@@ -67,7 +67,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 #include "vdp2.h"
 #include "yui.h"
 #include "bios.h"
-//#include "movie.h"
+#include "movie.h"
 #include "osdcore.h"
 #ifdef HAVE_LIBSDL
 #if defined(__APPLE__) || defined(GEKKO)
@@ -116,6 +116,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 #endif
 
 #include <inttypes.h>
+
+extern void SH2HandleInterrupts(SH2_struct *context);
 
 //////////////////////////////////////////////////////////////////////////////
 

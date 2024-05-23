@@ -1309,7 +1309,7 @@ static void FASTCALL Vdp2DrawRotationFP(vdp2draw_struct *info, vdp2rotationparam
          if (info->linescreen > 1)
          {
             lineColorAddr = (T1ReadWord(ram, lineAddr) & 0x780) | p->linescreen;
-            lineColor = Vdp2ColorRamGetColor(lineColorAddr, color_ram);
+            lineColor = Vdp2ColorRamGetColor(lineColorAddr, (int)color_ram);
             lineAddr += lineInc;
             TitanPutLineHLine(info->linescreen, j, COLSAT2YAB32(0x3F, lineColor));
          }
@@ -1518,7 +1518,7 @@ static void Vdp2DrawLineScreen(void)
       for (i = 0; i < vdp2height; i++)
       {
          color = T1ReadWord(Vdp2Ram, scrAddr) & 0x7FF;
-         dot = Vdp2ColorRamGetColor(color, Vdp2ColorRam);
+         dot = Vdp2ColorRamGetColor(color, (int)Vdp2ColorRam);
          scrAddr += 2;
 
          TitanPutLineHLine(1, i, COLSAT2YAB32(alpha, dot));
@@ -1528,7 +1528,7 @@ static void Vdp2DrawLineScreen(void)
    {
       /* single color, implemented but not tested... */
       color = T1ReadWord(Vdp2Ram, scrAddr) & 0x7FF;
-      dot = Vdp2ColorRamGetColor(color, Vdp2ColorRam);
+      dot = Vdp2ColorRamGetColor(color, (int)Vdp2ColorRam);
       for (i = 0; i < vdp2height; i++)
          TitanPutLineHLine(1, i, COLSAT2YAB32(alpha, dot));
    }
@@ -2198,14 +2198,14 @@ int VIDSoftInit(void)
 
    vidsoft_vdp1_thread_context.need_draw = 0;
    vidsoft_vdp1_thread_context.draw_finished = 1;
-   YabThreadStart(YAB_THREAD_VIDSOFT_VDP1, VidsoftVdp1Thread, 0);
+   YabThreadStart(YAB_THREAD_VIDSOFT_VDP1, (void * (*)(void *))VidsoftVdp1Thread, 0);
 
-   YabThreadStart(YAB_THREAD_VIDSOFT_LAYER_RBG0, VidsoftRbg0Thread, 0);
-   YabThreadStart(YAB_THREAD_VIDSOFT_LAYER_NBG0, VidsoftNbg0Thread, 0);
-   YabThreadStart(YAB_THREAD_VIDSOFT_LAYER_NBG1, VidsoftNbg1Thread, 0);
-   YabThreadStart(YAB_THREAD_VIDSOFT_LAYER_NBG2, VidsoftNbg2Thread, 0);
-   YabThreadStart(YAB_THREAD_VIDSOFT_LAYER_NBG3, VidsoftNbg3Thread, 0);
-   YabThreadStart(YAB_THREAD_VIDSOFT_LAYER_SPRITE, VidsoftSpriteThread, 0);
+   YabThreadStart(YAB_THREAD_VIDSOFT_LAYER_RBG0, (void * (*)(void *))VidsoftRbg0Thread, 0);
+   YabThreadStart(YAB_THREAD_VIDSOFT_LAYER_NBG0, (void * (*)(void *))VidsoftNbg0Thread, 0);
+   YabThreadStart(YAB_THREAD_VIDSOFT_LAYER_NBG1, (void * (*)(void *))VidsoftNbg1Thread, 0);
+   YabThreadStart(YAB_THREAD_VIDSOFT_LAYER_NBG2, (void * (*)(void *))VidsoftNbg2Thread, 0);
+   YabThreadStart(YAB_THREAD_VIDSOFT_LAYER_NBG3, (void * (*)(void *))VidsoftNbg3Thread, 0);
+   YabThreadStart(YAB_THREAD_VIDSOFT_LAYER_SPRITE, (void * (*)(void *))VidsoftSpriteThread, 0);
 
    return 0;
 }
@@ -3717,7 +3717,7 @@ void VidsoftDrawSprite(Vdp2 * vdp2_regs, u8 * spr_window_mask, u8* vdp1_front_fr
                      continue;
                   }
 
-                  dot = Vdp2ColorRamGetColor(vdp1coloroffset + pixel,color_ram);
+                  dot = Vdp2ColorRamGetColor(vdp1coloroffset + pixel,(int)color_ram);
 
                   if (TestBothWindow(vdp2_regs->WCTLD >> 8, colorcalcwindow, i, i2) && (vdp2_regs->CCCTL & 0x40))
                   {
@@ -3806,7 +3806,7 @@ void VidsoftDrawSprite(Vdp2 * vdp2_regs, u8 * spr_window_mask, u8* vdp1_front_fr
                      continue;
                   }
 
-                  dot = Vdp2ColorRamGetColor(vdp1coloroffset + pixel, color_ram);
+                  dot = Vdp2ColorRamGetColor(vdp1coloroffset + pixel, (int)color_ram);
 
                   if (TestBothWindow(vdp2_regs->WCTLD >> 8, colorcalcwindow, i, i2) && (vdp2_regs->CCCTL & 0x40))
                   {

@@ -27,6 +27,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 #include "vidshared.h"
 #include "shaders/FXAA_DefaultES.h"
 
+extern void YuiMsg(const char *format, ...);
+extern GLuint RBGGenerator_getTexture( int id );
+
 #if defined(__LIBRETRO__)
 #define YGLLOG YuiMsg
 #elif defined(__ANDROID__) || defined(_WINDOWS)
@@ -4084,7 +4087,7 @@ int YglBlitFXAA(u32 sourceTexture, float w, float h) {
       return -1;
     }
 
-    glShaderSource(fshader, 2, fxaa_f, NULL);
+    glShaderSource(fshader, 2, (const GLchar * const*)fxaa_f, NULL);
     glCompileShader(fshader);
     glGetShaderiv(fshader, GL_COMPILE_STATUS, &compiled);
     if (compiled == GL_FALSE) {
