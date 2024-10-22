@@ -116,6 +116,11 @@ ifneq (,$(findstring unix,$(platform)))
 	ifneq ($(findstring riscv64,$(shell uname -a)),)
 		HAVE_SSE = 0
 	endif
+	
+	# loong64
+	ifneq ($(findstring loongarch64,$(shell uname -m)),)
+		HAVE_SSE = 0
+	endif
 
 else ifneq (,$(findstring linux-portable,$(platform)))
 	TARGET := $(TARGET_NAME)_libretro.so
