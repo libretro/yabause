@@ -348,6 +348,15 @@ else
 
 endif
 
+# webOS
+ifneq (,$(findstring webos,$(CROSS_COMPILE)$(findstring starfish,$(CROSS_COMPILE))))
+	FORCE_GLES = 1
+	HAVE_SSE = 0
+	USE_ARM_DRC = 1
+	DYNAREC_DEVMIYAX = 1
+	FLAGS += -DARM
+endif
+
 include Makefile.common
 
 ifeq ($(__USE_OPENGL_DEBUG__),1)
