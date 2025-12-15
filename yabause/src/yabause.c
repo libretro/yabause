@@ -893,6 +893,7 @@ int YabauseEmulate(void) {
 #endif
 #endif
 #if DYNAREC_DEVMIYAX
+   extern void SH2DynShowSttaics(SH2_struct * master, SH2_struct * slave );
    if (SH2Core->id == 3) SH2DynShowSttaics(MSH2, SSH2);
 #endif
    return 0;
