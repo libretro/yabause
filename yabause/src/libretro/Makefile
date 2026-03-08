@@ -262,27 +262,86 @@ else ifneq (,$(findstring odroid,$(platform)))
 else ifneq (,$(findstring osx,$(platform)))
 	TARGET := $(TARGET_NAME)_libretro.dylib
 	fpic := -fPIC
-	OSXVER = $(shell sw_vers -productVersion | cut -d. -f 2)
-	OSX_GT_MOJAVE = $(shell (( $(OSXVER) >= 14)) && echo "YES")
-	ifneq ($(OSX_GT_MOJAVE),YES)
-		#this breaks compiling on Mac OS Mojave
-		fpic += -mmacosx-version-min=10.1
-	endif
 	ARCH_IS_MACOSX = 1
 	SHARED := -dynamiclib
 	ifeq ($(arch),ppc)
 		ENDIANNESS_DEFINES := -DWORDS_BIGENDIAN -DMSB_FIRST -D__ppc__
+		HAVE_SSE = 0
 	endif
 	LDFLAGS += -lpthread
 
-else ifneq (,$(findstring ios,$(platform)))
-	# iOS
+	ifeq ($(CROSS_COMPILE),1)
+		ifneq (,$(findstring arm64,$(LIBRETRO_APPLE_PLATFORM)))
+			HAVE_SSE = 0
+		endif
+		TARGET_RULE = -target $(LIBRETRO_APPLE_PLATFORM) -isysroot $(LIBRETRO_APPLE_ISYSROOT)
+		CFLAGS += $(TARGET_RULE)
+		CXXFLAGS += $(TARGET_RULE)
+		LDFLAGS += $(TARGET_RULE)
+	else ifeq ($(shell uname -m),arm64)
+		HAVE_SSE = 0
+	endif
+
+	CFLAGS += $(ARCHFLAGS)
+	CXXFLAGS += $(ARCHFLAGS)
+	LDFLAGS += $(ARCHFLAGS)
+
+else ifeq ($(platform), ios-arm64)
+	# iOS arm64
 	TARGET := $(TARGET_NAME)_libretro_ios.dylib
 	fpic := -fPIC
 	SHARED := -dynamiclib
-	CC = clang -arch armv7 -isysroot $(IOSSDK)
-	CC_AS = perl ./libretro/gas-preprocessor.pl $(CC)
-	CXX = clang++ -arch armv7 -isysroot $(IOSSDK)
+ifeq ($(IOSSDK),)
+	IOSSDK := $(shell xcodebuild -version -sdk iphoneos Path)
+endif
+	CC = cc -arch arm64 -isysroot $(IOSSDK)
+	CXX = c++ -arch arm64 -isysroot $(IOSSDK)
+	CC_AS = $(CC)
+	HAVE_SSE = 0
+	FORCE_GLES = 1
+	FLAGS += -DAARCH64 -DIOS
+	USE_GLES_FRAMEWORK = 1
+	MINVERSION = -miphoneos-version-min=11.0
+	FLAGS += $(MINVERSION)
+	LDFLAGS += $(MINVERSION)
+
+else ifneq (,$(findstring ios,$(platform)))
+	# iOS (legacy armv7)
+	TARGET := $(TARGET_NAME)_libretro_ios.dylib
+	fpic := -fPIC
+	SHARED := -dynamiclib
+ifeq ($(IOSSDK),)
+	IOSSDK := $(shell xcodebuild -version -sdk iphoneos Path)
+endif
+	CC = cc -arch armv7 -isysroot $(IOSSDK)
+	CXX = c++ -arch armv7 -isysroot $(IOSSDK)
+	CC_AS = $(CC)
+	HAVE_SSE = 0
+	FORCE_GLES = 1
+	FLAGS += -DARM -DIOS
+	USE_GLES_FRAMEWORK = 1
+	MINVERSION = -miphoneos-version-min=11.0
+	FLAGS += $(MINVERSION)
+	LDFLAGS += $(MINVERSION)
+
+else ifeq ($(platform), tvos-arm64)
+	# tvOS arm64
+	TARGET := $(TARGET_NAME)_libretro_tvos.dylib
+	fpic := -fPIC
+	SHARED := -dynamiclib
+ifeq ($(IOSSDK),)
+	IOSSDK := $(shell xcodebuild -version -sdk appletvos Path)
+endif
+	CC = cc -arch arm64 -isysroot $(IOSSDK)
+	CXX = c++ -arch arm64 -isysroot $(IOSSDK)
+	CC_AS = $(CC)
+	HAVE_SSE = 0
+	FORCE_GLES = 1
+	FLAGS += -DAARCH64 -DIOS
+	USE_GLES_FRAMEWORK = 1
+	MINVERSION = -mappletvos-version-min=11.0
+	FLAGS += $(MINVERSION)
+	LDFLAGS += $(MINVERSION)
 
 # sncps3
 else ifneq (,$(findstring sncps3,$(platform)))
@@ -394,7 +453,10 @@ ifeq ($(DEBUG), 1)
 	FLAGS += -O0 -g
 else
 	FLAGS += -O3 -DNDEBUG
-        FLAGS += -fno-tree-tail-merge #workaround segfault on N2 and possibly other ARM boards
+	ifneq (,$(findstring clang,$(shell $(CC) --version 2>/dev/null)))
+	else
+		FLAGS += -fno-tree-tail-merge #workaround segfault on N2 and possibly other ARM boards
+	endif
 endif
 
 OBJECTS += $(OBJECTS_C) $(OBJECTS_CXX) $(OBJECTS_S)

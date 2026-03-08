@@ -1362,7 +1362,9 @@ int YabauseQuickLoadGame(void)
 }
 
 // non standard function
+#if !defined(__APPLE__)
 #include <malloc.h>
+#endif
 char* strdup_ (const char* s)
 {
   size_t slen = strlen(s);

@@ -54,7 +54,11 @@ endif
 
 ifeq ($(FORCE_GLES), 1)
 	FLAGS += -D_OGLES3_
-	LDFLAGS += -lGLESv2
+	ifeq ($(USE_GLES_FRAMEWORK), 1)
+		LDFLAGS += -framework OpenGLES
+	else
+		LDFLAGS += -lGLESv2
+	endif
 	ifeq ($(FORCE_GLEW), 0)
 		FLAGS += -DHAVE_OPENGLES -DHAVE_OPENGLES3
 	endif
