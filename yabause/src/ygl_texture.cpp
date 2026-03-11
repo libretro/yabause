@@ -28,6 +28,20 @@ extern vdp2rotationparameter_struct  paraB;
 extern Vdp2 * fixVdp2Regs;
 }
 
+// Compute shaders require GLES 3.1+ or GL 4.3+.
+// macOS only supports GL 4.1, so disable on Apple desktop GL.
+#if defined(__APPLE__) && !defined(_OGLES3_)
+
+extern "C" {
+  void RBGGenerator_init(int width, int height) { (void)width; (void)height; }
+  void RBGGenerator_resize(int width, int height) { (void)width; (void)height; }
+  void RBGGenerator_update(RBGDrawInfo * rbg) { (void)rbg; }
+  GLuint RBGGenerator_getTexture(int id) { (void)id; return 0; }
+  void RBGGenerator_onFinish() {}
+}
+
+#else // has compute shader support
+
 #define YGLDEBUG LOG
 
 const char prg_generate_rbg[] =
@@ -2641,5 +2655,7 @@ extern "C" {
     instance->onFinish();
   }
 }
+
+#endif // compute shader support
 
 

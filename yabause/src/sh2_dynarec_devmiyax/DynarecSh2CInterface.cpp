@@ -21,7 +21,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 #include "../core.h"
 #include <stdio.h>
 #include <string.h>
-#include <malloc.h> 
+#if !defined(__APPLE__)
+#include <malloc.h>
+#endif
 #include <stdint.h>
 #include "../sh2core.h"
 #include "DynarecSh2.h"

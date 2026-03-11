@@ -109,7 +109,9 @@ void retro_set_environment(retro_environment_t cb)
       { "yabasanshiro_polygon_mode", "Polygon Mode (restart); perspective_correction|gpu_tesselation|cpu_tesselation" },
       { "yabasanshiro_resolution_mode", "Resolution Mode (restart); original|2x|4x|720p|1080p|4k" },
       { "yabasanshiro_rbg_resolution_mode", "RGB resolution mode; original|2x|720p|1080p|Fit_to_emulation" },
+#if !defined(__APPLE__)
       { "yabasanshiro_rbg_use_compute_shader", "RGB use compute shader for RGB; disabled|enabled" },
+#endif
       { NULL, NULL },
    };
 
@@ -715,6 +717,7 @@ void check_variables(void)
       }
    }
 
+#if !defined(__APPLE__)
    var.key = "yabasanshiro_rbg_use_compute_shader";
    var.value = NULL;
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
@@ -724,6 +727,7 @@ void check_variables(void)
       else if (strcmp(var.value, "disabled") == 0)
          g_rbg_use_compute_shader = 0;
    }
+#endif
 
 #ifdef DYNAREC_DEVMIYAX
    var.key = "yabasanshiro_sh2coretype";

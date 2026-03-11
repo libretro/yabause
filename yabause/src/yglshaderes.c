@@ -748,7 +748,7 @@ int Ygl_uniformPerLineAlpha(void * p)
   prg->preblendmode = prg->blendmode;
   prg->blendmode = 0;
 
-#if !defined(_OGLES3_)
+#if !defined(_OGLES3_) && !defined(__APPLE__)
   glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, strlen(__FUNCTION__), __FUNCTION__);
 #endif
 
@@ -849,7 +849,7 @@ int Ygl_uniformNormal_blur(void * p)
 {
   YglProgram * prg;
   prg = p;
-#if !defined(_OGLES3_)
+#if !defined(_OGLES3_) && !defined(__APPLE__)
   glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, strlen(__FUNCTION__), __FUNCTION__);
 #endif
 
@@ -993,7 +993,7 @@ int Ygl_uniformWindow(void * p )
 {
    YglProgram * prg;
    prg = p;
-#if !defined(_OGLES3_)
+#if !defined(_OGLES3_) && !defined(__APPLE__)
    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, strlen(__FUNCTION__), __FUNCTION__);
 #endif
    glUseProgram(prg->prgid );
@@ -1060,7 +1060,7 @@ int Ygl_uniformVdp1Normal(void * p )
 {
    YglProgram * prg;
    prg = p;
-#if !defined(_OGLES3_)
+#if !defined(_OGLES3_) && !defined(__APPLE__)
    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, strlen(__FUNCTION__), __FUNCTION__);
 #endif
    glEnableVertexAttribArray(prg->vertexp);
@@ -1628,7 +1628,7 @@ int Ygl_uniformStartUserClip(void * p )
 {
    YglProgram * prg;
    prg = p;
-#if !defined(_OGLES3_)
+#if !defined(_OGLES3_) && !defined(__APPLE__)
    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, strlen(__FUNCTION__), __FUNCTION__);
 #endif
 

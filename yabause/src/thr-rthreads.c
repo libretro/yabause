@@ -187,7 +187,7 @@ void YabThreadSetCurrentThreadAffinityMask(int mask)
 {
 #if defined(_WIN32)
 	SetThreadIdealProcessor(GetCurrentThread(), mask);
-#elif !defined(ANDROID) // it needs more than android-21
+#elif !defined(ANDROID) && !defined(__APPLE__) // it needs more than android-21
 	int err, syscallres;
 	pid_t pid = syscall(SYS_gettid);
 	mask = 1 << mask;
