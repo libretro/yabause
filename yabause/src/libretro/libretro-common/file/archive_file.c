@@ -20,7 +20,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -51,19 +50,19 @@ static int file_archive_get_file_list_cb(
       struct archive_extract_userdata *userdata)
 {
    union string_list_elem_attr attr;
-   attr.i = 0;
+   attr.i = RARCH_COMPRESSED_FILE_IN_ARCHIVE;
 
    if (valid_exts)
    {
-      size_t path_len              = strlen(path);
+      size_t _len                  = strlen(path);
       /* Checks if this entry is a directory or a file. */
-      char last_char               = path[path_len - 1];
+      char last_char               = path[_len - 1];
       struct string_list ext_list  = {0};
 
       /* Skip if directory. */
       if (last_char == '/' || last_char == '\\' )
-         return 0;
-      
+         return 1;
+
       string_list_initialize(&ext_list);
       if (string_split_noalloc(&ext_list, valid_exts, "|"))
       {
@@ -72,7 +71,7 @@ static int file_archive_get_file_list_cb(
          if (!file_ext)
          {
             string_list_deinitialize(&ext_list);
-            return 0;
+            return 1;
          }
 
          if (!string_list_find_elem_prefix(&ext_list, ".", file_ext))
@@ -81,8 +80,6 @@ static int file_archive_get_file_list_cb(
             string_list_deinitialize(&ext_list);
             return -1;
          }
-
-         attr.i = RARCH_COMPRESSED_FILE_IN_ARCHIVE;
       }
 
       string_list_deinitialize(&ext_list);
@@ -104,22 +101,19 @@ static int file_archive_extract_cb(const char *name, const char *valid_exts,
       char new_path[PATH_MAX_LENGTH];
       const char *delim;
 
-      delim = path_get_archive_delim(userdata->archive_path);
-
-      if (delim)
+      if ((delim = path_get_archive_delim(userdata->archive_path)))
       {
-         if (!string_is_equal_noncase(userdata->current_file_path, delim + 1))
+         if (!string_is_equal_noncase(
+                  userdata->current_file_path, delim + 1))
            return 1; /* keep searching for the right file */
       }
 
-      new_path[0] = '\0';
       if (userdata->extraction_directory)
-         fill_pathname_join(new_path, userdata->extraction_directory,
+         fill_pathname_join_special(new_path, userdata->extraction_directory,
                path_basename(name), sizeof(new_path));
       else
          fill_pathname_resolve_relative(new_path, userdata->archive_path,
                path_basename(name), sizeof(new_path));
-
 
       if (file_archive_perform_mode(new_path,
                 valid_exts, cdata, cmode, csize, size,
@@ -141,25 +135,18 @@ static int file_archive_parse_file_init(file_archive_transfer_t *state,
    char path[PATH_MAX_LENGTH];
    char *last                 = NULL;
 
-   path[0] = '\0';
-
    strlcpy(path, file, sizeof(path));
 
-   last = (char*)path_get_archive_delim(path);
+   if ((last = (char*)path_get_archive_delim(path)))
+      *last  = '\0';
 
-   if (last)
-      *last = '\0';
-
-   state->backend = file_archive_get_file_backend(path);
-   if (!state->backend)
+   if (!(state->backend = file_archive_get_file_backend(path)))
       return -1;
 
-   state->archive_file = filestream_open(path,
-         RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
    /* Failed to open archive. */
-   if (!state->archive_file)
+   if (!(state->archive_file = filestream_open(path,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE)))
       return -1;
 
    state->archive_size = filestream_get_size(state->archive_file);
@@ -170,7 +157,8 @@ static int file_archive_parse_file_init(file_archive_transfer_t *state,
       state->archive_mmap_fd = open(path, O_RDONLY);
       if (state->archive_mmap_fd)
       {
-         state->archive_mmap_data = (uint8_t*)mmap(NULL, (size_t)state->archive_size,
+         state->archive_mmap_data = (uint8_t*)mmap(NULL,
+               (size_t)state->archive_size,
                PROT_READ, MAP_SHARED, state->archive_mmap_fd, 0);
 
          if (state->archive_mmap_data == (uint8_t*)MAP_FAILED)
@@ -187,43 +175,6 @@ static int file_archive_parse_file_init(file_archive_transfer_t *state,
    state->step_total   = 0;
 
    return state->backend->archive_parse_file_init(state, path);
-}
-
-/**
- * file_archive_decompress_data_to_file:
- * @path                        : filename path of archive.
- * @size                        : output file size
- * @checksum                    : CRC32 checksum from input data.
- *
- * Write data to file.
- *
- * Returns: true (1) on success, otherwise false (0).
- **/
-static int file_archive_decompress_data_to_file(
-      file_archive_transfer_t *transfer,
-      file_archive_file_handle_t *handle,
-      const char *path,
-      uint32_t size,
-      uint32_t checksum)
-{
-   if (!handle)
-      return 0;
-
-#if 0
-   handle->real_checksum = transfer->backend->stream_crc_calculate(
-         0, handle->data, size);
-   if (handle->real_checksum != checksum)
-   {
-      /* File CRC difers from archive CRC. */
-      printf("File CRC differs from archive CRC. File: 0x%x, Archive: 0x%x.\n",
-            (unsigned)handle->real_checksum, (unsigned)checksum);
-   }
-#endif
-
-   if (!filestream_write_file(path, handle->data, size))
-      return 0;
-
-   return 1;
 }
 
 void file_archive_parse_file_iterate_stop(file_archive_transfer_t *state)
@@ -384,10 +335,9 @@ bool file_archive_extract_file(
       const char *archive_path,
       const char *valid_exts,
       const char *extraction_directory,
-      char *out_path, size_t len)
+      char *s, size_t len)
 {
    struct archive_extract_userdata userdata;
-   bool ret                                 = true;
    struct string_list *list                 = string_split(valid_exts, "|");
 
    userdata.archive_path[0]                 = '\0';
@@ -402,37 +352,22 @@ bool file_archive_extract_file(
    userdata.transfer                        = NULL;
    userdata.dec                             = NULL;
 
-   if (!list)
+   if (     list
+         && file_archive_walk(archive_path, valid_exts,
+            file_archive_extract_cb, &userdata)
+         && userdata.found_file
+      )
    {
-      ret = false;
-      goto end;
+      if (!string_is_empty(userdata.first_extracted_file_path))
+         strlcpy(s, userdata.first_extracted_file_path, len);
+      return true;
    }
 
-   if (!file_archive_walk(archive_path, valid_exts,
-            file_archive_extract_cb, &userdata))
-   {
-      /* Parsing file archive failed. */
-      ret = false;
-      goto end;
-   }
-
-   if (!userdata.found_file)
-   {
-      /* Didn't find any file that matched valid extensions
-       * for libretro implementation. */
-      ret = false;
-      goto end;
-   }
-
-   if (!string_is_empty(userdata.first_extracted_file_path))
-      strlcpy(out_path, userdata.first_extracted_file_path, len);
-
-end:
    if (userdata.first_extracted_file_path)
       free(userdata.first_extracted_file_path);
    if (list)
       string_list_free(list);
-   return ret;
+   return false;
 }
 
 /* Warning: 'list' must zero initialised before
@@ -503,8 +438,8 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, struct archive_extract_userdata *userdata)
 {
-   file_archive_file_handle_t handle;
    int ret;
+   file_archive_file_handle_t handle;
 
    if (!userdata->transfer || !userdata->transfer->backend)
       return false;
@@ -522,13 +457,45 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
                userdata->transfer->context, &handle);
    }while (ret == 0);
 
-   if (ret == -1 || !file_archive_decompress_data_to_file(
-            userdata->transfer, &handle, path,
-            size, crc32))
+   if (ret == -1 || !filestream_write_file(path, handle.data, size))
       return false;
 
    return true;
 }
+
+/**
+ * string_list_append_n:
+ * @list             : pointer to string list
+ * @elem             : element to add to the string list
+ * @length           : read at most this many bytes from elem
+ * @attr             : attributes of new element.
+ *
+ * Appends a new element to the string list.
+ *
+ * @return true if successful, otherwise false.
+ **/
+static bool string_list_append_n(struct string_list *list,
+      const char *elem, unsigned length,
+      union string_list_elem_attr attr)
+{
+   char *data_dup = NULL;
+
+   if (list->size >= list->cap &&
+         !string_list_capacity(list, list->cap * 2))
+      return false;
+
+   if (!(data_dup = (char*)malloc(length + 1)))
+      return false;
+
+   strlcpy(data_dup, elem, length + 1);
+
+   list->elems[list->size].data = data_dup;
+   list->elems[list->size].attr = attr;
+
+   list->size++;
+   return true;
+}
+
 
 /**
  * file_archive_filename_split:
@@ -550,7 +517,10 @@ static struct string_list *file_archive_filename_split(const char *path)
    {
       /* add archive path to list first */
       if (!string_list_append_n(list, path, (unsigned)(delim - path), attr))
-         goto error;
+      {
+         string_list_free(list);
+         return NULL;
+      }
 
       /* now add the path within the archive */
       delim++;
@@ -558,18 +528,22 @@ static struct string_list *file_archive_filename_split(const char *path)
       if (*delim)
       {
          if (!string_list_append(list, delim, attr))
-            goto error;
+         {
+            string_list_free(list);
+            return NULL;
+         }
       }
    }
    else
+   {
       if (!string_list_append(list, path, attr))
-         goto error;
+      {
+         string_list_free(list);
+         return NULL;
+      }
+   }
 
    return list;
-
-error:
-   string_list_free(list);
-   return NULL;
 }
 
 /* Generic compressed file loader.
@@ -578,9 +552,9 @@ error:
  */
 int file_archive_compressed_read(
       const char * path, void **buf,
-      const char* optional_filename, int64_t *length)
+      const char* optional_filename, int64_t *len)
 {
-   const struct 
+   const struct
       file_archive_file_backend *backend = NULL;
    struct string_list *str_list          = NULL;
 
@@ -592,7 +566,7 @@ int file_archive_compressed_read(
     */
    if (optional_filename && path_is_valid(optional_filename))
    {
-      *length = 0;
+      *len = 0;
       return 1;
    }
 
@@ -607,17 +581,17 @@ int file_archive_compressed_read(
    {
       /* could not extract string and substring. */
       string_list_free(str_list);
-      *length = 0;
+      *len = 0;
       return 0;
    }
 
    backend = file_archive_get_file_backend(str_list->elems[0].data);
-   *length = backend->compressed_file_read(str_list->elems[0].data,
+   *len    = backend->compressed_file_read(str_list->elems[0].data,
          str_list->elems[1].data, buf, optional_filename);
 
    string_list_free(str_list);
 
-   if (*length != -1)
+   if (*len != -1)
       return 1;
 
    return 0;
@@ -648,16 +622,12 @@ const struct file_archive_file_backend* file_archive_get_file_backend(const char
    const char *file_ext          = NULL;
    char *last                    = NULL;
 
-   newpath[0] = '\0';
-
    strlcpy(newpath, path, sizeof(newpath));
 
-   last = (char*)path_get_archive_delim(newpath);
+   if ((last = (char*)path_get_archive_delim(newpath)))
+      *last  = '\0';
 
-   if (last)
-      *last = '\0';
-
-   file_ext = path_get_extension(newpath);
+   file_ext  = path_get_extension(newpath);
 
 #ifdef HAVE_7ZIP
    if (string_is_equal_noncase(file_ext, "7z"))

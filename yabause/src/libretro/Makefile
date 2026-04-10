@@ -381,7 +381,10 @@ else ifeq ($(platform), libnx)
 # Emscripten
 else ifeq ($(platform), emscripten)
 	TARGET := $(TARGET_NAME)_libretro_$(platform).bc
+	CFLAGS   += -pthread -msimd128 -ftree-vectorize
+	CXXFLAGS += -pthread -msimd128 -ftree-vectorize
 	STATIC_LINKING = 1
+	HAVE_SSE = 0
 
 # GCW0
 else ifeq ($(platform), gcw0)
