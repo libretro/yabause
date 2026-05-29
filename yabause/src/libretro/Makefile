@@ -411,9 +411,14 @@ endif
 ifneq (,$(or $(findstring webos,$(CROSS_COMPILE)),$(findstring starfish,$(CROSS_COMPILE))))
 	FORCE_GLES = 1
 	HAVE_SSE = 0
-	USE_ARM_DRC = 1
 	DYNAREC_DEVMIYAX = 1
-	FLAGS += -DARM
+	ifneq (,$(findstring aarch64,$(CROSS_COMPILE)))
+		USE_AARCH64_DRC = 1
+		FLAGS += -DAARCH64
+	else
+		USE_ARM_DRC = 1
+		FLAGS += -DARM
+	endif
 endif
 
 include Makefile.common
