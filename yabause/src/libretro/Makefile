@@ -112,6 +112,12 @@ ifneq (,$(findstring unix,$(platform)))
 		FLAGS += -DARM
 	endif
 
+	# aarch64
+	ifneq ($(findstring aarch64,$(shell uname -a)),)
+		HAVE_SSE = 0
+		FLAGS += -DARM
+	endif
+
 	# riscv64
 	ifneq ($(findstring riscv64,$(shell uname -a)),)
 		HAVE_SSE = 0
