@@ -84,6 +84,16 @@ ifneq ($(findstring Linux,$(shell uname -s)),)
 	HAVE_CDROM = 1
 endif
 
+	# HAVE_SSE defaults to 1 at the top of this file, and the only thing it
+	# does is add -msse -mfpmath=sse further down, which no ARM compiler will
+	# take. The dedicated arm64 targets below (Switch, RockPro64, ODROID) each
+	# clear it by hand, but a plain aarch64 Linux build - which is what the
+	# libretro buildbot runs, with platform=unix like the x86_64 one - never
+	# went through any of them.
+	ifneq (,$(filter aarch64 arm64,$(shell uname -m)))
+		HAVE_SSE = 0
+	endif
+
 # Jetson Nano
 else ifeq ($(platform), jetson-nano)
 	override platform += unix
