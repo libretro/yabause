@@ -137,10 +137,19 @@ void retro_set_environment(retro_environment_t cb)
       { NULL, 0 },
    };
 
+   struct retro_vfs_interface_info vfs_iface_info;
+
    environ_cb = cb;
 
    cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
    environ_cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports);
+
+   /* Only the path checks, such as the one for the BIOS, use the frontend's
+    * VFS: the disc code relies on libretro-common's own file streams */
+   vfs_iface_info.required_interface_version = PATH_REQUIRED_VFS_VERSION;
+   vfs_iface_info.iface                      = NULL;
+   if (cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE, &vfs_iface_info))
+      path_vfs_init(&vfs_iface_info);
 }
 void retro_set_video_refresh(retro_video_refresh_t cb) { video_cb = cb; }
 void retro_set_audio_sample(retro_audio_sample_t cb) { (void)cb; }
@@ -918,9 +927,7 @@ void retro_cheat_set(unsigned index, bool enabled, const char *code)
 
 static int does_file_exist(const char *filename)
 {
-   struct stat st;
-   int result = stat(filename, &st);
-   return result == 0;
+   return path_is_valid(filename);
 }
 
 static void extract_basename(char *buf, const char *path, size_t size)
