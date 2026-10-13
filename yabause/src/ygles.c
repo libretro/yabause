@@ -3663,6 +3663,14 @@ void YglRender(void) {
 
    YGLLOG("YglRender\n");
 
+#ifdef __LIBRETRO__
+   /* The frontend may hand out a different framebuffer for each frame
+    * (libretro.h: "could change every frame potentially"), as RetroArch's
+    * threaded video does, and one retro_run may render more than one
+    * frame. Ask for it before every frame rendered. */
+   _Ygl->default_fbo = YuiGetFB();
+#endif
+
    FrameProfileAdd("YglRender start");
    if ((Vdp2Regs->TVMD & 0x8000) == 0){
      glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
