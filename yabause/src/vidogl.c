@@ -272,56 +272,48 @@ static INLINE void Vdp1MaskSpritePixel(int type, u16 * pixel, int *colorcalc)
   {
   case 0x0:
   {
-    *pixel |= (*colorcalc & 0x07) << 11;
     *colorcalc = (*pixel >> 11) & 0x7;
     *pixel &= 0x7FF;
     break;
   }
   case 0x1:
   {
-    *pixel |= (*colorcalc & 0x03) << 11;
     *colorcalc = (*pixel >> 11) & 0x3;
     *pixel &= 0x7FF;
     break;
   }
   case 0x2:
   {
-    *pixel |= (*colorcalc & 0x07) << 11;
     *colorcalc = (*pixel >> 11) & 0x7;
     *pixel &= 0x7FF;
     break;
   }
   case 0x3:
   {
-    *pixel |= (*colorcalc & 0x03) << 11;
     *colorcalc = (*pixel >> 11) & 0x3;
     *pixel &= 0x7FF;
     break;
   }
   case 0x4:
   {
-    *pixel |= (*colorcalc & 0x07) << 10;
     *colorcalc = (*pixel >> 10) & 0x7;
     *pixel &= 0x3FF;
     break;
   }
   case 0x5:
   {
-    *pixel |= (*colorcalc & 0x01) << 11;
     *colorcalc = (*pixel >> 11) & 0x1;
     *pixel &= 0x7FF;
     break;
   }
   case 0x6:
   {
-    *pixel |= (*colorcalc & 0x03) << 10;
     *colorcalc = (*pixel >> 10) & 0x3;
     *pixel &= 0x3FF;
     break;
   }
   case 0x7:
   {
-    *pixel |= (*colorcalc & 0x09) << 7;
     *colorcalc = (*pixel >> 9) & 0x7;
     *pixel &= 0x1FF;
     break;
@@ -334,7 +326,6 @@ static INLINE void Vdp1MaskSpritePixel(int type, u16 * pixel, int *colorcalc)
   }
   case 0x9:
   {
-    *pixel |= (*colorcalc & 0x01) << 6;
     *colorcalc = (*pixel >> 6) & 0x1;
     *pixel &= 0x3F;
     break;
@@ -347,7 +338,6 @@ static INLINE void Vdp1MaskSpritePixel(int type, u16 * pixel, int *colorcalc)
   }
   case 0xB:
   {
-    *pixel |= (*colorcalc & 0x03) << 6;
     *colorcalc = (*pixel >> 6) & 0x3;
     *pixel &= 0x3F;
     break;
@@ -360,7 +350,6 @@ static INLINE void Vdp1MaskSpritePixel(int type, u16 * pixel, int *colorcalc)
   }
   case 0xD:
   {
-    *pixel |= (*colorcalc & 0x01) << 6;
     *colorcalc = (*pixel >> 6) & 0x1;
     *pixel &= 0xFF;
     break;
@@ -373,7 +362,6 @@ static INLINE void Vdp1MaskSpritePixel(int type, u16 * pixel, int *colorcalc)
   }
   case 0xF:
   {
-    *pixel |= (*colorcalc & 0x03) << 6;
     *colorcalc = (*pixel >> 6) & 0x3;
     *pixel &= 0xFF;
     break;
