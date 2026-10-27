@@ -581,7 +581,13 @@ void YuiSwapBuffers(void)
 static void context_reset(void)
 {
 #if !defined(_USEGLEW_)
+   glsm_ctx_proc_address_t proc_info;
+
    glsm_ctl(GLSM_CTL_STATE_CONTEXT_RESET, NULL);
+   /* glsm only resolves libretro-common's map, not the core's own symbols */
+   if (glsm_ctl(GLSM_CTL_PROC_ADDRESS_GET, &proc_info))
+      rglgen_resolve_symbols_custom((rglgen_proc_address_t)proc_info.addr,
+            rglgen_symbol_map_private);
    glsm_ctl(GLSM_CTL_STATE_SETUP, NULL);
 #endif
    if (first_ctx_reset == 1)

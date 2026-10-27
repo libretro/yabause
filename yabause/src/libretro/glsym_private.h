@@ -45,6 +45,8 @@ typedef void (APIENTRYP RGLSYMGLTEXTUREBARRIERNVPROC) (void);
 extern RGLSYMGLTEXTUREBARRIERNVPROC __rglgen_glTextureBarrierNV;
 #endif
 
+extern const struct rglgen_sym_map rglgen_symbol_map_private[];
+
 #ifdef __cplusplus
 }
 #endif
