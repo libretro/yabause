@@ -927,7 +927,15 @@ void retro_cheat_set(unsigned index, bool enabled, const char *code)
 
 static int does_file_exist(const char *filename)
 {
-   return path_is_valid(filename);
+   char path[PATH_MAX];
+   char *p;
+
+   /* The frontend's VFS can reject a mixed path such as C:/system\saturn_bios.bin */
+   snprintf(path, sizeof(path), "%s", filename);
+   for (p = path; *p; p++)
+      if (*p == '\\')
+         *p = '/';
+   return path_is_valid(path);
 }
 
 static void extract_basename(char *buf, const char *path, size_t size)
