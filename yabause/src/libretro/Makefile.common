@@ -69,7 +69,8 @@ else
 	else ifeq ($(ARCH_IS_MACOSX), 1)
 		LDFLAGS += -framework OpenGL
 	else
-		LDFLAGS += -lGL
+		GL_LIB ?= -lGL
+		LDFLAGS += $(GL_LIB)
 	endif
 endif
 
