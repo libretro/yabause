@@ -938,6 +938,17 @@ static int does_file_exist(const char *filename)
    return path_is_valid(path);
 }
 
+static void set_bios_path(const char *name)
+{
+   size_t len = strlen(g_system_dir);
+
+   /* The frontend's system folder can end with either separator */
+   if (len && (g_system_dir[len - 1] == '/' || g_system_dir[len - 1] == '\\'))
+      snprintf(bios_path, sizeof(bios_path), "%s%s", g_system_dir, name);
+   else
+      snprintf(bios_path, sizeof(bios_path), "%s%c%s", g_system_dir, slash, name);
+}
+
 static void extract_basename(char *buf, const char *path, size_t size)
 {
    strncpy(buf, path_basename(path), size - 1);
@@ -1060,15 +1071,15 @@ bool retro_load_game(const struct retro_game_info *info)
    }
 
    snprintf(full_path, sizeof(full_path), "%s", info->path);
-   snprintf(bios_path, sizeof(bios_path), "%s%csaturn_bios.bin", g_system_dir, slash);
+   set_bios_path("saturn_bios.bin");
    if (does_file_exist(bios_path) != 1)
    {
       log_cb(RETRO_LOG_WARN, "%s NOT FOUND\n", bios_path);
-      snprintf(bios_path, sizeof(bios_path), "%s%csega_101.bin", g_system_dir, slash);
+      set_bios_path("sega_101.bin");
       if (does_file_exist(bios_path) != 1)
       {
          log_cb(RETRO_LOG_WARN, "%s NOT FOUND\n", bios_path);
-         snprintf(bios_path, sizeof(bios_path), "%s%cmpr-17933.bin", g_system_dir, slash);
+         set_bios_path("mpr-17933.bin");
          if (does_file_exist(bios_path) != 1)
          {
             log_cb(RETRO_LOG_WARN, "%s NOT FOUND\n", bios_path);
