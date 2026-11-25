@@ -360,7 +360,6 @@ static INLINE void Vdp1MaskSpritePixel(int type, u16 * pixel, int *colorcalc)
   }
   case 0xD:
   {
-    *pixel |= (*colorcalc & 0x01) << 6;
     *colorcalc = (*pixel >> 6) & 0x1;
     *pixel &= 0xFF;
     break;
@@ -373,7 +372,6 @@ static INLINE void Vdp1MaskSpritePixel(int type, u16 * pixel, int *colorcalc)
   }
   case 0xF:
   {
-    *pixel |= (*colorcalc & 0x03) << 6;
     *colorcalc = (*pixel >> 6) & 0x3;
     *pixel &= 0xFF;
     break;
