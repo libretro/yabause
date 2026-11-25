@@ -34,8 +34,6 @@
 
 yabauseinit_struct yinit;
 
-static char slash = path_default_slash_c();
-
 static char g_save_dir[PATH_MAX];
 static char g_system_dir[PATH_MAX];
 static char full_path[PATH_MAX];
@@ -137,10 +135,19 @@ void retro_set_environment(retro_environment_t cb)
       { NULL, 0 },
    };
 
+   struct retro_vfs_interface_info vfs_iface_info;
+
    environ_cb = cb;
 
    cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
    environ_cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports);
+
+   /* Only the path checks, such as the one for the BIOS, use the frontend's
+    * VFS: the disc code relies on libretro-common's own file streams */
+   vfs_iface_info.required_interface_version = PATH_REQUIRED_VFS_VERSION;
+   vfs_iface_info.iface                      = NULL;
+   if (cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE, &vfs_iface_info))
+      path_vfs_init(&vfs_iface_info);
 }
 void retro_set_video_refresh(retro_video_refresh_t cb) { video_cb = cb; }
 void retro_set_audio_sample(retro_audio_sample_t cb) { (void)cb; }
@@ -924,9 +931,22 @@ void retro_cheat_set(unsigned index, bool enabled, const char *code)
 
 static int does_file_exist(const char *filename)
 {
-   struct stat st;
-   int result = stat(filename, &st);
-   return result == 0;
+   return path_is_valid(filename);
+}
+
+/* The frontend's VFS can reject backslashes and doubled separators, so a
+ * folder from the frontend is joined to a name with a single '/' */
+static void join_path(char *out, size_t size, const char *dir, const char *name)
+{
+   size_t len;
+   char *p;
+
+   snprintf(out, size, "%s", dir);
+   for (p = out; *p; p++)
+      if (*p == '\\')
+         *p = '/';
+   len = strlen(out);
+   snprintf(out + len, size - len, "%s%s", (len && out[len - 1] != '/') ? "/" : "", name);
 }
 
 static void extract_basename(char *buf, const char *path, size_t size)
@@ -967,7 +987,7 @@ void retro_init(void)
    }
 
    char save_dir[PATH_MAX];
-   snprintf(save_dir, sizeof(save_dir), "%s%cyabasanshiro%c", g_save_dir, slash, slash);
+   join_path(save_dir, sizeof(save_dir), g_save_dir, "yabasanshiro");
    path_mkdir(save_dir);
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_INPUT_BITMASKS, NULL))
@@ -1051,15 +1071,15 @@ bool retro_load_game(const struct retro_game_info *info)
    }
 
    snprintf(full_path, sizeof(full_path), "%s", info->path);
-   snprintf(bios_path, sizeof(bios_path), "%s%csaturn_bios.bin", g_system_dir, slash);
+   join_path(bios_path, sizeof(bios_path), g_system_dir, "saturn_bios.bin");
    if (does_file_exist(bios_path) != 1)
    {
       log_cb(RETRO_LOG_WARN, "%s NOT FOUND\n", bios_path);
-      snprintf(bios_path, sizeof(bios_path), "%s%csega_101.bin", g_system_dir, slash);
+      join_path(bios_path, sizeof(bios_path), g_system_dir, "sega_101.bin");
       if (does_file_exist(bios_path) != 1)
       {
          log_cb(RETRO_LOG_WARN, "%s NOT FOUND\n", bios_path);
-         snprintf(bios_path, sizeof(bios_path), "%s%cmpr-17933.bin", g_system_dir, slash);
+         join_path(bios_path, sizeof(bios_path), g_system_dir, "mpr-17933.bin");
          if (does_file_exist(bios_path) != 1)
          {
             log_cb(RETRO_LOG_WARN, "%s NOT FOUND\n", bios_path);
@@ -1080,7 +1100,7 @@ bool retro_load_game(const struct retro_game_info *info)
       log_cb(RETRO_LOG_WARN, "HLE bios is enabled, this is for debugging purpose only, expect lots of issues\n");
    }
 
-   snprintf(bup_path, sizeof(bup_path), "%s%cyabasanshiro%cbackup.bin", g_save_dir, slash, slash);
+   join_path(bup_path, sizeof(bup_path), g_save_dir, "yabasanshiro/backup.bin");
 
    struct retro_input_descriptor desc[] = {
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT,  "D-Pad Left" },
